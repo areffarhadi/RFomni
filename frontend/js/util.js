@@ -138,9 +138,9 @@ export function hashColor(str) {
 
 /** Color for a segment: categorical tiers get a color per label, others use the tier color. */
 export function segColor(tier, value) {
-  if (tier.output === 'label' && typeof value === 'string' && value) {
+  if ((tier.output === 'label' || tier.output === 'boxes') && typeof value === 'string' && value) {
     const k = value.toLowerCase();
-    if (EMO[k] && tier.granularity !== 'file') return EMO[k];
+    if (EMO[k] && (tier.granularity !== 'file' || tier.output === 'boxes')) return EMO[k];
     if (tier.task_id === 'diarization' || tier.task_id === 'lid' || (tier.labels || []).length !== 1) return hashColor(k);
   }
   return tier.color || '#94a3b8';

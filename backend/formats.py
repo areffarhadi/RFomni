@@ -215,7 +215,7 @@ def export_rttm(doc, media):
 
 
 CSV_FIELDS = ["file", "media_id", "modality", "tier", "task_id", "start", "end", "duration", "value",
-              "confidence", "source", "reviewed"]
+              "confidence", "source", "reviewed", "geom"]
 
 
 def csv_rows(doc, media):
@@ -228,7 +228,8 @@ def csv_rows(doc, media):
                "start": "" if s["start"] is None else s["start"], "end": "" if s["end"] is None else s["end"],
                "duration": dur, "value": val_str(s["value"]),
                "confidence": "" if s["confidence"] is None else s["confidence"],
-               "source": s.get("source", ""), "reviewed": int(bool(s.get("reviewed")))}
+               "source": s.get("source", ""), "reviewed": int(bool(s.get("reviewed"))),
+               "geom": json.dumps(s["geom"]) if s.get("geom") else ""}
 
 
 def export_csv(pairs) -> str:
@@ -252,12 +253,37 @@ def overlap_value(doc, tier_id, a, b):
     return val_str(best["value"]) if best else None
 
 
+def spatial_items(doc, tier):
+    """Boxes / keypoints of a tier for the manifest, in pixels when the image size is known."""
+    out = []
+    for s in doc["segments"]:
+        if s["tier_id"] != tier["id"] or not s.get("geom"):
+            continue
+        g = s["geom"]
+        item = {"label": val_str(s["value"]), "confidence": s.get("confidence"), "reviewed": bool(s.get("reviewed"))}
+        if g["type"] == "box":
+            item["box"] = [g["x"], g["y"], g["w"], g["h"]]
+        else:
+            item["keypoints"] = g["points"]
+            if g.get("box"):
+                item["box"] = g["box"]
+        out.append(item)
+    return out
+
+
 def manifest_records(doc, media, path: str, anchor: str = "asr") -> list:
     """One record per anchor segment, with the overlapping value of every other tier.
-    Good starting point for training data (e.g. Qwen3-Omni fine-tuning)."""
+    Good starting point for training data (e.g. Qwen3-Omni fine-tuning).
+    Images: one record with file-level values plus boxes / keypoints (normalised 0-1, x y w h)."""
     tiers = doc["tiers"]
+    spatial = {t["id"] for t in tiers if t.get("output") in ("boxes", "keypoints")}
     file_level = {t["name"]: val_str(s["value"]) for t in tiers for s in doc["segments"]
-                  if s["tier_id"] == t["id"] and (not temporal(s) or t.get("granularity") == "file")}
+                  if t["id"] not in spatial and s["tier_id"] == t["id"] and (not temporal(s) or t.get("granularity") == "file")}
+    for t in tiers:
+        if t["id"] in spatial:
+            items = spatial_items(doc, t)
+            if items:
+                file_level[t["name"]] = items
     base = {"media": path, "media_id": media["id"], "modality": media["modality"]}
     if media["modality"] == "image" or not tiers:
         return [{**base, **file_level}] if file_level else []
@@ -285,6 +311,62 @@ def manifest_records(doc, media, path: str, anchor: str = "asr") -> list:
         r.update(file_level)
         recs.append(r)
     return recs
+
+
+COCO_KP = ["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder",
+           "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_hip", "right_hip",
+           "left_knee", "right_knee", "left_ankle", "right_ankle"]
+COCO_SKELETON = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12], [7, 13], [6, 7], [6, 8], [7, 9],
+                 [8, 10], [9, 11], [2, 3], [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
+
+
+def export_coco(pairs) -> str:
+    """COCO-format JSON with every box and pose of the given (media, doc) image pairs (pixel coordinates)."""
+    images, anns, cats = [], [], {}
+
+    def cat(name, kp=False):
+        if name not in cats:
+            c = {"id": len(cats) + 1, "name": name, "supercategory": "person" if kp or name == "person" else "object"}
+            if kp:
+                c.update(keypoints=COCO_KP, skeleton=COCO_SKELETON)
+            cats[name] = c
+        elif kp and "keypoints" not in cats[name]:
+            cats[name].update(keypoints=COCO_KP, skeleton=COCO_SKELETON)
+        return cats[name]["id"]
+
+    for iid, (media, doc) in enumerate([p for p in pairs if p[0]["modality"] == "image"], 1):
+        W, H = media.get("width") or 1, media.get("height") or 1
+        images.append({"id": iid, "file_name": media.get("rel_path") or media["name"], "width": W, "height": H})
+        tiers = {t["id"]: t for t in doc["tiers"]}
+        for s in doc["segments"]:
+            g, t = s.get("geom"), tiers.get(s["tier_id"], {})
+            if not g:
+                continue
+            a = {"id": len(anns) + 1, "image_id": iid, "iscrowd": 0, "tier": t.get("name"), "task_id": t.get("task_id"),
+                 "score": s.get("confidence"), "source": s.get("source"), "reviewed": bool(s.get("reviewed"))}
+            if g["type"] == "box":
+                b = [g["x"] * W, g["y"] * H, g["w"] * W, g["h"] * H]
+                a.update(category_id=cat(val_str(s["value"]) or "object"), bbox=[round(v, 2) for v in b],
+                         area=round(b[2] * b[3], 2))
+            else:
+                pts = g["points"]
+                kp = []
+                for x, y, v in pts:
+                    kp += [round(x * W, 2), round(y * H, 2), int(v)] if v else [0, 0, 0]
+                vis = [(x * W, y * H) for x, y, v in pts if v]
+                if g.get("box"):
+                    bx = g["box"]
+                    b = [bx[0] * W, bx[1] * H, bx[2] * W, bx[3] * H]
+                elif vis:
+                    xs, ys = [p[0] for p in vis], [p[1] for p in vis]
+                    b = [min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)]
+                else:
+                    b = [0, 0, 0, 0]
+                a.update(category_id=cat(val_str(s["value"]) or "person", kp=True), keypoints=kp,
+                         num_keypoints=sum(1 for p in pts if p[2]), bbox=[round(v, 2) for v in b], area=round(b[2] * b[3], 2))
+            anns.append(a)
+    return json.dumps({"info": {"description": "Omni Studio export", "date_created": now_iso()},
+                       "images": images, "annotations": anns, "categories": list(cats.values())}, ensure_ascii=False, indent=1)
 
 
 # =============================================================================

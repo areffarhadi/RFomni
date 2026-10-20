@@ -183,6 +183,7 @@ export class BaseEditor {
       'sep', { header: 'Export this file' },
       av && ex('eaf', 'ELAN .eaf'), av && ex('textgrid', 'Praat TextGrid'), ex('json', 'Omni Studio JSON'),
       av && ex('srt', 'SRT subtitles'), av && ex('vtt', 'WebVTT'), av && ex('rttm', 'RTTM (diarization)'), ex('csv', 'CSV'),
+      !av && ex('coco', 'COCO JSON (boxes & keypoints)'),
       'sep',
       { label: 'Open original file', icon: 'link', onClick: () => window.open(urls.file(this.pid, m.id), '_blank') },
       { label: m.source === 'linked' ? 'Remove from project (file stays on disk)' : 'Delete from project', icon: 'trash', danger: true, onClick: () => this.removeFile() },

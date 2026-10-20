@@ -22,7 +22,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.1.0", "Tessera"
+VERSION, CODENAME = "0.2.0", "Mosaic"
 app = FastAPI(title="Omni Studio", version=VERSION)
 
 
@@ -351,6 +351,7 @@ EXPORTERS = {
     "vtt": (".vtt", "text/vtt"),
     "rttm": (".rttm", "text/plain"),
     "csv": (".csv", "text/csv"),
+    "coco": (".coco.json", "application/json"),
 }
 
 
@@ -379,6 +380,8 @@ def _export_one(fmt, doc, item, path, proj=None):
         return formats.export_rttm(doc, item)
     if fmt == "csv":
         return formats.export_csv([(item, doc)])
+    if fmt == "coco":
+        return formats.export_coco([(item, doc)]) if item["modality"] == "image" else None
     raise ValueError(f"unknown format {fmt}")
 
 
@@ -416,7 +419,7 @@ def export_project(pid: str, formats_: str = Query("json,eaf,csv,manifest", alia
             pairs.append((item, doc))
             stem = str(Path(item["rel_path"]).with_suffix(""))
             for fmt in wanted:
-                if fmt in ("csv", "manifest"):
+                if fmt in ("csv", "manifest", "coco"):
                     continue
                 text = _export_one(fmt, doc, item, path, proj)
                 if text:
@@ -425,6 +428,8 @@ def export_project(pid: str, formats_: str = Query("json,eaf,csv,manifest", alia
                 manifest += formats.manifest_records(doc, item, str(path), anchor)
         if "csv" in wanted:
             z.writestr(f"{proj['id']}/annotations.csv", formats.export_csv(pairs))
+        if "coco" in wanted and any(m["modality"] == "image" for m, _ in pairs):
+            z.writestr(f"{proj['id']}/coco_annotations.json", formats.export_coco(pairs))
         if "manifest" in wanted:
             z.writestr(f"{proj['id']}/manifest.jsonl",
                        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in manifest))

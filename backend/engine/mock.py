@@ -182,11 +182,40 @@ class MockEngine(Engine):
         qs = np.quantile(feats, np.linspace(0, 1, k + 1)[1:-1])
         return [int(np.searchsorted(qs, f)) for f in feats]
 
+    # ---------------- spatial (images) ----------------
+    POSE_TEMPLATE = [(.50, .08), (.54, .06), (.46, .06), (.58, .07), (.42, .07), (.66, .20), (.34, .20), (.73, .37),
+                     (.27, .37), (.75, .53), (.25, .53), (.60, .55), (.40, .55), (.61, .76), (.39, .76), (.61, .96), (.39, .96)]
+
+    def _spatial(self, task, rng) -> list:
+        def box(cx, cy, w, hgt):
+            return {"type": "box", "x": round(cx - w / 2, 4), "y": round(cy - hgt / 2, 4), "w": round(w, 4), "h": round(hgt, 4)}
+        out = []
+        labels = task.get("labels") or ["object"]
+        if task["output"] == "keypoints":
+            bx, by, bw, bh = rng.uniform(.25, .4), rng.uniform(.05, .12), rng.uniform(.25, .35), rng.uniform(.75, .85)
+            pts = [[round(bx + px * bw + rng.normal(0, .01), 4), round(by + py * bh + rng.normal(0, .01), 4), 2]
+                   for px, py in self.POSE_TEMPLATE]
+            out.append({"value": labels[0], "confidence": _conf(rng),
+                        "geom": {"type": "keypoints", "points": pts, "skeleton": "coco17", "box": [bx, by, bw, bh]}})
+        elif task["id"] == "face_boxes":
+            for _ in range(int(rng.integers(1, 3))):
+                out.append({"value": self._label(task, rng), "confidence": _conf(rng),
+                            "geom": box(rng.uniform(.3, .7), rng.uniform(.25, .45), rng.uniform(.15, .25), rng.uniform(.2, .3))})
+        else:
+            for _ in range(int(rng.integers(1, 4))):
+                out.append({"value": str(rng.choice(labels)), "confidence": _conf(rng),
+                            "geom": box(rng.uniform(.25, .75), rng.uniform(.3, .7), rng.uniform(.15, .45), rng.uniform(.2, .6))})
+        for s in out:
+            s["start"] = s["end"] = None
+        return out
+
     # ---------------- main ----------------
     def annotate(self, task: dict, ctx: AnnotateContext) -> list:
         rng = np.random.default_rng(_seed(ctx.media["id"], task["id"]))
         mod = ctx.media["modality"]
         dur = ctx.duration
+        if task.get("output") in ("boxes", "keypoints"):
+            return self._spatial(task, rng) if mod == "image" else []
         gran = "file" if mod == "image" else task.get("granularity", "segment")
 
         if gran == "file":

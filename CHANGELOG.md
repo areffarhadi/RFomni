@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0 "Mosaic" (2026-10-20)
+
+- **Image regions**: new task outputs `boxes` and `keypoints`, with built-in tasks Faces (box + expression),
+  People (body boxes), Objects (labelled boxes) and Pose (COCO-17 keypoints).
+- Image editor with an editable overlay: move / resize / draw / relabel / delete boxes, drag keypoints,
+  mark them occluded or not visible, place missing ones, add a skeleton for a missed person; zoom and pan;
+  arrow-key nudging; undo / redo. Corrections keep the original model geometry and can be restored.
+- Prompt tasks can produce boxes or keypoints (the prompt asks for 0-1000 coordinates).
+- COCO JSON export (per image and per project), geometry in CSV and the training manifest.
+- Showcase: new full-body `pose_park.png` and pseudo boxes / keypoints with deliberate mistakes to fix.
+
 ## v0.1.0 "Tessera" (2026-10-20)
 
 First version of the rebuilt studio. UI-first: annotation runs use a mock engine until the model is connected.

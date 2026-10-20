@@ -11,6 +11,7 @@ const FORMATS = [
   { id: 'vtt', name: 'WebVTT', desc: 'Same as SRT for web players, with <v speaker> tags.' },
   { id: 'rttm', name: 'RTTM', desc: 'Diarization tier in the standard NIST format for DER scoring.' },
   { id: 'csv', name: 'CSV (all segments)', desc: 'One row per segment across all files: tier, times, value, confidence.' },
+  { id: 'coco', name: 'COCO JSON (images)', desc: 'All boxes and pose keypoints of the images in COCO format (pixel coordinates).' },
   { id: 'manifest', name: 'Training manifest (JSONL)', desc: 'One line per utterance with all overlapping labels and word timings, ready for fine-tuning.' },
 ];
 

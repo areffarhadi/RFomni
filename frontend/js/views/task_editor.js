@@ -7,7 +7,7 @@ import { openModal, confirmDialog, toast, errorToast } from '../ui.js';
 const COLORS = ['#38bdf8', '#22d3ee', '#2dd4bf', '#34d399', '#a3e635', '#facc15', '#fb923c', '#f87171',
   '#f472b6', '#e879f9', '#a78bfa', '#818cf8', '#94a3b8'];
 
-export const OUTPUTS = { text: 'Free text', label: 'One label', tags: 'Tags', score: 'Score' };
+export const OUTPUTS = { text: 'Free text', label: 'One label', tags: 'Tags', score: 'Score', boxes: 'Boxes', keypoints: 'Keypoints' };
 export const GRANS = {
   file: 'Whole file', segment: 'Each speech segment', window: 'Fixed windows', event: 'Timed events',
   word: 'Each word', phone: 'Each phone',
@@ -106,6 +106,12 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   }, 250);
   function preview() { fetchPreview(); }
   function previewTier() {
+    if (t.output === 'boxes' || t.output === 'keypoints') {
+      tierOut.replaceChildren(h('div', { style: { padding: '10px 12px', fontSize: '12.5px', color: 'var(--text-2)' } },
+        t.output === 'boxes' ? 'Shown as labelled rectangles on the image; you can move, resize, relabel and add boxes.'
+          : 'Shown as a skeleton of 17 keypoints per person; you can drag, add and hide points.'));
+      return;
+    }
     const fake = { output: t.output, labels: t.labels, color: t.color, granularity: t.granularity };
     const vals = t.output === 'label' ? (t.labels.length ? t.labels : ['label']) : t.output === 'tags' ? [(t.labels.slice(0, 2).join('; ') || 'tag')] :
       t.output === 'score' ? ['4.0', '3.5', '4.5'] : ['model output…', 'another segment'];
@@ -120,13 +126,24 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   }
   function sync() {
     outCtl.update();
-    labelsField.style.display = t.output === 'label' || t.output === 'tags' ? '' : 'none';
+    const spatial = t.output === 'boxes' || t.output === 'keypoints';
+    if (spatial) {
+      t.granularity = 'file';
+      t.modalities = ['image'];
+      granSel.value = 'file';
+      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = i === 2; });
+    }
+    granField.style.display = spatial ? 'none' : '';
+    modField.style.display = spatial ? 'none' : '';
+    labelsField.style.display = t.output === 'label' || t.output === 'tags' || t.output === 'boxes' ? '' : 'none';
     scoreField.style.display = t.output === 'score' ? '' : 'none';
     winRow.style.display = t.granularity === 'window' ? '' : 'none';
     preview();
     previewTier();
   }
   const scoreField = h('label.field', h('span', 'Score range'), scoreRow);
+  const granField = h('label.field', h('span', 'One answer per'), h('div.row', granSel, winRow));
+  const modField = h('div.field', h('span', 'Applies to'), modBox);
 
   const body = h('div.te-grid',
     h('div',
@@ -138,8 +155,8 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
       h('div.field', h('span', 'Type'), kindCtl.el),
       h('div.field', h('span', 'Output'), outCtl.el),
       labelsField, scoreField,
-      h('label.field', h('span', 'One answer per'), h('div.row', granSel, winRow)),
-      h('div.field', h('span', 'Applies to'), modBox),
+      granField,
+      modField,
       h('div.field', h('span', 'Tier color'), swatches)),
     h('div',
       h('div.field', h('span', 'What the model will receive'), promptOut,

@@ -177,6 +177,7 @@ class JobManager:
                         "id": new_id("s"), "tier_id": tid, "start": s.get("start"), "end": s.get("end"),
                         "value": s.get("value", ""), "confidence": s.get("confidence"),
                         "source": engine.source, "reviewed": False, **({"meta": s["meta"]} if s.get("meta") else {}),
+                        **({"geom": s["geom"]} if s.get("geom") else {}),
                     })
                 job["written_tiers"] += 1
             doc["tiers"], doc["segments"] = tiers, segments

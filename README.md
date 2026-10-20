@@ -1,6 +1,6 @@
 # Omni Studio
 
-**Current release: v0.1.0 "Tessera"** · see [CHANGELOG.md](CHANGELOG.md)
+**Current release: v0.2.0 "Mosaic"** · see [CHANGELOG.md](CHANGELOG.md)
 
 ![Tier editor with waveform, spectrogram and forced-alignment boundaries](docs/screenshots/forced_alignment.png)
 
@@ -47,9 +47,9 @@ Environment variables: `OMNI_STUDIO_PORT` (8710), `OMNI_STUDIO_WORKSPACE` (./wor
 | **Editor (audio & video)** | Waveform, spectrogram (linear/mel, colormaps) or both; video frame strip; overview + scrollbar; one lane per task with parent/child tiers (ASR → words → phones). Click to select, double-click / Enter to edit, drag on an empty lane to create, drag edges to adjust (snaps to other tiers), Alt-drag to move, split / merge, label hotkeys 1–9, undo/redo, autosave. Live transcript with word highlighting. |
 | **Forced alignment on the signal** | Word (or phone) boundaries are drawn on the waveform and spectrogram with their labels, Praat-style. Drag a line to move it: the neighbouring word, the phones inside both words and a coinciding utterance edge follow, and the two words are played back on release. Click a word to select it, double-click (or `P`) to listen. Choose the tier in the toolbar (**Boundaries**). The original model times stay in `meta.model_start / model_end`. |
 | **Channel order** | Drag a tier header up or down (or use *Move up / down* in its menu). The order is saved on the project, so every file, the Tasks page, the coverage table and exports follow it. |
-| **Editor (images)** | Image viewer with one field per task (caption, labels, tags, score). |
+| **Editor (images)** | Image with editable regions plus one field per task (caption, labels, tags, score). **Boxes**: faces labelled with their expression, people / bodies, objects; select, move, resize with handles, relabel (1–9 or double-click), draw new ones (B), delete, nudge with the arrow keys. **Pose**: COCO-17 skeletons; drag a keypoint, Alt-drag the whole skeleton, mark a point occluded (O) or not visible (Del), place a missing point by clicking its name then the image, add a new person (K). Zoom with the wheel, pan by dragging. Corrections keep the model output (`meta.model_geom`) and can be restored. |
 | **Review** | Project-wide queue of the least-confident unreviewed segments; opens the file at that segment. `A` accepts and jumps to the next one. Edits keep the original model output (`meta.model_value`) for later evaluation. |
-| **Import / export** | Import ELAN `.eaf`, Praat TextGrid (e.g. MFA output), the vLLM-omni pipeline JSON and native JSON. Export JSON, ELAN, TextGrid, SRT, WebVTT, RTTM, CSV and a JSONL training manifest (one line per utterance with all overlapping labels and word timings). |
+| **Import / export** | Import ELAN `.eaf`, Praat TextGrid (e.g. MFA output), the vLLM-omni pipeline JSON and native JSON. Export JSON, ELAN, TextGrid, SRT, WebVTT, RTTM, CSV, COCO JSON (boxes and keypoints) and a JSONL training manifest (one line per utterance with all overlapping labels and word timings). |
 
 Press `?` in the app for all keyboard shortcuts.
 
@@ -65,6 +65,8 @@ Press `?` in the app for all keyboard shortcuts.
 | Task library: annotation and captioning | Writing a new task as a prompt |
 | ![Multilingual](docs/screenshots/editor_multilingual.png) | ![Review queue](docs/screenshots/review.png) |
 | Speakers, languages and translations | Review queue of low-confidence segments |
+| ![Pose keypoints](docs/screenshots/image_regions.png) | ![Face boxes](docs/screenshots/image_faces.png) |
+| Pose keypoints, person / face / object boxes | Fixing a face box and its expression label |
 
 ## Layout
 

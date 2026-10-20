@@ -6,7 +6,11 @@ from . import config
 from .util import new_id, read_json, slugify, write_json
 
 KINDS = {"annotation", "captioning"}
-OUTPUTS = {"text", "label", "tags", "score"}
+OUTPUTS = {"text", "label", "tags", "score", "boxes", "keypoints"}
+SPATIAL = {"boxes", "keypoints"}
+COCO_KEYPOINTS = ["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder",
+                  "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_hip", "right_hip",
+                  "left_knee", "right_knee", "left_ankle", "right_ankle"]
 GRANULARITIES = {"file", "segment", "window", "event", "word", "phone"}
 MODALITIES = {"audio", "video", "image"}
 
@@ -67,6 +71,9 @@ def validate_task(raw: dict) -> dict:
     kind = raw.get("kind", "annotation")
     if kind not in KINDS:
         raise ValueError("kind must be 'annotation' or 'captioning'")
+    if output in SPATIAL:  # rectangles / keypoints live on still images
+        gran = "file"
+        raw = {**raw, "modalities": ["image"]}
     mods = [m for m in raw.get("modalities", []) if m in MODALITIES]
     if not mods:
         raise ValueError("Select at least one modality")
@@ -144,6 +151,14 @@ def output_spec(task: dict) -> str:
     out, gran = task.get("output", "text"), task.get("granularity", "file")
     labels = task.get("labels") or []
     lab = ", ".join(labels)
+    if out == "boxes":
+        extra = f" Labels: [{lab}]." if labels else ""
+        return ('Return only JSON: {"boxes": [{"label": "<label>", "box_2d": [x1, y1, x2, y2], "confidence": <0-1>}, ...]} '
+                f"with one item per instance and coordinates scaled to 0-1000.{extra}")
+    if out == "keypoints":
+        return ('Return only JSON: {"people": [{"box_2d": [x1, y1, x2, y2], "keypoints": [[x, y, v], ...]}, ...]} '
+                f"with the 17 COCO keypoints in this order: {', '.join(COCO_KEYPOINTS)}; coordinates scaled to 0-1000; "
+                "v = 2 visible, 1 occluded, 0 not in the image.")
     if gran in ("word", "phone", "event"):
         unit = {"word": "word", "phone": "phone", "event": "event"}[gran]
         val = {"text": '"<text>"', "label": '"<one label>"', "tags": '["<tag>", ...]', "score": "<number>"}[out]

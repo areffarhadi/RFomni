@@ -44,6 +44,29 @@ def _num(v):
         return None
 
 
+def _geom(g):
+    """Spatial annotation on an image, in coordinates normalised to the image size (0..1).
+    box: {type, x, y, w, h} (top-left + size); keypoints: {type, points: [[x, y, v], ...], skeleton, box?}."""
+    if not isinstance(g, dict):
+        return None
+
+    def f(v):
+        return round(min(1.5, max(-0.5, float(v))), 5)
+
+    try:
+        if g.get("type") == "box":
+            return {"type": "box", "x": f(g["x"]), "y": f(g["y"]), "w": max(0.0, f(g["w"])), "h": max(0.0, f(g["h"]))}
+        if g.get("type") == "keypoints":
+            pts = [[f(p[0]), f(p[1]), int(p[2]) if len(p) > 2 else 2] for p in g.get("points", [])]
+            out = {"type": "keypoints", "points": pts, "skeleton": g.get("skeleton") or "coco17"}
+            if g.get("box"):
+                out["box"] = [f(v) for v in g["box"][:4]]
+            return out
+    except (KeyError, TypeError, ValueError, IndexError):
+        return None
+    return None
+
+
 def normalize_doc(doc: dict, mid: str) -> dict:
     tiers, seen = [], set()
     for t in doc.get("tiers", []):
@@ -57,7 +80,7 @@ def normalize_doc(doc: dict, mid: str) -> dict:
             "name": str(t.get("name") or tid)[:60],
             "title": str(t.get("title") or t.get("name") or tid)[:120],
             "color": t.get("color") or "#94a3b8",
-            "output": t.get("output") if t.get("output") in ("text", "label", "tags", "score") else "text",
+            "output": t.get("output") if t.get("output") in ("text", "label", "tags", "score", "boxes", "keypoints") else "text",
             "granularity": t.get("granularity") or "segment",
             "labels": [str(x) for x in (t.get("labels") or [])],
             "parent": t.get("parent"),
@@ -95,6 +118,9 @@ def normalize_doc(doc: dict, mid: str) -> dict:
         }
         if s.get("meta"):
             seg["meta"] = s["meta"]
+        geom = _geom(s.get("geom"))
+        if geom:
+            seg["geom"] = geom
         segs.append(seg)
     order = {t["id"]: i for i, t in enumerate(tiers)}
     segs.sort(key=lambda s: (order[s["tier_id"]], s["start"] if s["start"] is not None else -1, s["end"] or 0))

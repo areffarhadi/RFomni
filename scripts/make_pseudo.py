@@ -166,9 +166,10 @@ def write_wav(path, x):
 # =============================================================================
 # Drawing
 # =============================================================================
-def face(d, cx, cy, r, skin="#f1c7a5", hair="#3b2a20", expr="neutral", mouth=0.0, blink=False, shirt="#3b82f6"):
-    d.ellipse([cx - r * 1.5, cy + r * 0.75, cx + r * 1.5, cy + r * 2.9], fill=shirt)          # shoulders
-    d.rectangle([cx - r * 0.28, cy + r * 0.6, cx + r * 0.28, cy + r * 1.0], fill=skin)          # neck
+def face(d, cx, cy, r, skin="#f1c7a5", hair="#3b2a20", expr="neutral", mouth=0.0, blink=False, shirt="#3b82f6", bust=True):
+    if bust:
+        d.ellipse([cx - r * 1.5, cy + r * 0.75, cx + r * 1.5, cy + r * 2.9], fill=shirt)          # shoulders
+        d.rectangle([cx - r * 0.28, cy + r * 0.6, cx + r * 0.28, cy + r * 1.0], fill=skin)          # neck
     d.ellipse([cx - r * 1.02, cy - r * 1.12, cx + r * 1.02, cy + r * 0.55], fill=hair)         # hair back
     d.ellipse([cx - r * 0.82, cy - r * 0.95, cx + r * 0.82, cy + r * 0.92], fill=skin)         # face
     d.chord([cx - r * 0.86, cy - r * 1.02, cx + r * 0.86, cy - r * 0.05], 180, 360, fill=hair)  # fringe
@@ -334,7 +335,7 @@ class Ann:
         self.by_task = task_reg.tasks_by_id()
         self.tiers, self.segs = {}, []
 
-    def add(self, task_id, start, end, value, c=None, source="model", reviewed=False, meta=None):
+    def add(self, task_id, start, end, value, c=None, source="model", reviewed=False, meta=None, geom=None):
         if task_id not in self.tiers:
             t = self.by_task[task_id]
             self.tiers[task_id] = {"id": t["id"], "task_id": t["id"], "name": t["name"], "title": t["title"], "color": t["color"],
@@ -344,6 +345,8 @@ class Ann:
              "confidence": conf() if c is None else c, "source": source, "reviewed": reviewed}
         if meta:
             s["meta"] = meta
+        if geom:
+            s["geom"] = geom
         self.segs.append(s)
         return s
 
@@ -775,6 +778,122 @@ def build_street():
     return path, an
 
 
+# ----------------------------------------------------------------------------- spatial helpers
+def face_box(cx, cy, r):
+    return (cx - 0.95 * r, cy - 1.12 * r, 1.9 * r, 2.07 * r)
+
+
+def face_kps(cx, cy, r):
+    """nose, left eye, right eye, left ear, right ear (the person's left is the image right)."""
+    return [(cx, cy + 0.2 * r), (cx + 0.32 * r, cy - 0.12 * r), (cx - 0.32 * r, cy - 0.12 * r),
+            (cx + 0.84 * r, cy + 0.05 * r), (cx - 0.84 * r, cy + 0.05 * r)]
+
+
+BODY = ["ls", "rs", "le", "re", "lw", "rw", "lh", "rh", "lk", "rk", "la", "ra"]
+
+
+def person(d, J, hc, r, skin, hair, shirt, pants, expr="neutral"):
+    lw = int(r * 0.42)
+    for hip, knee, ank in (("rh", "rk", "ra"), ("lh", "lk", "la")):
+        d.line([J[hip], J[knee], J[ank]], fill=pants, width=int(lw * 1.25), joint="curve")
+        ax, ay = J[ank]
+        d.ellipse([ax - lw * 0.9, ay - lw * 0.3, ax + lw * 0.9, ay + lw * 0.5], fill="#1f2937")
+    d.polygon([J["ls"], J["rs"], J["rh"], J["lh"]], fill=shirt)
+    for sh, el, wr in (("rs", "re", "rw"), ("ls", "le", "lw")):
+        d.line([J[sh], J[el]], fill=shirt, width=lw, joint="curve")
+        d.line([J[el], J[wr]], fill=skin, width=int(lw * 0.85))
+        wx, wy = J[wr]
+        d.ellipse([wx - lw * 0.55, wy - lw * 0.55, wx + lw * 0.55, wy + lw * 0.55], fill=skin)
+    nx, ny = (J["ls"][0] + J["rs"][0]) / 2, (J["ls"][1] + J["rs"][1]) / 2
+    d.line([(nx, ny), (hc[0], hc[1] + r * 0.6)], fill=skin, width=int(r * 0.5))
+    face(d, hc[0], hc[1], r, skin, hair, expr, bust=False)
+
+
+def norm_box(b, W, H):
+    return {"type": "box", "x": round(b[0] / W, 5), "y": round(b[1] / H, 5), "w": round(b[2] / W, 5), "h": round(b[3] / H, 5)}
+
+
+def norm_pose(pts, W, H, box=None):
+    g = {"type": "keypoints", "skeleton": "coco17",
+         "points": [[round(x / W, 5), round(y / H, 5), v] if v else [0, 0, 0] for x, y, v in pts]}
+    if box:
+        g["box"] = [round(box[0] / W, 5), round(box[1] / H, 5), round(box[2] / W, 5), round(box[3] / H, 5)]
+    return g
+
+
+def bounds(pts, pad):
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return (min(xs) - pad, min(ys) - pad, max(xs) - min(xs) + 2 * pad, max(ys) - min(ys) + 2 * pad)
+
+
+def bust_pose(cx, cy, r, H, drop=()):
+    """Head + shoulders visible, the rest of the body is outside the frame (v = 0)."""
+    pts = [(x, y, 2) for x, y in face_kps(cx, cy, r)]
+    pts += [(cx + 1.1 * r, cy + 1.25 * r, 2), (cx - 1.1 * r, cy + 1.25 * r, 2)]
+    pts += [(0, 0, 0)] * 10
+    return [(0, 0, 0) if i in drop else p for i, p in enumerate(pts)]
+
+
+def build_pose_park():
+    W, H = 1280, 800
+    img = gradient(W, H, "#9bd3f5", "#e6f4fb")
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 520, W, H], fill="#86c26a")
+    d.rectangle([0, 700, W, H], fill="#74b35a")
+    d.rectangle([150, 360, 170, 560], fill="#7c4a24")
+    for dx, dy, rr in ((0, -60, 90), (-60, -10, 70), (60, -10, 70)):
+        d.ellipse([160 + dx - rr, 300 + dy - rr, 160 + dx + rr, 300 + dy + rr], fill="#2f8f46")
+    d.rectangle([1040, 600, 1220, 618], fill="#8b5a2b")       # bench
+    d.rectangle([1040, 560, 1220, 574], fill="#8b5a2b")
+    d.rectangle([1052, 618, 1062, 660], fill="#5b3a1a")
+    d.rectangle([1198, 618, 1208, 660], fill="#5b3a1a")
+    # person C (small, in the background, partly hidden by a bush): the "model" misses this one
+    JC = {"ls": (668, 368), "rs": (612, 368), "le": (680, 410), "re": (600, 410), "lw": (684, 448), "rw": (598, 448),
+          "lh": (656, 452), "rh": (624, 452), "lk": (658, 500), "rk": (622, 500), "la": (660, 540), "ra": (620, 540)}
+    person(d, JC, (640, 330), 24, "#c58c6b", "#111827", "#7c3aed", "#374151")
+    for dx, rr in ((-70, 46), (-20, 58), (35, 52), (85, 40)):
+        d.ellipse([640 + dx - rr, 470 - rr * 0.7, 640 + dx + rr, 470 + rr * 1.1], fill="#3f9d4e")
+    # person A: waving with the left arm
+    JA = {"ls": (440, 300), "rs": (320, 300), "le": (505, 228), "lw": (525, 140), "re": (292, 398), "rw": (285, 488),
+          "lh": (415, 480), "rh": (345, 480), "lk": (425, 600), "rk": (335, 600), "la": (430, 720), "ra": (330, 720)}
+    person(d, JA, (380, 218), 56, "#f1c7a5", "#3b2a20", "#ef4444", "#1e3a8a", "happy")
+    # person B: walking
+    JB = {"ls": (955, 312), "rs": (845, 312), "le": (990, 410), "lw": (1012, 500), "re": (818, 405), "rw": (798, 490),
+          "lh": (930, 492), "rh": (870, 492), "lk": (968, 602), "rk": (858, 612), "la": (995, 716), "ra": (848, 726)}
+    person(d, JB, (900, 232), 52, "#e8b896", "#9a3412", "#0ea5e9", "#3f3f46", "neutral")
+    d.ellipse([1040, 690, 1088, 738], fill="#facc15")          # ball
+    d.arc([1040, 690, 1088, 738], 200, 340, fill="#ca8a04", width=4)
+    p = OUT / "images" / "pose_park.png"
+    img.save(p)
+
+    def full(J, hc, r):
+        return [(x, y, 2) for x, y in face_kps(*hc, r)] + [(J[k][0], J[k][1], 2) for k in BODY]
+
+    an = Ann()
+    pa, pb = full(JA, (380, 218), 56), full(JB, (900, 232), 52)
+    box_a = bounds([(x, y) for x, y, _ in pa] + [(380, 218 - 1.15 * 56)], 24)
+    box_b = bounds([(x, y) for x, y, _ in pb] + [(900, 232 - 1.15 * 52)], 24)
+    # model mistakes to correct: A's left wrist is off, B's right ankle is missing and the right knee is off
+    pa_model = list(pa)
+    pa_model[9] = (pa[9][0] + 42, pa[9][1] + 46, 2)
+    pb_model = list(pb)
+    pb_model[16] = (0, 0, 0)
+    pb_model[14] = (pb[14][0] - 30, pb[14][1] - 22, 2)
+    an.add("pose", None, None, "person", 0.71, geom=norm_pose(pa_model, W, H, box_a))
+    an.add("pose", None, None, "person", 0.46, geom=norm_pose(pb_model, W, H, box_b))
+    an.add("person_boxes", None, None, "person", 0.93, geom=norm_box(box_a, W, H))
+    an.add("person_boxes", None, None, "person", 0.48, geom=norm_box((box_b[0] + 20, box_b[1] + 40, box_b[2] - 50, box_b[3] - 150), W, H))
+    an.add("face_boxes", None, None, "happy", 0.88, geom=norm_box(face_box(380, 218, 56), W, H))
+    an.add("face_boxes", None, None, "neutral", 0.57, geom=norm_box(face_box(900, 232, 52), W, H))
+    an.add("object_boxes", None, None, "bench", 0.9, geom=norm_box((1034, 552, 194, 112), W, H))
+    an.add("object_boxes", None, None, "tree", 0.86, geom=norm_box((70, 170, 190, 395), W, H))
+    an.add("object_boxes", None, None, "ball", 0.52, geom=norm_box((1036, 686, 56, 56), W, H))
+    an.add("image_caption", None, None, "Two people in a park: a woman in a red shirt waves while a man in a blue shirt walks past a bench and a yellow ball.", 0.87)
+    an.add("image_tags", None, None, ["person", "group", "outdoor"], 0.9)
+    an.add("fer", None, None, "happy", 0.66)
+    return p, an
+
+
 # ----------------------------------------------------------------------------- images
 def build_images():
     out = []
@@ -789,6 +908,11 @@ def build_images():
     an.add("image_tags", None, None, ["outdoor", "vehicle", "person", "text"], 0.87)
     an.add("ocr", None, None, "MAIN ST", 0.93)
     an.add("fer", None, None, "no face", 0.62)
+    W, H = 1280, 800
+    an.add("person_boxes", None, None, "person", 0.81, geom=norm_box((740, 466, 40, 114), W, H))
+    an.add("object_boxes", None, None, "car", 0.95, geom=norm_box((418, 572, 266, 148), W, H))
+    an.add("object_boxes", None, None, "tree", 0.83, geom=norm_box((40, 336, 116, 236), W, H))
+    an.add("object_boxes", None, None, "sign", 0.77, geom=norm_box((1056, 396, 138, 168), W, H))
     out.append((p, an, False))
 
     for name, expr, c_fer, bg, reviewed in (("portrait_smiling.png", "happy", 0.94, ("#fde68a", "#f59e0b"), True),
@@ -808,6 +932,13 @@ def build_images():
         an.add("image_tags", None, None, ["person", "face"], 0.95, reviewed=reviewed)
         an.add("face_caption", None, None, f"Adult with a {expr} expression, looking straight at the camera, head upright, "
                "short hair, wearing a teal shirt.", conf(0.8, 0.06), reviewed=reviewed)
+        fb = face_box(450, 400, 230)
+        if expr == "surprised":  # model mistake: the face box is shifted and too small
+            fb = (fb[0] + 60, fb[1] + 70, fb[2] * 0.78, fb[3] * 0.8)
+        an.add("face_boxes", None, None, expr, c_fer, reviewed=reviewed, geom=norm_box(fb, 900, 900))
+        an.add("person_boxes", None, None, "person", 0.95, reviewed=reviewed, geom=norm_box((105, 142, 690, 758), 900, 900))
+        an.add("pose", None, None, "person", 0.84, reviewed=reviewed,
+               geom=norm_pose(bust_pose(450, 400, 230, 900), 900, 900, (105, 142, 690, 758)))
         out.append((p, an, reviewed))
 
     img = Image.new("RGB", (900, 1200), "#fbf8f1")
@@ -865,6 +996,11 @@ def build_images():
     an.add("image_tags", None, None, ["group", "person", "face", "indoor"], 0.9)
     an.add("fer", None, None, "happy", 0.57)
     an.add("face_caption", None, None, "Three adults facing the camera: left and right are smiling, the middle person looks neutral.", 0.77)
+    for cx, expr, c in ((280, "happy", 0.91), (600, "sad", 0.41), (920, "happy", 0.86)):  # middle label is wrong
+        an.add("face_boxes", None, None, expr, c, geom=norm_box(face_box(cx, 330, 120), 1200, 800))
+        an.add("person_boxes", None, None, "person", conf(0.9, 0.03), geom=norm_box((cx - 180, 190, 360, 610), 1200, 800))
+        an.add("pose", None, None, "person", 0.62 if cx == 920 else conf(0.85, 0.04),
+               geom=norm_pose(bust_pose(cx, 330, 120, 800, drop=(3,) if cx == 920 else ()), 1200, 800, (cx - 180, 190, 360, 610)))
     out.append((p, an, False))
     return out
 
@@ -872,7 +1008,8 @@ def build_images():
 # =============================================================================
 TASKS = ["asr", "forced_alignment", "phoneme", "diarization", "gender", "lid", "translation", "ser", "speech_caption", "ner",
          "sound_quality", "sed", "audio_caption", "active_speaker", "fer", "shots", "ocr", "action", "dense_caption",
-         "video_caption", "image_caption", "detailed_caption", "image_tags", "face_caption"]
+         "video_caption", "image_caption", "detailed_caption", "image_tags", "face_boxes", "person_boxes", "object_boxes",
+         "pose", "face_caption"]
 
 
 def main():
@@ -882,7 +1019,7 @@ def main():
         path, an = fn()
         built.append((path, an, False))
         print(f"  {path.relative_to(OUT)}: {len(an.segs)} pseudo labels")
-    for path, an, rev in build_images():
+    for path, an, rev in build_images() + [(*build_pose_park(), False)]:
         built.append((path, an, rev))
         print(f"  {path.relative_to(OUT)}: {len(an.segs)} pseudo labels")
 
