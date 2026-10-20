@@ -13,6 +13,7 @@ const FORMATS = [
   { id: 'csv', name: 'CSV (all segments)', desc: 'One row per segment across all files: tier, times, value, confidence.' },
   { id: 'coco', name: 'COCO JSON (images)', desc: 'All boxes and pose keypoints of the images in COCO format (pixel coordinates).' },
   { id: 'manifest', name: 'Training manifest (JSONL)', desc: 'One line per utterance with all overlapping labels and word timings, ready for fine-tuning.' },
+  { id: 'speaker_clips', name: 'Speaker clips (WAV)', desc: 'Pure speech of every speaker as 16 kHz WAV clips, one folder per speaker, plus the overlap regions per speaker pair and a clips.csv list.' },
 ];
 
 export class ExportView {

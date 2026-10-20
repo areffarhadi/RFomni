@@ -10,6 +10,17 @@
 - Forced alignment: every word now has its own border. Dragging moves only the highlighted word (its phones follow)
   and stops at a touching neighbour; Alt or the new **Linked** switch moves a shared border of two words together.
 - **Auto-play** after moving a border is a labelled on/off switch in the timeline toolbar, also toggled with `L`.
+- Speakers & overlap: diarization now gives speaker turns that may overlap (one lane per speaker in the editor);
+  new tasks **Pure speech** (one speaker only, per speaker) and **Overlap** (labelled with the speaker pair);
+  *Rebuild from the speaker turns* after corrections; **Speaker clips** export (WAV per speaker, overlaps per pair).
+- Spoof & deepfake tasks: audio spoof (per segment), video deepfake (per window), image spoof, manipulated regions (boxes).
+- **Statistics** tab: dataset make-up, label distributions (count or duration), review progress, how often reviewers
+  kept or changed the model output, speaker / overlap figures, warnings, CSV download.
+- **Share links**: view-only or editing links to one project, limited to some tiers if wanted, with optional downloads
+  and expiry; work on the local network, or on the internet through a Cloudflare quick tunnel. Shared links run on a
+  separate gated listener; edits through a link are tagged with its name.
+- Showcase: new `studio_debate.wav` with three people talking over each other (`scripts/make_pseudo.py --add debate`).
+- The editor no longer overflows on narrower screens; the timeline toolbar wraps instead.
 
 ## v0.2.0 "Mosaic" (2026-10-20)
 

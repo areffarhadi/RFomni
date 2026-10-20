@@ -214,7 +214,7 @@ def output_spec(task: dict) -> str:
                 f"with the 17 COCO keypoints in this order: {', '.join(COCO_KEYPOINTS)}; coordinates scaled to 0-1000; "
                 "v = 2 visible, 1 occluded, 0 not in the image.")
     if gran in ("word", "phone", "event"):
-        unit = {"word": "word", "phone": "phone", "event": "event"}[gran]
+        unit = task.get("unit") or gran  # e.g. "speaker turn" for diarization
         val = {"text": '"<text>"', "label": '"<one label>"', "tags": '["<tag>", ...]', "score": "<number>"}[out]
         extra = f" Labels: [{lab}]." if labels and out in ("label", "tags") else ""
         return (f"Return only JSON: {{\"items\": [{{\"start\": <sec>, \"end\": <sec>, \"value\": {val}}}, ...]}}"

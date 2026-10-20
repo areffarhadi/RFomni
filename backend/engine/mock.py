@@ -9,6 +9,7 @@ import hashlib
 import numpy as np
 
 from ..config import SR
+from ..speakers import speaker_regions
 from .base import AnnotateContext, Engine
 
 LOREM = ("lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut "
@@ -136,8 +137,9 @@ class MockEngine(Engine):
             return "en" if rng.random() < 0.85 else str(rng.choice(labels))
         if len(labels) == 1:
             return labels[0]
-        w = np.full(len(labels), 0.5 / max(1, len(labels) - 1))
-        w[0] = 0.5
+        p0 = 0.85 if task.get("category") == "spoof" else 0.5  # spoof: mostly genuine
+        w = np.full(len(labels), (1 - p0) / max(1, len(labels) - 1))
+        w[0] = p0
         return str(rng.choice(labels, p=w / w.sum()))
 
     def _value(self, task, rng, start, end, i=0, feature=None):
@@ -182,6 +184,26 @@ class MockEngine(Engine):
         qs = np.quantile(feats, np.linspace(0, 1, k + 1)[1:-1])
         return [int(np.searchsorted(qs, f)) for f in feats]
 
+    def _turns(self, ctx, rng) -> list:
+        """Speaker turns: speech regions with a speaker each; some turns start before the previous
+        speaker has finished, so the turns overlap like real interruptions and back-channels."""
+        if "turns" in ctx.cache:
+            return ctx.cache["turns"]
+        spans = self._speech(ctx)
+        ids = self._speaker_ids(ctx, spans, rng)
+        turns = [[a, b, f"SPEAKER_{k}"] for (a, b), k in zip(spans, ids)]
+        for i in range(1, len(turns)):
+            prev, cur = turns[i - 1], turns[i]
+            if prev[2] != cur[2] and cur[0] - prev[1] < 1.0 and rng.random() < 0.45:
+                cur[0] = round(max(prev[0] + 0.3, prev[1] - float(rng.uniform(0.3, 1.4))), 3)
+        ctx.cache["turns"] = [{"start": a, "end": b, "value": v, "confidence": _conf(rng)} for a, b, v in turns]
+        return ctx.cache["turns"]
+
+    def _regions(self, task, ctx, rng) -> list:
+        turns = [s for s in ctx.tier_segments("diarization") if s.get("start") is not None] or self._turns(ctx, rng)
+        pure, over = speaker_regions(turns)
+        return [{k: r[k] for k in ("start", "end", "value", "confidence")} for r in (pure if task["id"] == "pure_speech" else over)]
+
     # ---------------- spatial (images) ----------------
     POSE_TEMPLATE = [(.50, .08), (.54, .06), (.46, .06), (.58, .07), (.42, .07), (.66, .20), (.34, .20), (.73, .37),
                      (.27, .37), (.75, .53), (.25, .53), (.60, .55), (.40, .55), (.61, .76), (.39, .76), (.61, .96), (.39, .96)]
@@ -197,6 +219,10 @@ class MockEngine(Engine):
                    for px, py in self.POSE_TEMPLATE]
             out.append({"value": labels[0], "confidence": _conf(rng),
                         "geom": {"type": "keypoints", "points": pts, "skeleton": "coco17", "box": [bx, by, bw, bh]}})
+        elif task.get("category") == "spoof":  # most images are not manipulated
+            if rng.random() < 0.35:
+                out.append({"value": str(rng.choice(labels)), "confidence": round(float(rng.uniform(0.35, 0.8)), 3),
+                            "geom": box(rng.uniform(.3, .7), rng.uniform(.3, .6), rng.uniform(.12, .3), rng.uniform(.15, .35))})
         elif task["id"] == "face_boxes":
             for _ in range(int(rng.integers(1, 3))):
                 out.append({"value": self._label(task, rng), "confidence": _conf(rng),
@@ -225,6 +251,11 @@ class MockEngine(Engine):
         if gran in ("word", "phone"):
             return self._sub_units(task, ctx, rng, gran)
 
+        if task["id"] == "diarization":
+            return [dict(t) for t in self._turns(ctx, rng)]
+        if task["id"] in ("pure_speech", "overlap"):
+            return self._regions(task, ctx, rng)
+
         if gran == "segment":
             spans = self._speech(ctx)
         elif gran == "window":
@@ -232,9 +263,8 @@ class MockEngine(Engine):
         else:  # event
             spans = self._events(dur, rng, contiguous=task["id"] == "shots")
 
-        feats = self._speaker_ids(ctx, spans, rng) if task["id"] == "diarization" else [None] * len(spans)
-        return [{"start": a, "end": b, "value": self._value(task, rng, a, b, i, f), "confidence": _conf(rng)}
-                for i, ((a, b), f) in enumerate(zip(spans, feats))]
+        return [{"start": a, "end": b, "value": self._value(task, rng, a, b, i), "confidence": _conf(rng)}
+                for i, (a, b) in enumerate(spans)]
 
     def _sub_units(self, task, ctx, rng, gran) -> list:
         """Words: split the parent transcript proportionally. Phones: split each word into letters."""

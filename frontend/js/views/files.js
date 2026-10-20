@@ -22,11 +22,11 @@ export class FileList {
     this.closed = new Set(ls.get('closed:' + this.pid, []));
 
     this.count = h('span.badge');
-    const addBtn = h('button.icon-btn', { title: 'Add data', onclick: () => menu(addBtn, addDataMenuItems(this.pid)) }, ico('plus', 17));
+    const addBtn = h('button.icon-btn.owner-only', { title: 'Add data', onclick: () => menu(addBtn, addDataMenuItems(this.pid)) }, ico('plus', 17));
     const head = h('div.fp-head',
       h('h2', 'Files', this.count),
       h('button.icon-btn', { title: 'Project overview', onclick: () => go(links.project(this.pid)) }, ico('grid', 16)),
-      h('button.icon-btn', { title: 'Run tasks on files', onclick: () => openRunDialog({ mediaIds: this.checked.size ? [...this.checked] : null }) }, ico('sparkles', 16)),
+      h('button.icon-btn.owner-only', { title: 'Run tasks on files', onclick: () => openRunDialog({ mediaIds: this.checked.size ? [...this.checked] : null }) }, ico('sparkles', 16)),
       addBtn);
     const search = h('input.input', { placeholder: 'Search files', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.render(); } });
     this.modChips = h('div.fp-chips', ['all', 'audio', 'video', 'image'].map(m =>
@@ -146,7 +146,7 @@ export class FileList {
     this.selbar.style.display = n ? '' : 'none';
     if (!n) return;
     this.selbar.replaceChildren(h('span.grow', `${n} selected`),
-      h('button.btn.sm', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('sparkles', 13), 'Run tasks'),
+      h('button.btn.sm.owner-only', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('sparkles', 13), 'Run tasks'),
       h('button.btn.sm.ghost', { onclick: () => { this.checked.clear(); this.render(); } }, 'Clear'));
   }
 

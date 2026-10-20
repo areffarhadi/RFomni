@@ -3,6 +3,7 @@ import { h, ico, fmtTime, valStr, segColor, debounce, clamp } from '../util.js';
 import { state } from '../state.js';
 import { popover } from '../ui.js';
 import { confBar } from '../views/review.js';
+import { sortSpeakers, pairLabel, DIAR, PURE, OVERLAP } from './speakers.js';
 
 export function parseTime(str) {
   const s = String(str).trim();
@@ -15,6 +16,15 @@ export function parseTime(str) {
 /** Labels a tier can take: the task's current classes (edited on the Tasks page) plus any value
  *  already used in this tier, or (open vocabulary) the values already used. */
 export function tierLabels(tier, doc) {
+  const kind = tier.task_id || tier.id;
+  if (kind === PURE || kind === OVERLAP) {  // speakers come from the diarization tier of the file
+    const dia = doc.tiers.find(t => (t.task_id || t.id) === DIAR);
+    const spk = sortSpeakers((dia ? doc.list(dia.id) : []).map(s => valStr(s.value)).filter(Boolean));
+    const used = doc.list(tier.id).map(s => valStr(s.value)).filter(Boolean);
+    if (kind === PURE) return sortSpeakers([...spk, ...used]);
+    const pairs = spk.length <= 6 ? spk.flatMap((a, i) => spk.slice(i + 1).map(b => pairLabel([a, b]))) : [];
+    return sortSpeakers([...used, ...pairs]);
+  }
   const task = tier.task_id && state.taskById.get(tier.task_id);
   const fixed = task?.labels?.length ? task.labels : (tier.labels || []);
   if (fixed.length && tier.task_id !== 'diarization') {
@@ -32,9 +42,9 @@ export function tierLabels(tier, doc) {
   return [...used].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
-export function srcBadge(src) {
+export function srcBadge(src, by) {
   const k = (src || '').split('+')[0];
-  return h('span.src.' + k, src || '?');
+  return h('span.src.' + k, { title: by ? `Edited through the shared link "${by}"` : '' }, src || '?', by ? h('small', ` · ${by}`) : null);
 }
 
 /** Editor widget for a value of the given tier. onChange(value, {merge}) */
@@ -201,7 +211,7 @@ export class Inspector {
     const sw = h('label.switch', h('input', { type: 'checkbox', checked: !!s.reviewed, onchange: () => ed.toggleReviewed(s.id) }), h('span'));
     this.metaEl.replaceChildren(
       s.confidence != null ? confBar(s.confidence, ed.lowThr) : h('span', 'no confidence'),
-      srcBadge(s.source),
+      srcBadge(s.source, s.meta?.edited_by),
       h('div.grow'),
       h('label.row', { style: { gap: '7px', cursor: 'pointer' }, title: 'R' }, sw, s.reviewed ? 'Reviewed' : 'Not reviewed'));
   }
@@ -235,7 +245,7 @@ export class Inspector {
       const s = doc.list(t.id)[0];
       return h('div.file-field',
         h('div.ff-head', h('b', { style: { '--c': t.color } }, h('i'), t.title || t.name), h('div.grow'),
-          s?.confidence != null ? confBar(s.confidence, ed.lowThr) : null, s ? srcBadge(s.source) : null,
+          s?.confidence != null ? confBar(s.confidence, ed.lowThr) : null, s ? srcBadge(s.source, s.meta?.edited_by) : null,
           s ? h('button.icon-btn.sm' + (s.reviewed ? '.active' : ''), { title: 'Reviewed', onclick: () => ed.toggleReviewed(s.id) }, ico('check', 14)) : null),
         valueEditor(t, s?.value ?? (t.output === 'tags' ? [] : ''), (v, o) => {
           if (s) ed.updateSeg(s.id, { value: v }, 'Edit value', o?.merge);

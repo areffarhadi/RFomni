@@ -22,6 +22,10 @@
       "name": "Vision"
     },
     {
+      "id": "spoof",
+      "name": "Spoof & deepfake"
+    },
+    {
       "id": "captioning",
       "name": "Captioning"
     }
@@ -237,12 +241,51 @@
         "audio",
         "video"
       ],
-      "granularity": "segment",
+      "granularity": "event",
       "output": "label",
       "labels": [],
       "color": "#fb923c",
-      "description": "Who spoke when. Open label set: SPEAKER_0, SPEAKER_1, ...",
-      "prompt": "Assign a consistent speaker label (SPEAKER_0, SPEAKER_1, ...) to this segment so that the same voice always gets the same label."
+      "description": "Who spoke when: one segment per speaker turn. Turns of different speakers may overlap. Open label set: SPEAKER_0, SPEAKER_1, ...",
+      "prompt": "List every speaker turn in this recording with its start and end time and a consistent speaker label (SPEAKER_0, SPEAKER_1, ...), so the same voice always gets the same label. When two people talk at the same time, give both turns with their own times, so the turns overlap.",
+      "unit": "speaker turn"
+    },
+    {
+      "id": "pure_speech",
+      "name": "Pure speech",
+      "title": "Single-speaker speech",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "unit": "region",
+      "output": "label",
+      "labels": [],
+      "parent": "diarization",
+      "color": "#fdba74",
+      "description": "Regions where exactly one speaker talks and nobody else, labelled with that speaker. Clean material per speaker, e.g. for speaker verification or voice cloning.",
+      "prompt": "Find every region where exactly one person is speaking and nobody else talks at the same time. Label each region with that speaker, using the same labels as the speaker diarization (SPEAKER_0, SPEAKER_1, ...)."
+    },
+    {
+      "id": "overlap",
+      "name": "Overlap",
+      "title": "Overlapped speech (per speaker pair)",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "unit": "overlap region",
+      "output": "label",
+      "labels": [],
+      "parent": "diarization",
+      "color": "#f43f5e",
+      "description": "Regions where two or more speakers talk at the same time, labelled with the speakers involved, e.g. SPEAKER_0 + SPEAKER_1.",
+      "prompt": "Find every region where two or more people speak at the same time. Label each region with the speakers involved, joined with ' + ' in ascending order (e.g. SPEAKER_0 + SPEAKER_1), using the same labels as the speaker diarization."
     },
     {
       "id": "gender",
@@ -717,6 +760,95 @@
       "prompt": "Estimate the body pose of every person: give the 17 COCO keypoints with a visibility flag for each."
     },
     {
+      "id": "spoof_audio",
+      "name": "Spoof (audio)",
+      "title": "Audio spoof detection",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "bonafide",
+        "TTS",
+        "voice conversion",
+        "replay",
+        "spliced"
+      ],
+      "color": "#e11d48",
+      "description": "Is the speech genuine (bonafide) or spoofed, and how? Judged per speech segment, so partly spoofed recordings are localized. For videos the audio track is checked.",
+      "prompt": "Is the speech in this segment genuine human speech recorded live (bonafide), or is it spoofed? If it is spoofed, say how: synthesized by text-to-speech (TTS), voice conversion, replayed through a loudspeaker (replay), or cut together from different recordings (spliced)."
+    },
+    {
+      "id": "spoof_video",
+      "name": "Deepfake (video)",
+      "title": "Video deepfake detection",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "window",
+      "window_sec": 4,
+      "output": "label",
+      "labels": [
+        "real",
+        "face swap",
+        "face reenactment",
+        "lip-sync",
+        "fully generated"
+      ],
+      "color": "#be123c",
+      "description": "Is the picture real camera footage or manipulated? Judged per 4-second window, so manipulated parts of a video are localized.",
+      "prompt": "Is the video in this part real camera footage, or is it manipulated? If it is manipulated, which kind: face swap, face reenactment (expressions or head movement driven by someone else), lip-sync (the mouth was changed to match other audio), or fully generated video."
+    },
+    {
+      "id": "spoof_image",
+      "name": "Spoof (image)",
+      "title": "Image spoof / AI-generated",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "real",
+        "AI-generated",
+        "face swap",
+        "edited",
+        "recaptured"
+      ],
+      "color": "#f43f5e",
+      "description": "Is the photo real, generated or manipulated? 'recaptured' is a photo of a screen or of a print (presentation attack).",
+      "prompt": "Is this a real, unedited photograph? If not, choose what it is: fully AI-generated, face swap, edited (objects added, removed or spliced in), or recaptured (a photo of a screen or of a printed picture)."
+    },
+    {
+      "id": "spoof_regions",
+      "name": "Fake regions",
+      "title": "Manipulated regions (image)",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "face swap",
+        "inpainted",
+        "spliced",
+        "generated"
+      ],
+      "color": "#fb7185",
+      "description": "A box around every manipulated part of an image, labelled with the kind of manipulation.",
+      "prompt": "Find every manipulated region in this image (a swapped face, an inpainted or removed area, a spliced-in object, generated content) and give a box around each one with the kind of manipulation."
+    },
+    {
       "id": "audio_caption",
       "name": "AudioCap",
       "title": "Audio captioning",
@@ -894,6 +1026,26 @@
         "object_boxes",
         "pose",
         "ocr"
+      ]
+    },
+    {
+      "id": "speakers",
+      "name": "Speakers & overlap",
+      "tasks": [
+        "diarization",
+        "pure_speech",
+        "overlap",
+        "asr"
+      ]
+    },
+    {
+      "id": "spoof",
+      "name": "Spoof & deepfake",
+      "tasks": [
+        "spoof_audio",
+        "spoof_video",
+        "spoof_image",
+        "spoof_regions"
       ]
     }
   ]

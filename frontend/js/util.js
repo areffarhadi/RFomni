@@ -130,6 +130,13 @@ const EMO = {
   'no face': '#64748b', speech: '#94a3b8',
 };
 
+// spoof / deepfake classes: genuine is green, every kind of fake gets a warm colour
+const AUTH = {
+  bonafide: '#4ade80', real: '#4ade80', tts: '#f87171', 'voice conversion': '#fb7185', replay: '#f59e0b', spliced: '#e879f9',
+  'ai-generated': '#f87171', 'face swap': '#fb7185', 'face reenactment': '#e879f9', 'lip-sync': '#f59e0b',
+  'fully generated': '#f87171', edited: '#f59e0b', recaptured: '#a78bfa', inpainted: '#f59e0b', generated: '#f87171',
+};
+
 export function hashColor(str) {
   let x = 2166136261;
   for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
@@ -140,8 +147,9 @@ export function hashColor(str) {
 export function segColor(tier, value) {
   if ((tier.output === 'label' || tier.output === 'boxes') && typeof value === 'string' && value) {
     const k = value.toLowerCase();
+    if (AUTH[k] && /^spoof_/.test(tier.task_id || '')) return AUTH[k];
     if (EMO[k] && (tier.granularity !== 'file' || tier.output === 'boxes')) return EMO[k];
-    if (tier.task_id === 'diarization' || tier.task_id === 'lid' || (tier.labels || []).length !== 1) return hashColor(k);
+    if (/^(diarization|pure_speech|overlap|lid)$/.test(tier.task_id || '') || (tier.labels || []).length !== 1) return hashColor(k);
   }
   return tier.color || '#94a3b8';
 }

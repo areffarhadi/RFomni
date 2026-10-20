@@ -74,6 +74,7 @@ export class AnnoDoc extends EventTarget {
    * With merge=true, consecutive steps with the same label are merged (typing).
    */
   transact(label, fn, { merge = false } = {}) {
+    if (this.readOnly) { this.dispatchEvent(new CustomEvent('readonly', { detail: { label } })); return; }
     const changes = new Map();
     let tiersBefore = null;
     const tx = {
@@ -124,6 +125,7 @@ export class AnnoDoc extends EventTarget {
   }
 
   undo() {
+    if (this.readOnly) return null;
     const e = this.undoStack.pop();
     if (!e) return null;
     for (const [id, { before }] of e.changes) before ? this.segs.set(id, before) : this.segs.delete(id);

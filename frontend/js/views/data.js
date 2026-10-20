@@ -1,6 +1,6 @@
 // Data tab: file list on the left, dashboard or editor on the right.
 import { h, ls } from '../util.js';
-import { state, emit } from '../state.js';
+import { state, emit, isShared } from '../state.js';
 import { go, links } from '../nav.js';
 import { toast } from '../ui.js';
 import { FileList } from './files.js';
@@ -22,6 +22,7 @@ export class DataView {
   }
 
   setupDrop() {
+    if (isShared()) return;
     let depth = 0;
     const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
     this.el.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; e.preventDefault(); depth++; this.el.classList.add('dropzone-over'); });

@@ -11,7 +11,8 @@ import { Timeline } from './timeline.js';
 import { Inspector, pickValue, tierLabels } from './inspector.js';
 import { NowPanel } from './now.js';
 import { sortTiers, tierKey, moveTierKey } from './order.js';
-import { on } from '../state.js';
+import { on, isShared, canEdit } from '../state.js';
+import { speakerRegions, tierKind, DIAR, PURE, OVERLAP } from './speakers.js';
 
 export class Editor extends BaseEditor {
   constructor(dv, media, params) {
@@ -56,6 +57,7 @@ export class Editor extends BaseEditor {
       if (sig !== this.orderSig) { this.orderSig = sig; this.refreshTiers(); }
     }));
     this.applyParams(this.params);
+    this.turnSig = this.speakerSig();
     if (!this.doc.tiers.length) this.suggestRun();
   }
 
@@ -71,7 +73,7 @@ export class Editor extends BaseEditor {
   }
 
   suggestRun() {
-    if (!state.project.tasks.length) return;
+    if (!state.project.tasks.length || isShared()) return;
     this.timeline.tiersInner.querySelector('.empty')?.append(
       h('div', { style: { marginTop: '10px' } }, h('button.btn.primary', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('sparkles', 14), 'Run tasks on this file')));
   }
@@ -162,6 +164,7 @@ export class Editor extends BaseEditor {
   async reorderTier(srcId, dstId, after) {
     const src = this.doc.tier(srcId), dst = this.doc.tier(dstId);
     if (!src || !dst || src === dst) return;
+    if (isShared()) { toast('Only the owner of the project can change the tier order', { timeout: 2400 }); return; }
     try {
       await moveTierKey(tierKey(src), tierKey(dst), after, this.doc.tiers.map(tierKey));
       this.orderSig = JSON.stringify(state.project.tier_order || state.project.tasks);
@@ -185,14 +188,19 @@ export class Editor extends BaseEditor {
   tierMenu(tid, anchor) {
     const tier = this.doc.tier(tid);
     const segs = this.doc.list(tid);
+    const kind = tierKind(tier);
+    const speakerTier = [DIAR, PURE, OVERLAP].includes(kind);
     menu(anchor, [
       { header: tier.title || tier.name },
-      { label: 'Move up', icon: 'chev-u', onClick: () => this.moveTierBy(tid, -1) },
-      { label: 'Move down', icon: 'chev-d', onClick: () => this.moveTierBy(tid, 1) },
-      'sep',
+      !isShared() && { label: 'Move up', icon: 'chev-u', onClick: () => this.moveTierBy(tid, -1) },
+      !isShared() && { label: 'Move down', icon: 'chev-d', onClick: () => this.moveTierBy(tid, 1) },
+      !isShared() && 'sep',
+      speakerTier && canEdit() ? { label: kind === DIAR ? 'Make pure speech & overlap tiers from these turns' : 'Rebuild from the speaker turns',
+        icon: 'users', disabled: !this.doc.tiers.some(t => tierKind(t) === DIAR), onClick: () => this.rebuildSpeakerTiers() } : null,
+      speakerTier && canEdit() ? 'sep' : null,
       { label: 'Mark all reviewed', icon: 'check', disabled: !segs.length, onClick: () => this.doc.transact('Review tier', (tx) => segs.forEach(s => tx.update(s.id, { reviewed: true }))) },
       { label: 'Mark all unreviewed', icon: 'review', disabled: !segs.length, onClick: () => this.doc.transact('Unreview tier', (tx) => segs.forEach(s => tx.update(s.id, { reviewed: false }))) },
-      tier.task_id && state.taskById.get(tier.task_id) ? { label: 'Run this task again…', icon: 'sparkles', onClick: () => this.flush().then(() => openRunDialog({ mediaIds: [this.media.id], taskIds: [tier.task_id] })) } : null,
+      !isShared() && tier.task_id && state.taskById.get(tier.task_id) ? { label: 'Run this task again…', icon: 'sparkles', onClick: () => this.flush().then(() => openRunDialog({ mediaIds: [this.media.id], taskIds: [tier.task_id] })) } : null,
       { label: 'Hide tier', icon: 'eye-off', onClick: () => this.setHidden(tid, true) },
       'sep',
       { label: 'Clear all segments', icon: 'x', danger: true, disabled: !segs.length, onClick: async () => {
@@ -204,6 +212,51 @@ export class Editor extends BaseEditor {
           this.doc.transact('Delete tier', (tx) => { segs.forEach(s => tx.remove(s.id)); tx.setTiers(this.doc.tiers.filter(t => t.id !== tid)); });
       } },
     ]);
+  }
+
+  // ------------------------------------------------------------ speakers
+  speakerSig() {
+    const d = this.doc.tiers.find(t => tierKind(t) === DIAR);
+    return d ? this.doc.list(d.id).map(s => `${s.start}|${s.end}|${s.value}`).join(',') : '';
+  }
+
+  /** Pure speech (one speaker) and overlap (speaker pairs) tiers, recomputed from the current speaker turns. One undo step. */
+  rebuildSpeakerTiers({ quiet = false } = {}) {
+    const dia = this.doc.tiers.find(t => tierKind(t) === DIAR);
+    if (!dia) { toast('This file has no speaker diarization tier'); return; }
+    const { pure, overlap } = speakerRegions(this.doc.list(dia.id));
+    let tiers = this.doc.tiers;
+    this.doc.transact('Rebuild speaker regions', (tx) => {
+      for (const [kind, regs] of [[PURE, pure], [OVERLAP, overlap]]) {
+        let tier = tiers.find(t => tierKind(t) === kind);
+        if (!tier) {
+          const task = state.taskById.get(kind);
+          if (!task) continue;
+          tier = { ...tierFromTask(task, 'derived'), parent: dia.task_id || dia.id };
+          tiers = [...tiers, tier];
+        }
+        for (const s of this.doc.list(tier.id)) tx.remove(s.id);
+        for (const r of regs) tx.add({ tier_id: tier.id, start: r.start, end: r.end, value: r.value, confidence: r.confidence, source: 'derived', reviewed: false });
+      }
+      if (tiers !== this.doc.tiers) tx.setTiers(tiers);
+    });
+    this.turnSig = this.speakerSig();
+    for (const t of this.doc.tiers) if ([PURE, OVERLAP].includes(tierKind(t))) this.hidden.delete(t.id);
+    this.refreshTiers();
+    if (!quiet) toast(`${pure.length} pure-speech regions and ${overlap.length} overlaps from ${this.doc.list(dia.id).length} speaker turns`, { kind: 'ok', timeout: 2600 });
+  }
+
+  /** After the speaker turns change, offer to bring the pure speech / overlap tiers up to date. */
+  checkSpeakerTurns() {
+    const sig = this.speakerSig();
+    if (sig === this.turnSig) return;
+    this.turnSig = sig;
+    if (!this.doc.tiers.some(t => [PURE, OVERLAP].includes(tierKind(t))) || this.doc.readOnly) return;
+    if (Date.now() - (this.turnToast || 0) < 15000) return;
+    this.turnToast = Date.now();
+    toast('Speaker turns changed. The pure speech and overlap tiers may be out of date.', {
+      timeout: 6000, action: { label: 'Rebuild', onClick: () => this.rebuildSpeakerTiers() },
+    });
   }
 
   // ------------------------------------------------------------ selection & editing
@@ -424,8 +477,9 @@ export class Editor extends BaseEditor {
   }
 
   // ------------------------------------------------------------ document events
-  afterChange() {
+  afterChange(d) {
     if (this.selId && !this.doc.seg(this.selId)) this.selId = null;
+    if (d?.label !== 'Rebuild speaker regions') this.checkSpeakerTurns();
     const sig = this.doc.tiers.map(t => t.id + ':' + t.name + ':' + t.color).join('|');
     if (sig !== this.tierSig) this.refreshTiers();
     else this.now.refresh();

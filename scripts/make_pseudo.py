@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from backend import config, tasks as task_reg  # noqa: E402
 from backend.main import _new_item, store  # noqa: E402
+from backend.speakers import speaker_regions  # noqa: E402
 from backend.util import new_id  # noqa: E402
 
 SR = 16000
@@ -422,6 +423,15 @@ class Ann:
                 self.add(task_id, a, b, v[0] if isinstance(v, tuple) else v, v[1] if isinstance(v, tuple) else None)
             t += win
 
+    def speaker_regions(self):
+        """Pure speech + overlap tiers from the diarization turns (what the model would return)."""
+        turns = [s for s in self.segs if s["tier_id"] == "diarization"]
+        pure, over = speaker_regions(turns)
+        for r in pure:
+            self.add("pure_speech", r["start"], r["end"], r["value"], r["confidence"])
+        for r in over:
+            self.add("overlap", r["start"], r["end"], r["value"], conf(0.7, 0.12))
+
     def doc(self):
         return {"tiers": list(self.tiers.values()), "segments": self.segs}
 
@@ -544,6 +554,56 @@ def build_japanese():
     an.speech(tr.utts, audio=audio, skip_phones=True)
     an.sed(tr)
     an.add("audio_caption", 0.0, round(len(audio) / SR, 3), "A female presenter reads a short weather forecast in Japanese.", 0.9)
+    return path, an
+
+
+def build_debate():
+    """Three people talking over each other: overlapping turns, a back-channel inside a turn."""
+    lines = [  # (voice, text, emotion, gap before it; negative = starts before the previous speaker has finished)
+        ("Karen", "Let me be clear, the data shows that labelling everything by hand does not scale.", "neutral", 0.5),
+        ("Fred", "But automatic labels are only as good as the model behind them.", "neutral", -0.9),
+        ("Karen", "Which is exactly why people should review them.", "frustrated", 0.3),
+        ("Rishi", "Can I add something here?", "neutral", -0.7),
+        ("Fred", "Yes, go ahead.", "neutral", -0.3),
+        ("Rishi", "In our lab the model does the first pass, and people only fix what looks wrong.", "happy", 0.4),
+        ("Karen", "Right, right.", "happy", -1.6),
+        ("Fred", "And how much time does that save you?", "surprised", 0.3),
+        ("Rishi", "About two thirds of the time, on speech data.", "neutral", 0.35),
+        ("Karen", "That is impressive.", "happy", -0.5),
+        ("Fred", "Impressive, but is it reproducible?", "neutral", -0.8),
+    ]
+    clips, t, end = [], 0.0, 0.0
+    speakers = {}
+    for v, txt, emo, gap in lines:
+        x = tts(v, txt, emo)
+        start = max(0.0, end + gap) if gap < 0 else end + gap
+        if gap < 0 and clips:
+            start = max(start, clips[-1][1] + 0.3)  # never before the previous turn has started
+        speakers.setdefault(v, f"SPEAKER_{len(speakers)}")
+        lang, gender = VOICES[v]
+        clips.append((x, start))
+        end = max(end, start + len(x) / SR)
+        t = start
+    audio = np.zeros(int((end + 0.6) * SR), np.float32)
+    utts = []
+    for (x, start), (v, txt, emo, _) in zip(clips, lines):
+        i = int(start * SR)
+        audio[i: i + len(x)] += x * 0.8
+        lang, gender = VOICES[v]
+        utts.append({"start": round(start, 3), "end": round(start + len(x) / SR, 3), "text": txt, "voice": v,
+                     "speaker": speakers[v], "lang": lang, "gender": gender, "emotion": emo, "translation": None,
+                     "entities": [], "tokens": None})
+    audio = np.clip(audio + noise(len(audio), 0.002), -1, 1).astype(np.float32)
+    path = OUT / "podcasts" / "studio_debate.wav"
+    write_wav(path, audio)
+    an = Ann()
+    an.speech(utts, audio=audio, asr_conf=(0.84, 0.07), skip_phones=True)
+    an.speaker_regions()
+    for k, u in enumerate(utts):  # one deliberate false alarm to correct
+        lab, c = ("voice conversion", 0.41) if k == 4 else ("bonafide", conf(0.93, 0.03))
+        an.add("spoof_audio", u["start"], u["end"], lab, c)
+    an.add("audio_caption", 0.0, round(len(audio) / SR, 3),
+           "A heated studio debate: two men and a woman interrupt each other about automatic labelling.", 0.86)
     return path, an
 
 
@@ -1006,16 +1066,42 @@ def build_images():
 
 
 # =============================================================================
-TASKS = ["asr", "forced_alignment", "phoneme", "diarization", "gender", "lid", "translation", "ser", "speech_caption", "ner",
+TASKS = ["asr", "forced_alignment", "phoneme", "diarization", "pure_speech", "overlap", "gender", "lid", "translation", "ser", "speech_caption", "ner",
          "sound_quality", "sed", "audio_caption", "active_speaker", "fer", "shots", "ocr", "action", "dense_caption",
          "video_caption", "image_caption", "detailed_caption", "image_tags", "face_boxes", "person_boxes", "object_boxes",
-         "pose", "face_caption"]
+         "pose", "face_caption", "spoof_audio", "spoof_video", "spoof_image", "spoof_regions"]
+
+
+def add_files(builders):
+    """Add (or replace) single showcase files in the existing project, keeping every other file and its edits."""
+    proj = store.get_project(PID)
+    by_rel = {m["rel_path"]: m for m in store.list_media(PID)}
+    for fn in builders:
+        path, an = fn()
+        rel = str(path.relative_to(OUT))
+        if rel in by_rel:
+            store.remove_media(PID, by_rel[rel]["id"])
+        item = _new_item(path, rel, "linked")
+        store.add_media(PID, [item])
+        store.save_doc(PID, item["id"], an.doc())
+        print(f"  {rel}: {len(an.segs)} pseudo labels")
+    missing = [t for t in TASKS if t not in proj["tasks"]]
+    if missing:
+        store.update_project(PID, {"tasks": proj["tasks"] + missing})
+        print("  added tasks:", ", ".join(missing))
+
+
+BUILDERS = {"interview": build_interview, "call": build_call, "panel": build_panel, "japanese": build_japanese,
+            "debate": build_debate, "lecture": build_lecture, "meeting": build_meeting, "street": build_street}
 
 
 def main():
+    if "--add" in sys.argv:  # e.g. --add debate
+        add_files([BUILDERS[n] for n in sys.argv[sys.argv.index("--add") + 1:]])
+        return
     print("generating media in", OUT)
     built = []
-    for fn in (build_interview, build_call, build_panel, build_japanese, build_lecture, build_meeting, build_street):
+    for fn in BUILDERS.values():
         path, an = fn()
         built.append((path, an, False))
         print(f"  {path.relative_to(OUT)}: {len(an.segs)} pseudo labels")

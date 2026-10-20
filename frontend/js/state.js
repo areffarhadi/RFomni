@@ -13,6 +13,12 @@ export const state = {
   jobs: new Map(), // jid -> job
 };
 
+// Shared links: the same app, opened by someone else through a share link (see backend/share.py).
+export const shareInfo = () => state.info?.share || null;
+export const isShared = () => !!state.info?.share;
+export const canEdit = () => !state.info?.share || state.info.share.access === 'edit';
+export const canDownload = () => !state.info?.share || !!state.info.share.allow_download;
+
 const bus = new EventTarget();
 export function on(name, fn) {
   const w = (e) => fn(e.detail);

@@ -1,7 +1,7 @@
 // Project overview: stats, tasks, file x task coverage matrix.
 import { api } from '../api.js';
 import { h, ico, fmtDur, modalityIcon, rafThrottle } from '../util.js';
-import { state, on, projectTasks, refreshProject } from '../state.js';
+import { state, on, projectTasks, refreshProject, isShared, shareInfo } from '../state.js';
 import { go, links } from '../nav.js';
 import { menu, promptDialog, confirmDialog, errorToast, toast } from '../ui.js';
 import { addDataMenuItems, pickAndUpload, openLinkDialog } from './upload.js';
@@ -25,14 +25,25 @@ export class Dashboard {
     const media = state.media;
     const s = p.stats || {};
     const tasks = projectTasks();
-    const moreBtn = h('button.icon-btn', { title: 'Project settings', onclick: () => this.projectMenu(moreBtn) }, ico('more', 18));
-    const addBtn = h('button.btn', { onclick: () => menu(addBtn, addDataMenuItems(p.id)) }, ico('plus', 15), 'Add data');
+    const moreBtn = h('button.icon-btn.owner-only', { title: 'Project settings', onclick: () => this.projectMenu(moreBtn) }, ico('more', 18));
+    const addBtn = h('button.btn.owner-only', { onclick: () => menu(addBtn, addDataMenuItems(p.id)) }, ico('plus', 15), 'Add data');
     const head = h('div.dash-head',
       h('div', h('h1', p.name), h('p', p.description || 'No description')),
       h('div.row', addBtn,
-        h('button.btn.primary', { onclick: () => openRunDialog(), disabled: !media.length }, ico('sparkles', 15), 'Run tasks'),
+        h('button.btn.primary.owner-only', { onclick: () => openRunDialog(), disabled: !media.length }, ico('sparkles', 15), 'Run tasks'),
+        h('button.btn', { onclick: () => go(links.tab(p.id, 'stats')) }, ico('chart', 15), 'Statistics'),
         moreBtn));
+    const sh = shareInfo();
+    const banner = sh ? h('div.notice.share-note', ico(sh.access === 'edit' ? 'edit' : 'eye', 16), h('div',
+      h('b', sh.access === 'edit' ? 'You can review and correct the labels in this project.' : 'This is a view-only copy of the project.'),
+      ' ', sh.access === 'edit' ? 'Open a file, fix what is wrong and mark it reviewed; your changes are saved for the owner with your link name.'
+        : 'Open any file to listen, look at the labels and the statistics. Changes are not saved.',
+      sh.note ? h('div.muted', { style: { marginTop: '4px' } }, sh.note) : null)) : null;
 
+    if (!media.length && isShared()) {
+      this.inner.replaceChildren(head, banner, h('div.empty', 'This project has no files yet.'));
+      return;
+    }
     if (!media.length) {
       this.inner.replaceChildren(head, h('div.big-drop',
         ico('upload', 34),
@@ -58,14 +69,14 @@ export class Dashboard {
       Object.assign(stat('flag', 'Low confidence', s.low || 0, 'segments', h('div.sub', `below ${p.settings?.low_confidence ?? 0.6}`)),
         { className: 'stat link', onclick: () => go(links.tab(p.id, 'review')) }));
 
-    this.inner.replaceChildren(head, stats, this.tasksSection(tasks), this.coverage(tasks, media));
+    this.inner.replaceChildren(head, banner, stats, this.tasksSection(tasks), this.coverage(tasks, media));
   }
 
   tasksSection(tasks) {
     const p = state.project;
     return h('div.section',
       h('div.section-head', h('h3', ico('tasks', 15), 'Tasks in this project'),
-        h('button.btn.sm', { onclick: () => go(links.tab(p.id, 'tasks')) }, ico('edit', 13), tasks.length ? 'Edit tasks' : 'Choose tasks')),
+        h('button.btn.sm.owner-only', { onclick: () => go(links.tab(p.id, 'tasks')) }, ico('edit', 13), tasks.length ? 'Edit tasks' : 'Choose tasks')),
       h('div.section-body', tasks.length
         ? h('div.row', { style: { flexWrap: 'wrap', gap: '6px' } }, tasks.map(taskChip))
         : h('div.muted', 'No tasks yet. Pick tasks from the library or write your own prompt task.')));

@@ -1,7 +1,7 @@
 // Shared editor plumbing: load/save with revision checks, header, file menu, import/export.
 import { api, urls } from '../api.js';
 import { h, ico, debounce, download, fmtDur, modalityIcon } from '../util.js';
-import { state, on, emit, upsertMedia, removeMediaLocal, refreshProject } from '../state.js';
+import { state, on, emit, upsertMedia, removeMediaLocal, refreshProject, isShared, canEdit, canDownload } from '../state.js';
 import { go, links } from '../nav.js';
 import { openModal, menu, toast, errorToast, confirmDialog } from '../ui.js';
 import { openRunDialog } from '../views/run.js';
@@ -32,6 +32,12 @@ export class BaseEditor {
   async loadDoc() {
     const raw = await api.annotations(this.pid, this.media.id);
     this.doc = new AnnoDoc(raw);
+    this.doc.readOnly = !canEdit();
+    this.doc.addEventListener('readonly', () => {
+      if (Date.now() - (this.roToast || 0) > 4000) toast('This shared link is view only: changes are not saved.', { kind: 'warn', timeout: 3000 });
+      this.roToast = Date.now();
+      this.afterChange({ label: 'readonly' });
+    });
     this.savedVersion = this.doc.version;
     this.doc.addEventListener('change', (e) => {
       this.setSaveState('dirty');
@@ -136,7 +142,7 @@ export class BaseEditor {
   // ------------------------------------------------------------ header
   buildHeader() {
     const m = this.media;
-    this.statusBtn = h('button.btn.sm', { onclick: () => this.toggleFileReviewed() });
+    this.statusBtn = h('button.btn.sm.edit-only', { onclick: () => this.toggleFileReviewed() });
     const more = h('button.icon-btn', { title: 'More', onclick: () => this.fileMenu(more) }, ico('more', 17));
     this.renderStatus();
     return h('div.ed-head',
@@ -144,13 +150,13 @@ export class BaseEditor {
         h('div', h('div.nm', m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
           m.duration ? fmtDur(m.duration) : null, m.width ? `${m.width}×${m.height}` : null].filter(Boolean).join(' · ')))),
       this.saveEl,
-      h('button.icon-btn', { title: 'Undo (⌘Z)', onclick: () => this.undo() }, ico('undo', 16)),
-      h('button.icon-btn', { title: 'Redo (⌘⇧Z)', onclick: () => this.redo() }, ico('redo', 16)),
+      h('button.icon-btn.edit-only', { title: 'Undo (⌘Z)', onclick: () => this.undo() }, ico('undo', 16)),
+      h('button.icon-btn.edit-only', { title: 'Redo (⌘⇧Z)', onclick: () => this.redo() }, ico('redo', 16)),
       h('span', { style: { width: '1px', height: '20px', background: 'var(--line-2)' } }),
       h('button.icon-btn', { title: 'Previous file ([)', onclick: () => this.dv.step(-1) }, ico('chev-l', 17)),
       h('button.icon-btn', { title: 'Next file (])', onclick: () => this.dv.step(1) }, ico('chev-r', 17)),
       this.statusBtn,
-      h('button.btn.sm', { onclick: () => this.flush().then(() => openRunDialog({ mediaIds: [m.id] })) }, ico('sparkles', 13), 'Run'),
+      h('button.btn.sm.owner-only', { onclick: () => this.flush().then(() => openRunDialog({ mediaIds: [m.id] })) }, ico('sparkles', 13), 'Run'),
       more);
   }
 
@@ -178,16 +184,17 @@ export class BaseEditor {
     const m = this.media;
     const ex = (fmt, label) => ({ label, icon: 'download', onClick: async () => { await this.flush(); download(urls.exportFile(this.pid, m.id, fmt)); } });
     const av = m.modality !== 'image';
+    const owner = !isShared(), dl = canDownload();
     menu(anchor, [
-      { label: 'Import annotations (ELAN, Praat, JSON)…', icon: 'upload', onClick: () => this.importFile() },
-      'sep', { header: 'Export this file' },
-      av && ex('eaf', 'ELAN .eaf'), av && ex('textgrid', 'Praat TextGrid'), ex('json', 'Omni Studio JSON'),
-      av && ex('srt', 'SRT subtitles'), av && ex('vtt', 'WebVTT'), av && ex('rttm', 'RTTM (diarization)'), ex('csv', 'CSV'),
-      !av && ex('coco', 'COCO JSON (boxes & keypoints)'),
+      owner && { label: 'Import annotations (ELAN, Praat, JSON)…', icon: 'upload', onClick: () => this.importFile() },
+      dl && 'sep', dl && { header: 'Export this file' },
+      dl && av && ex('eaf', 'ELAN .eaf'), dl && av && ex('textgrid', 'Praat TextGrid'), dl && ex('json', 'Omni Studio JSON'),
+      dl && av && ex('srt', 'SRT subtitles'), dl && av && ex('vtt', 'WebVTT'), dl && av && ex('rttm', 'RTTM (diarization)'), dl && ex('csv', 'CSV'),
+      dl && !av && ex('coco', 'COCO JSON (boxes & keypoints)'),
       'sep',
       { label: 'Open original file', icon: 'link', onClick: () => window.open(urls.file(this.pid, m.id), '_blank') },
-      { label: m.source === 'linked' ? 'Remove from project (file stays on disk)' : 'Delete from project', icon: 'trash', danger: true, onClick: () => this.removeFile() },
-    ], { placement: 'bottom-end' });
+      owner && { label: m.source === 'linked' ? 'Remove from project (file stays on disk)' : 'Delete from project', icon: 'trash', danger: true, onClick: () => this.removeFile() },
+    ].filter(Boolean), { placement: 'bottom-end' });
   }
 
   importFile() {

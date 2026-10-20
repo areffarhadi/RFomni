@@ -789,7 +789,7 @@ export class ImageEditor extends BaseEditor {
       h('i.dot', { style: { '--c': color } }),
       h('span.rl', valStr(s.value) || h('span.muted', 'no label'), nVis != null ? h('small', ` ${nVis}/${Math.max(17, g.points.length)} points`) : null),
       s.confidence != null ? confBar(s.confidence, this.lowThr) : null,
-      srcBadge(s.source),
+      srcBadge(s.source, s.meta?.edited_by),
       h('button.icon-btn.sm' + (s.reviewed ? '.active' : ''), { title: s.reviewed ? 'Reviewed (R)' : 'Mark reviewed (R)', onclick: () => this.update(s.id, { reviewed: !s.reviewed }, 'Review') }, ico('check', 13)),
       h('button.icon-btn.sm', { title: 'Delete (Del)', onclick: () => this.deleteSeg(s.id) }, ico('trash', 13)));
     if (!sel) return row;
@@ -887,7 +887,7 @@ export class ImageEditor extends BaseEditor {
     }, ico('check', 14));
     return h('div.file-field', { dataset: { tier: t.id } },
       h('div.ff-head', h('b', { style: { '--c': t.color } }, h('i'), t.title || t.name), h('div.grow'),
-        s?.confidence != null ? confBar(s.confidence, this.lowThr) : null, s ? srcBadge(s.source) : null, rev),
+        s?.confidence != null ? confBar(s.confidence, this.lowThr) : null, s ? srcBadge(s.source, s.meta?.edited_by) : null, rev),
       valueEditor(t, s?.value ?? (t.output === 'tags' ? [] : ''), set, { doc: this.doc }),
       s?.meta?.model_value != null ? h('div.muted', { style: { fontSize: '12px' } }, 'Model said: ', valStr(s.meta.model_value)) : null);
   }

@@ -1,24 +1,31 @@
-// Project shell: left rail + tabs (data / tasks / review / export).
+// Project shell: left rail + tabs (data / tasks / statistics / review / export).
 import { h, ico } from '../util.js';
-import { state, on, loadProject } from '../state.js';
+import { state, on, loadProject, isShared, canDownload } from '../state.js';
 import { links } from '../nav.js';
 import { DataView } from './data.js';
 import { TasksView } from './tasks.js';
 import { ReviewView } from './review.js';
 import { ExportView } from './export.js';
+import { StatsView } from './stats.js';
 
 const TABS = [
   { id: 'data', label: 'Data', icon: 'database' },
-  { id: 'tasks', label: 'Tasks', icon: 'tasks' },
+  { id: 'tasks', label: 'Tasks', icon: 'tasks', owner: true },
+  { id: 'stats', label: 'Statistics', icon: 'chart' },
   { id: 'review', label: 'Review', icon: 'review' },
-  { id: 'export', label: 'Export', icon: 'download' },
+  { id: 'export', label: 'Export', icon: 'download', download: true },
 ];
 
 export class ProjectView {
   constructor(pid) {
     this.pid = pid;
     this.links = {};
-    this.rail = h('nav.rail', TABS.map(t => {
+    const tabs = TABS.filter(t => !(t.owner && isShared()) && !(t.download && !canDownload()));
+    // "Projects" first: back to the list of all projects (not shown on shared links)
+    const home = isShared() ? null : [
+      h('a.rail-home', { href: links.home(), title: 'All projects' }, ico('folder', 19), h('span', 'Projects')),
+      h('div.rail-sep')];
+    this.rail = h('nav.rail', home, tabs.map(t => {
       const a = h('a', { href: t.id === 'data' ? links.project(pid) : links.tab(pid, t.id), title: t.label },
         ico(t.icon, 19), h('span', t.label));
       this.links[t.id] = a;
@@ -56,7 +63,8 @@ export class ProjectView {
     this.data.hide();
     this.data.el.style.display = 'none';
     if (this.other) { this.other.destroy?.(); this.other.el.remove(); }
-    const View = { tasks: TasksView, review: ReviewView, export: ExportView }[tab] || TasksView;
+    const views = { tasks: TasksView, stats: StatsView, review: ReviewView, export: ExportView };
+    const View = this.links[tab] ? views[tab] : StatsView;
     this.other = new View(this);
     this.body.append(this.other.el);
   }

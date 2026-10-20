@@ -3,12 +3,15 @@ import { urls } from '../api.js';
 import { h, ico, clamp, fmtTime, segColor, valStr, rafThrottle, ls } from '../util.js';
 import { menu, popover, toast } from '../ui.js';
 import { TileStore, loadImage } from './tiles.js';
+import { tierKind, hasOverlap, sortSpeakers, DIAR } from './speakers.js';
 
 const TILE = 512;          // tile width in px at its native zoom level
 const MAX_DOM = 600;       // above this many visible segments a tier is drawn on canvas
 const STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
 const FRAME_STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200];
 const NON_OVERLAP = new Set(['segment', 'word', 'phone', 'window']);
+// speaker turns may overlap (two people talking at once), whatever granularity an older file stored
+const noOverlap = (tier) => NON_OVERLAP.has(tier.granularity) && tierKind(tier) !== DIAR;
 
 const niceStep = (min, steps = STEPS) => steps.find(s => s >= min) || steps[steps.length - 1];
 
@@ -594,10 +597,10 @@ export class Timeline {
     let lo = 0, hi = this.dur, block = null;
     if (hint.edge === 'start') {
       hi = s.end - 0.01;
-      if (prev && NON_OVERLAP.has(tier.granularity) && prev.end <= s.start + tol) { lo = Math.max(lo, prev.end); block = 'lo'; }
+      if (prev && noOverlap(tier) && prev.end <= s.start + tol) { lo = Math.max(lo, prev.end); block = 'lo'; }
     } else {
       lo = s.start + 0.01;
-      if (next && NON_OVERLAP.has(tier.granularity) && next.start >= s.end - tol) { hi = Math.min(hi, next.start); block = 'hi'; }
+      if (next && noOverlap(tier) && next.start >= s.end - tol) { hi = Math.min(hi, next.start); block = 'hi'; }
     }
     const kids = [];
     for (const T of down) {
@@ -651,7 +654,7 @@ export class Timeline {
     let lo = 0, hi = this.dur;
     for (const it of items) {
       if (it.edge === 'start') hi = Math.min(hi, it.s.end - 0.01); else lo = Math.max(lo, it.s.start + 0.01);
-      if (it.own && NON_OVERLAP.has(tier.granularity)) {
+      if (it.own && noOverlap(tier)) {
         const nb = doc.neighbors(it.s);
         if (it.edge === 'end' && nb.next && !items.some(j => j.s === nb.next)) hi = Math.min(hi, nb.next.start);
         if (it.edge === 'start' && nb.prev && !items.some(j => j.s === nb.prev)) lo = Math.max(lo, nb.prev.end);
@@ -808,7 +811,23 @@ export class Timeline {
    *  Overlaps under 20 ms (rounding at word boundaries) are ignored. */
   layoutTier(r) {
     const rowOf = new Map(), ends = [];
-    for (const s of this.ed.doc.list(r.tier.id)) {
+    const list = this.ed.doc.list(r.tier.id);
+    if (tierKind(r.tier) === DIAR && hasOverlap(list)) {
+      // overlapping speaker turns: one lane per speaker, ELAN style
+      const spk = sortSpeakers(list.filter(s => s.start != null).map(s => valStr(s.value)));
+      if (spk.length > 1 && spk.length <= 6) {
+        for (const s of list) rowOf.set(s.id, spk.indexOf(valStr(s.value)));
+        r.rowOf = rowOf;
+        r.nRows = spk.length;
+        r.curH = Math.max(r.height, r.nRows * 21 + 6);
+        r.row.style.height = r.curH + 'px';
+        r.row.classList.add('lanes');
+        r.layoutVer = this.ed.doc.version;
+        return;
+      }
+    }
+    r.row.classList.remove('lanes');
+    for (const s of list) {
       if (s.start == null) continue;
       let k = ends.findIndex(e => e <= s.start + 0.02);
       if (k < 0) { k = ends.length; ends.push(s.end); } else ends[k] = Math.max(ends[k], s.end);
@@ -1140,7 +1159,7 @@ export class Timeline {
         return;
       }
       const { prev, next } = doc.neighbors(s);
-      const strict = NON_OVERLAP.has(r.tier.granularity);
+      const strict = noOverlap(r.tier);
       const lo = strict && prev ? prev.end : 0;
       const hi = strict && next ? next.start : this.dur;
       const targets = this.snapTargets(s.id);

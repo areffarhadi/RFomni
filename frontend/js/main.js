@@ -1,20 +1,24 @@
 // App shell: top bar, router, status bar.
 import { api } from './api.js';
 import { $, h, ico, isTyping, ls } from './util.js';
-import { state, on, loadInfo, loadTasks } from './state.js';
+import { state, on, loadInfo, loadTasks, shareInfo } from './state.js';
 import { parseHash, links } from './nav.js';
 import { errorToast, modalOpen } from './ui.js';
 import { HomeView } from './views/home.js';
 import { ProjectView } from './views/project.js';
 import { showShortcuts } from './views/shortcuts.js';
+import { openShareDialog } from './views/share.js';
 
 const app = $('#app');
 const crumbs = h('div.crumbs');
 const enginePill = h('div.engine-pill', h('i'), h('span', 'Engine…'));
 const themeBtn = h('button.icon-btn', { title: 'Toggle light / dark', onclick: toggleTheme });
+const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
+const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
+const brand = h('a.brand', { href: '#/' }, ico('logo', 25, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
-  h('a.brand', { href: '#/' }, ico('logo', 20, ''), h('b', 'Omni'), h('span.light', 'Studio')),
-  crumbs, h('div.grow'), enginePill,
+  brand,
+  crumbs, h('div.grow'), sharedPill, shareBtn, enginePill,
   h('button.icon-btn', { title: 'Keyboard shortcuts (?)', onclick: showShortcuts }, ico('keyboard', 17)),
   themeBtn);
 const main = h('main.main');
@@ -40,8 +44,10 @@ setThemeIcon();
 // ---- breadcrumbs ----------------------------------------------------------
 let crumbFile = null;
 function renderCrumbs() {
-  const items = [h('span', '/'), h('a', { href: '#/' }, 'Projects')];
+  const shared = shareInfo();
+  const items = shared ? [] : [h('span', '/'), h('a', { href: '#/' }, 'Projects')];
   const { parts } = parseHash();
+  shareBtn.style.display = !shared && parts[0] === 'p' && state.project ? '' : 'none';
   if (parts[0] === 'p' && state.project) {
     items.push(h('span', '/'));
     const last = !crumbFile;
@@ -82,6 +88,11 @@ on('save-state', (s) => {
 let view = null;
 async function route() {
   const { parts, params } = parseHash();
+  const shared = shareInfo();
+  if (shared && (parts[0] !== 'p' || parts[1] !== shared.project_id)) {  // a shared link only opens its project
+    location.replace(links.project(shared.project_id));
+    return;
+  }
   try {
     if (parts[0] === 'p' && parts[1]) {
       const pid = parts[1];
@@ -118,14 +129,29 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '?' && !isTyping(e) && !modalOpen()) { e.preventDefault(); showShortcuts(); }
 });
 
+/** Opened through a share link: no project list, no runs or uploads; view-only links cannot edit. */
+function setupShared(sh) {
+  document.body.classList.add('shared', sh.access === 'edit' ? 'can-edit' : 'readonly');
+  brand.href = links.project(sh.project_id);
+  enginePill.style.display = 'none';
+  sharedPill.style.display = '';
+  sharedPill.title = [sh.note, sh.expires_at ? `Link expires ${new Date(sh.expires_at).toLocaleDateString()}` : ''].filter(Boolean).join('\n');
+  sharedPill.replaceChildren(ico(sh.access === 'edit' ? 'edit' : 'eye', 13),
+    h('span', sh.access === 'edit' ? 'Shared · you can review and edit labels' : 'Shared · view only'),
+    sh.label ? h('b', sh.label) : null);
+  document.title = `${sh.project_name} · Omni Studio`;
+}
+
 (async function boot() {
   try {
     await Promise.all([loadInfo(), loadTasks()]);
+    const shared = shareInfo();
+    if (shared) setupShared(shared);
     const eng = state.info.engine;
     enginePill.classList.toggle('on', !!eng.connected);
     enginePill.lastChild.textContent = eng.connected ? eng.title : 'Mock engine · no model';
     enginePill.title = eng.description || '';
-    wsEl.textContent = state.info.workspace;
+    wsEl.textContent = state.info.workspace || '';
     wsEl.title = 'Workspace folder';
     verEl.textContent = `v${state.info.version} · ${state.info.codename}`;
   } catch (e) {

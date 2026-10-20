@@ -17,6 +17,9 @@ from . import media as media_mod
 from . import tasks as task_reg
 from .engine import get_engine
 from . import jobs as jobs_mod
+from . import share as share_mod
+from . import speakers as spk_mod
+from . import stats as stats_mod
 from .jobs import MODES, JobManager
 from .store import Conflict, NotFound, ProjectStore
 from .util import new_id, now_iso, safe_rel_path, unique_path
@@ -25,6 +28,7 @@ store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
 VERSION, CODENAME = "0.2.0", "Mosaic"
 app = FastAPI(title="Omni Studio", version=VERSION)
+share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
 
 # -----------------------------------------------------------------------------
@@ -54,6 +58,11 @@ async def no_cache_static(request: Request, call_next):
     return resp
 
 
+def _share(request: Request):
+    """The share link a request came through (only on the shared listener), else None."""
+    return request.scope.get("state", {}).get("share")
+
+
 def _cached(body: bytes, media_type: str) -> Response:
     return Response(body, media_type=media_type, headers={"Cache-Control": "private, max-age=3600"})
 
@@ -62,9 +71,17 @@ def _cached(body: bytes, media_type: str) -> Response:
 # meta
 # -----------------------------------------------------------------------------
 @app.get("/api/info")
-def info():
-    return {"app": "Omni Studio", "version": VERSION, "codename": CODENAME, "workspace": str(config.WORKSPACE),
-            "engine": get_engine().info(), "run_modes": MODES}
+def info(request: Request):
+    sh = _share(request)
+    out = {"app": "Omni Studio", "version": VERSION, "codename": CODENAME, "workspace": str(config.WORKSPACE),
+           "engine": get_engine().info(), "run_modes": MODES}
+    if sh:
+        proj = store.get_project(sh["project_id"])
+        out["workspace"] = None
+        out["share"] = {"label": sh["label"], "access": sh["access"], "allow_download": sh["allow_download"],
+                        "project_id": sh["project_id"], "project_name": proj["name"], "tasks": sh["tasks"],
+                        "note": sh.get("note", ""), "expires_at": sh.get("expires_at")}
+    return out
 
 
 @app.get("/api/fs")
@@ -92,7 +109,11 @@ def browse(path: str = "~"):
 # tasks
 # -----------------------------------------------------------------------------
 @app.get("/api/tasks")
-def list_tasks():
+def list_tasks(request: Request):
+    sh = _share(request)
+    if sh:  # a shared link only sees the tasks of its project
+        keep = set(sh["tasks"] or store.get_project(sh["project_id"])["tasks"])
+        return {"tasks": [t for t in task_reg.all_tasks() if t["id"] in keep], "categories": task_reg.categories(), "presets": []}
     return {"tasks": task_reg.all_tasks(), "categories": task_reg.categories(), "presets": task_reg.presets()}
 
 
@@ -153,10 +174,19 @@ def create_project(body: dict = Body(...)):
 
 
 @app.get("/api/projects/{pid}")
-def get_project(pid: str):
+def get_project(pid: str, request: Request):
     p = store.get_project(pid)
     p["stats"] = store.stats(pid)
     p["media"] = store.list_media(pid)
+    sh = _share(request)
+    if sh:
+        if sh["tasks"]:
+            p["tasks"] = [t for t in p["tasks"] if t in sh["tasks"]]
+            p["tier_order"] = [t for t in p.get("tier_order") or [] if t in sh["tasks"]]
+        p["jobs"] = []
+        for m in p["media"]:
+            m.pop("abs_path", None)
+        return p
     p["jobs"] = jobs.list(pid)
     return p
 
@@ -174,6 +204,8 @@ def patch_project(pid: str, body: dict = Body(...)):
 def delete_project(pid: str):
     media_mod.drop_caches((pid,))
     store.delete_project(pid)
+    share_mod.delete_project_shares(pid)
+    share_mod.server.sync()
     return {"ok": True}
 
 
@@ -334,13 +366,20 @@ def media_thumb(pid: str, mid: str):
 # annotations
 # -----------------------------------------------------------------------------
 @app.get("/api/projects/{pid}/media/{mid}/annotations")
-def get_annotations(pid: str, mid: str):
-    return store.load_doc(pid, mid)
+def get_annotations(pid: str, mid: str, request: Request):
+    return share_mod.filter_doc(store.load_doc(pid, mid), _share(request))
 
 
 @app.put("/api/projects/{pid}/media/{mid}/annotations")
-def put_annotations(pid: str, mid: str, body: dict = Body(...), force: bool = False):
-    doc = store.save_doc(pid, mid, body, expected_rev=None if force else body.get("rev"))
+def put_annotations(pid: str, mid: str, request: Request, body: dict = Body(...), force: bool = False):
+    sh = _share(request)
+    if sh:  # keep tiers the link does not show, and record who changed what
+        with store.lock(("m", pid, mid)):
+            body, n = share_mod.merge_shared_save(store.load_doc(pid, mid), body, sh)
+            doc = store.save_doc(pid, mid, body, expected_rev=None if force else body.get("rev"))
+        share_mod.count_edits(sh, n)
+    else:
+        doc = store.save_doc(pid, mid, body, expected_rev=None if force else body.get("rev"))
     return {"rev": doc["rev"], "updated_at": doc["updated_at"], "media": store.get_media(pid, mid)}
 
 
@@ -399,9 +438,9 @@ def _export_one(fmt, doc, item, path, proj=None):
 
 
 @app.get("/api/projects/{pid}/media/{mid}/export")
-def export_file(pid: str, mid: str, format: str = "eaf"):
+def export_file(pid: str, mid: str, request: Request, format: str = "eaf"):
     item = store.get_media(pid, mid)
-    doc = store.load_doc(pid, mid)
+    doc = share_mod.filter_doc(store.load_doc(pid, mid), _share(request))
     text = _export_one(format, doc, item, store.media_path(pid, item), store.get_project(pid))
     if text is None:
         raise HTTPException(404, f"Nothing to export as {format} for this file")
@@ -411,9 +450,10 @@ def export_file(pid: str, mid: str, format: str = "eaf"):
 
 
 @app.get("/api/projects/{pid}/export.zip")
-def export_project(pid: str, formats_: str = Query("json,eaf,csv,manifest", alias="formats"),
-                   scope: str = "annotated", anchor: str = "asr", media: str = ""):
+def export_project(pid: str, request: Request, formats_: str = Query("json,eaf,csv,manifest", alias="formats"),
+                   scope: str = "annotated", anchor: str = "asr", media: str = "", min_clip: float = 0.3):
     proj = store.get_project(pid)
+    sh = _share(request)
     wanted = [f for f in formats_.split(",") if f]
     items = store.list_media(pid)
     if media:
@@ -426,19 +466,26 @@ def export_project(pid: str, formats_: str = Query("json,eaf,csv,manifest", alia
     buf = io.BytesIO()
     pairs, manifest = [], []
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        clip_rows = []
         for item in items:
-            doc = store.load_doc(pid, item["id"])
+            doc = share_mod.filter_doc(store.load_doc(pid, item["id"]), sh)
             path = store.media_path(pid, item)
             pairs.append((item, doc))
             stem = str(Path(item["rel_path"]).with_suffix(""))
+            if "speaker_clips" in wanted:
+                clip_rows += _speaker_clips(z, f"{proj['id']}/speaker_clips", pid, item, doc, stem, min_clip)
             for fmt in wanted:
-                if fmt in ("csv", "manifest", "coco"):
+                if fmt in ("csv", "manifest", "coco", "speaker_clips"):
                     continue
                 text = _export_one(fmt, doc, item, path, proj)
                 if text:
                     z.writestr(f"{proj['id']}/files/{stem}{EXPORTERS[fmt][0]}", text)
             if "manifest" in wanted:
                 manifest += formats.manifest_records(doc, item, str(path), anchor)
+        if clip_rows:
+            head = "file,kind,speakers,start,end,duration,clip\n"
+            z.writestr(f"{proj['id']}/speaker_clips/clips.csv", head + "".join(
+                ",".join(_csv_cell(v) for v in r) + "\n" for r in clip_rows))
         if "csv" in wanted:
             z.writestr(f"{proj['id']}/annotations.csv", formats.export_csv(pairs))
         if "coco" in wanted and any(m["modality"] == "image" for m, _ in pairs):
@@ -452,19 +499,120 @@ def export_project(pid: str, formats_: str = Query("json,eaf,csv,manifest", alia
                     headers={"Content-Disposition": f'attachment; filename="{proj["id"]}-annotations.zip"'})
 
 
+def _csv_cell(v) -> str:
+    v = str(v)
+    return '"' + v.replace('"', '""') + '"' if any(c in v for c in ',"\n') else v
+
+
+def _speaker_clips(z, root, pid, item, doc, stem, min_clip) -> list:
+    """WAV clips (16 kHz mono) of every speaker's pure speech and of every overlap region of one file."""
+    if item["modality"] == "image" or not item.get("has_audio", True):
+        return []
+    r = spk_mod.regions_from_doc(doc)
+    if not r or not (r["pure"] or r["overlap"]):
+        return []
+    x = media_mod.get_audio((pid, item["id"]), store.media_path(pid, item), store.cache_dir(pid, item["id"]))
+    rows = []
+    for kind, regs in (("pure", r["pure"]), ("overlap", r["overlap"])):
+        for g in regs:
+            a, b = g["start"], g["end"]
+            if b - a < min_clip:
+                continue
+            who = g["value"] if kind == "pure" else "+".join(g["speakers"])
+            safe = "".join(c if c.isalnum() or c in "-_+." else "_" for c in who) or "unknown"
+            name = f"{stem}/{safe if kind == 'pure' else 'overlap/' + safe}/{a:09.3f}-{b:09.3f}.wav"
+            z.writestr(f"{root}/{name}", media_mod.wav_bytes(x[int(a * config.SR): int(b * config.SR)]))
+            rows.append((item["rel_path"], kind, " + ".join(g["speakers"]), f"{a:.3f}", f"{b:.3f}", f"{b - a:.3f}", name))
+    return rows
+
+
+# -----------------------------------------------------------------------------
+# statistics
+# -----------------------------------------------------------------------------
+@app.get("/api/projects/{pid}/stats")
+def project_stats(pid: str, request: Request):
+    sh = _share(request)
+    return stats_mod.project_stats(store, pid, (sh or {}).get("tasks") or None)
+
+
+@app.get("/api/projects/{pid}/stats.csv")
+def project_stats_csv(pid: str, request: Request):
+    sh = _share(request)
+    st = stats_mod.project_stats(store, pid, (sh or {}).get("tasks") or None)
+    return Response(stats_mod.stats_csv(st), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{pid}-statistics.csv"'})
+
+
+# -----------------------------------------------------------------------------
+# share links (owner side; the shared listener itself lives in share.py)
+# -----------------------------------------------------------------------------
+@app.get("/api/projects/{pid}/shares")
+def list_shares(pid: str):
+    store.pdir(pid)
+    return {"shares": share_mod.list_shares(pid), "server": share_mod.server.status(), "access": share_mod.ACCESS}
+
+
+@app.post("/api/projects/{pid}/shares")
+def create_share(pid: str, body: dict = Body(...)):
+    sh = share_mod.create_share(store.get_project(pid), body)
+    try:
+        share_mod.server.start()
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+    return {"share": sh, "server": share_mod.server.status()}
+
+
+@app.patch("/api/shares/{sid}")
+def patch_share(sid: str, body: dict = Body(...)):
+    try:
+        sh = share_mod.update_share(sid, body, store.get_project)
+    except KeyError:
+        raise HTTPException(404, "No such link")
+    share_mod.server.sync()
+    return {"share": sh, "server": share_mod.server.status()}
+
+
+@app.delete("/api/shares/{sid}")
+def delete_share(sid: str):
+    try:
+        share_mod.delete_share(sid)
+    except KeyError:
+        raise HTTPException(404, "No such link")
+    share_mod.server.sync()
+    return {"ok": True, "server": share_mod.server.status()}
+
+
+@app.post("/api/share-server/tunnel")
+def start_tunnel():
+    if not share_mod.server.running():
+        raise HTTPException(409, "Create a share link first")
+    try:
+        share_mod.server.tunnel.start(share_mod.server.port)
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+    return share_mod.server.status()
+
+
+@app.delete("/api/share-server/tunnel")
+def stop_tunnel():
+    share_mod.server.tunnel.stop()
+    return share_mod.server.status()
+
+
 # -----------------------------------------------------------------------------
 # review queue
 # -----------------------------------------------------------------------------
 @app.get("/api/projects/{pid}/review")
-def review_queue(pid: str, threshold: float | None = None, task: str = "", limit: int = 500):
+def review_queue(pid: str, request: Request, threshold: float | None = None, task: str = "", limit: int = 500):
     proj = store.get_project(pid)
+    sh = _share(request)
     thr = proj["settings"].get("low_confidence", 0.6) if threshold is None else threshold
     out = []
     for item in store.list_media(pid):
         sm = item.get("summary") or {}
         if not sm.get("n_segments"):
             continue
-        doc = store.load_doc(pid, item["id"])
+        doc = share_mod.filter_doc(store.load_doc(pid, item["id"]), sh)
         tiers = {t["id"]: t for t in doc["tiers"]}
         for s in doc["segments"]:
             t = tiers[s["tier_id"]]
@@ -536,4 +684,7 @@ def main():
     host = os.environ.get("OMNI_STUDIO_HOST", "127.0.0.1")
     port = int(os.environ.get("OMNI_STUDIO_PORT", "8710"))
     print(f"\n  Omni Studio {VERSION} ({CODENAME})  ->  http://{host}:{port}\n  workspace: {config.WORKSPACE}\n")
+    share_mod.server.sync()  # shared links stay reachable after a restart
+    if share_mod.server.running():
+        print(f"  shared links on port {share_mod.server.port}\n")
     uvicorn.run(app, host=host, port=port, log_level="warning")

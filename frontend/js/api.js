@@ -63,6 +63,14 @@ export const api = {
   job: (jid) => req('GET', `/api/jobs/${enc(jid)}`),
   cancelJob: (jid) => req('POST', `/api/jobs/${enc(jid)}/cancel`),
   review: (pid, params) => req('GET', `${P(pid)}/review?${qs(params)}`),
+  stats: (pid) => req('GET', `${P(pid)}/stats`),
+
+  shares: (pid) => req('GET', `${P(pid)}/shares`),
+  createShare: (pid, body) => req('POST', `${P(pid)}/shares`, body),
+  updateShare: (sid, patch) => req('PATCH', `/api/shares/${enc(sid)}`, patch),
+  deleteShare: (sid) => req('DELETE', `/api/shares/${enc(sid)}`),
+  startTunnel: () => req('POST', '/api/share-server/tunnel'),
+  stopTunnel: () => req('DELETE', '/api/share-server/tunnel'),
 };
 
 export const urls = {
@@ -74,6 +82,7 @@ export const urls = {
   thumb: (pid, mid) => `${M(pid, mid)}/thumb`,
   exportFile: (pid, mid, format) => `${M(pid, mid)}/export?${qs({ format })}`,
   exportZip: (pid, o) => `${P(pid)}/export.zip?${qs(o)}`,
+  statsCsv: (pid) => `${P(pid)}/stats.csv`,
 };
 
 /** Upload one file with progress; resolves to the new media item. */
