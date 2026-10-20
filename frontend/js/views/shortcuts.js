@@ -9,9 +9,10 @@ const GROUPS = [
     ['S', 'Split at playhead'], ['M', 'Merge with next'], ['Delete', 'Delete segment'], [`${mod} Z`, 'Undo'], [`${mod} Shift Z`, 'Redo'], [`${mod} S`, 'Save now']]],
   ['Timeline', [['+ / −', 'Zoom in / out'], ['0', 'Fit whole file'], ['Z', 'Zoom to segment'], [`${mod} / pinch + scroll`, 'Zoom at pointer'], ['Shift + scroll', 'Scroll in time'],
     ['Drag on empty tier', 'Create a segment'], ['Drag segment edge', 'Adjust boundary (snaps)'], ['Alt + drag segment', 'Move segment'], ['Drag on waveform', 'Select a time range']]],
-  ['Forced alignment on the signal', [['Drag a line on waveform / spectrogram', 'Move the word boundary (neighbour word and phones follow)'],
+  ['Forced alignment on the signal', [['Drag a line on waveform / spectrogram', 'Move that word\'s own border (the highlighted word; its phones follow)'],
+    ['Alt + drag a line', 'Move the shared border of two touching words together'],
     ['Click a word on the waveform', 'Select it'], ['Double-click a word', 'Play it'], ['Boundaries ▾ (toolbar)', 'Choose the tier: words, phones, segments or off'],
-    ['↻ (toolbar)', 'Play the two words after moving a boundary']]],
+    ['L  or  ▶ Auto-play (toolbar)', 'Switch auto-play after moving a border on / off'], ['🔗 Linked (toolbar)', 'Off: each word has its own border · On: touching words share it']]],
 ];
 
 export function showShortcuts() {

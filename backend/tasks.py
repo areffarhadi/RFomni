@@ -34,8 +34,62 @@ def presets() -> list:
     return _builtin_raw().get("presets", [])
 
 
+# Fields of a built-in task the user may change; output type and granularity stay fixed
+# (to change those, duplicate the task as a new prompt task).
+OVERRIDABLE = ["name", "title", "description", "prompt", "labels", "color", "window_sec", "score_min", "score_max"]
+
+
+def _overrides() -> dict:
+    return read_json(config.TASK_OVERRIDES_FILE, {"tasks": {}}).get("tasks", {})
+
+
 def builtin_tasks() -> list:
-    return [{**t, "builtin": True} for t in _builtin_raw().get("tasks", [])]
+    """Built-in tasks with the user's changes applied. A changed task carries `modified`,
+    `modified_fields` and `default` (the original values) so the UI can show and reset them."""
+    ov = _overrides()
+    out = []
+    for t in _builtin_raw().get("tasks", []):
+        o = ov.get(t["id"]) or {}
+        changed = [k for k in OVERRIDABLE if k in o and o[k] != t.get(k)]
+        task = {**t, **{k: o[k] for k in changed}, "builtin": True, "modified": bool(changed)}
+        if changed:
+            task["modified_fields"] = changed
+            task["modified_at"] = o.get("updated_at")
+            task["default"] = {k: t.get(k) for k in OVERRIDABLE if k in t}
+        out.append(task)
+    return out
+
+
+def builtin_default(task_id: str):
+    return next((t for t in _builtin_raw().get("tasks", []) if t["id"] == task_id), None)
+
+
+def save_override(task_id: str, raw: dict) -> dict:
+    """Change classes / prompt / names of a built-in task. Only differences from the default are stored."""
+    base = builtin_default(task_id)
+    if base is None:
+        raise KeyError(task_id)
+    merged = validate_task({**base, **{k: raw[k] for k in OVERRIDABLE if k in raw}, "open_labels": not base.get("labels")})
+    diff = {k: merged[k] for k in OVERRIDABLE if k in merged and merged[k] != base.get(k)}
+    with _lock:
+        data = read_json(config.TASK_OVERRIDES_FILE, {"tasks": {}})
+        if diff:
+            from .util import now_iso
+            data.setdefault("tasks", {})[task_id] = {**diff, "updated_at": now_iso()}
+        else:
+            data.setdefault("tasks", {}).pop(task_id, None)
+        write_json(config.TASK_OVERRIDES_FILE, data)
+    return get_task(task_id)
+
+
+def reset_override(task_id: str) -> dict:
+    if builtin_default(task_id) is None:
+        raise KeyError(task_id)
+    with _lock:
+        data = read_json(config.TASK_OVERRIDES_FILE, {"tasks": {}})
+        data.setdefault("tasks", {}).pop(task_id, None)
+        write_json(config.TASK_OVERRIDES_FILE, data)
+    return get_task(task_id)
 
 
 def custom_tasks() -> list:
@@ -78,7 +132,7 @@ def validate_task(raw: dict) -> dict:
     if not mods:
         raise ValueError("Select at least one modality")
     labels = [str(l).strip() for l in raw.get("labels", []) if str(l).strip()]
-    if output in ("label",) and not labels:
+    if output in ("label",) and not labels and not raw.get("open_labels"):
         raise ValueError("A label task needs at least one label")
     color = raw.get("color") or "#a78bfa"
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):

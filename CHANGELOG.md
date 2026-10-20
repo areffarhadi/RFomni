@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Tasks page: change the classes (add, remove, rename, edit as a list) and the prompt of any task, including built-in ones.
+  Changed and new tasks move to their own column behind a vertical line, with Edit / Test / Reset to default / Delete;
+  the editor shows the default next to each change. Editors offer the current classes right away.
+- Test on a sample: dry-run a task (or unsaved edits) on 1–10 random files of the project; results per file with
+  playback, shuffle, and "Run on all files". Nothing is written to the annotations.
+- Forced alignment: every word now has its own border. Dragging moves only the highlighted word (its phones follow)
+  and stops at a touching neighbour; Alt or the new **Linked** switch moves a shared border of two words together.
+- **Auto-play** after moving a border is a labelled on/off switch in the timeline toolbar, also toggled with `L`.
+
 ## v0.2.0 "Mosaic" (2026-10-20)
 
 - **Image regions**: new task outputs `boxes` and `keypoints`, with built-in tasks Faces (box + expression),

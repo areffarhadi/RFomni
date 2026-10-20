@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parent.parent
 WORKSPACE = Path(os.environ.get("OMNI_STUDIO_WORKSPACE", ROOT / "workspace")).expanduser().resolve()
 PROJECTS_DIR = WORKSPACE / "projects"
 CUSTOM_TASKS_FILE = WORKSPACE / "custom_tasks.json"
+TASK_OVERRIDES_FILE = WORKSPACE / "task_overrides.json"  # user changes to built-in tasks (classes, prompt, ...)
 BUILTIN_TASKS_FILE = ROOT / "config" / "tasks.json"
 FRONTEND_DIR = ROOT / "frontend"
 

@@ -12,10 +12,18 @@ export function parseTime(str) {
   return parts.reduce((acc, p) => acc * 60 + p, 0);
 }
 
-/** Labels a tier can take: its fixed set, or (open vocabulary) the values already used. */
+/** Labels a tier can take: the task's current classes (edited on the Tasks page) plus any value
+ *  already used in this tier, or (open vocabulary) the values already used. */
 export function tierLabels(tier, doc) {
-  const fixed = tier.labels || [];
-  if (fixed.length && tier.task_id !== 'diarization') return fixed;
+  const task = tier.task_id && state.taskById.get(tier.task_id);
+  const fixed = task?.labels?.length ? task.labels : (tier.labels || []);
+  if (fixed.length && tier.task_id !== 'diarization') {
+    const extra = new Set();
+    for (const s of doc.list(tier.id)) {
+      for (const v of Array.isArray(s.value) ? s.value : [s.value]) if (v && !fixed.includes(v)) extra.add(v);
+    }
+    return [...fixed, ...extra];
+  }
   const used = new Set(fixed);
   for (const s of doc.list(tier.id)) {
     if (Array.isArray(s.value)) s.value.forEach(v => used.add(v));

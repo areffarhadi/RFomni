@@ -35,6 +35,8 @@ export const api = {
   createTask: (t) => req('POST', '/api/tasks', t),
   updateTask: (id, t) => req('PUT', `/api/tasks/${enc(id)}`, t),
   deleteTask: (id) => req('DELETE', `/api/tasks/${enc(id)}`),
+  resetTask: (id) => req('POST', `/api/tasks/${enc(id)}/reset`),
+  testTask: (pid, body) => req('POST', `${P(pid)}/test-task`, body),
   previewPrompt: (t) => req('POST', '/api/tasks/preview', t),
 
   projects: () => req('GET', '/api/projects'),

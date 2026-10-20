@@ -16,6 +16,7 @@ from . import formats
 from . import media as media_mod
 from . import tasks as task_reg
 from .engine import get_engine
+from . import jobs as jobs_mod
 from .jobs import MODES, JobManager
 from .store import Conflict, NotFound, ProjectStore
 from .util import new_id, now_iso, safe_rel_path, unique_path
@@ -102,10 +103,22 @@ def create_task(body: dict = Body(...)):
 
 @app.put("/api/tasks/{task_id}")
 def update_task(task_id: str, body: dict = Body(...)):
+    """Custom tasks are replaced; built-in tasks keep their output type and store only the changed fields."""
     try:
+        if task_reg.builtin_default(task_id):
+            return task_reg.save_override(task_id, body)
         return task_reg.save_custom_task(body, task_id)
     except KeyError:
-        raise HTTPException(404, "Only your own prompt tasks can be edited")
+        raise HTTPException(404, "No such task")
+
+
+@app.post("/api/tasks/{task_id}/reset")
+def reset_task(task_id: str):
+    """Bring a built-in task back to its default classes, prompt and names."""
+    try:
+        return task_reg.reset_override(task_id)
+    except KeyError:
+        raise HTTPException(404, "Only built-in tasks can be reset")
 
 
 @app.delete("/api/tasks/{task_id}")
@@ -471,6 +484,23 @@ def review_queue(pid: str, threshold: float | None = None, task: str = "", limit
 # -----------------------------------------------------------------------------
 # runs
 # -----------------------------------------------------------------------------
+@app.post("/api/projects/{pid}/test-task")
+def test_task(pid: str, body: dict = Body(...)):
+    """Try a task (saved, or an unsaved draft) on a few files without saving anything."""
+    store.pdir(pid)
+    task = body.get("task")
+    if task:
+        base = task_reg.get_task(task.get("id")) if task.get("id") else None
+        if base and base.get("builtin"):
+            task = {**base, **{k: task[k] for k in task_reg.OVERRIDABLE if k in task}}
+        else:
+            task = {**task_reg.validate_task(task), "id": task.get("id") or "draft"}
+    else:
+        task = task_reg.get_task(body.get("task_id", ""))
+        if not task:
+            raise HTTPException(404, "No such task")
+    n = max(1, min(int(body.get("n", 3)), 10))
+    return jobs_mod.test_task(store, pid, task, body.get("media_ids"), n, int(body.get("seed", 0)))
 @app.post("/api/projects/{pid}/run")
 def run_tasks(pid: str, body: dict = Body(...)):
     store.pdir(pid)

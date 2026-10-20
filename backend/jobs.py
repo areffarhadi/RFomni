@@ -44,6 +44,47 @@ def tier_from_task(task: dict, engine) -> dict:
     }
 
 
+def test_task(store, pid: str, task: dict, media_ids=None, n: int = 3, seed: int = 0) -> dict:
+    """Dry run of one task on a few files of the project: nothing is written to the annotations.
+    Parent tasks (e.g. ASR for word alignment) are run in memory first when the file has none."""
+    import random
+    items = [m for m in store.list_media(pid) if m["modality"] in task.get("modalities", [])]
+    pool = len(items)
+    if media_ids:
+        wanted = set(media_ids)
+        items = [m for m in items if m["id"] in wanted]
+    else:
+        items = random.Random(seed).sample(items, min(max(1, int(n)), len(items)))
+    engine = get_engine()
+    all_tasks = task_reg.tasks_by_id()
+    results = []
+    for item in items:
+        path = store.media_path(pid, item)
+        doc = store.load_doc(pid, item["id"])
+        cache_dir = store.cache_dir(pid, item["id"])
+        ctx = AnnotateContext(item, path, doc,
+                              audio_loader=lambda p=path, c=cache_dir, i=item: media_mod.get_audio((pid, i["id"]), p, c),
+                              settings=store.get_project(pid).get("settings", {}))
+        chain, parent = [], task.get("parent")
+        while parent and parent in all_tasks and not ctx.tier_segments(parent) and len(chain) < 4:
+            chain.insert(0, all_tasks[parent])
+            parent = all_tasks[parent].get("parent")
+        try:
+            for t in chain:
+                ctx.results[t["id"]] = engine.annotate(t, ctx)
+            segs = engine.annotate(task, ctx)
+            err = None
+        except Exception as e:  # show the error next to the file instead of failing the whole test
+            traceback.print_exc()
+            segs, err = [], str(e)
+        results.append({
+            "media": {k: item.get(k) for k in ("id", "name", "rel_path", "modality", "duration", "width", "height")},
+            "segments": segs[:300], "count": len(segs), "error": err,
+        })
+    return {"task": task, "prompt": task_reg.build_prompt(task), "engine": engine.info(),
+            "pool": pool, "results": results}
+
+
 class JobManager:
     def __init__(self, store):
         self.store = store

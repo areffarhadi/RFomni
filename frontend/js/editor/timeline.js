@@ -1,7 +1,7 @@
 // ELAN-style timeline: ruler, waveform / spectrogram, video frames, one lane per tier.
 import { urls } from '../api.js';
 import { h, ico, clamp, fmtTime, segColor, valStr, rafThrottle, ls } from '../util.js';
-import { menu, popover } from '../ui.js';
+import { menu, popover, toast } from '../ui.js';
 import { TileStore, loadImage } from './tiles.js';
 
 const TILE = 512;          // tile width in px at its native zoom level
@@ -38,6 +38,7 @@ export class Timeline {
     this.peak = null;
     this.follow = ls.get('follow', true);
     this.autoPlay = ls.get('autoPlayBoundary', true);
+    this.linked = ls.get('linkedBorders', false); // false: every word has its own start / end
     this.bPref = ls.get('btier:' + ed.pid, null); // tier whose boundaries are drawn & draggable on the signal
     this.bTierId = null;
     this.hoverB = null;
@@ -69,13 +70,19 @@ export class Timeline {
       title: 'Draw the boundaries of this tier on the waveform / spectrogram, where you can drag them',
       onchange: (e) => { this.bTierId = e.target.value || null; this.bPref = e.target.value || 'none'; ls.set('btier:' + this.pid, this.bPref); this.schedule(); },
     });
-    this.autoBtn = h('button.icon-btn' + (this.autoPlay ? '.active' : ''), {
-      title: 'Play the words around a boundary after you move it',
-      onclick: () => { this.autoPlay = !this.autoPlay; ls.set('autoPlayBoundary', this.autoPlay); this.autoBtn.classList.toggle('active', this.autoPlay); },
-    }, ico('repeat', 15));
+    const toggle = (icon, label, title, get, set) => {
+      const b = h('button.tl-toggle', { title, onclick: () => { set(!get()); b.sync(); } }, ico(icon, 13), h('span', label));
+      b.sync = () => { b.classList.toggle('on', get()); b.setAttribute('aria-pressed', get()); };
+      b.sync();
+      return b;
+    };
+    this.autoBtn = toggle('play', 'Auto-play', 'Play the word again after you move its border (L)',
+      () => this.autoPlay, (v) => { this.autoPlay = v; ls.set('autoPlayBoundary', v); });
+    this.linkBtn = toggle('link', 'Linked', 'Linked borders: move the shared border of two touching words together. Off: every word has its own border. Alt while dragging does the opposite.',
+      () => this.linked, (v) => { this.linked = v; ls.set('linkedBorders', v); });
     this.bar = h('div.tl-bar', this.playBtn, this.clock, rate, h('span.sep'),
       this.modeCtl, specBtn, h('span.sep'),
-      h('span.blab', ico('split', 13), 'Boundaries'), this.bSel, this.autoBtn, h('span.sep'),
+      h('span.blab', ico('split', 13), 'Boundaries'), this.bSel, this.linkBtn, this.autoBtn, h('span.sep'),
       h('button.icon-btn', { title: 'Zoom out (−)', onclick: () => this.zoomCenter(1 / 1.6) }, ico('zoom-out', 16)),
       h('button.icon-btn', { title: 'Zoom in (+)', onclick: () => this.zoomCenter(1.6) }, ico('zoom-in', 16)),
       h('button.icon-btn', { title: 'Fit whole file (0)', onclick: () => this.fit() }, ico('fit', 16)),
@@ -225,6 +232,13 @@ export class Timeline {
     this.waveRow.style.display = this.mode === 'spec' ? 'none' : '';
     this.specRow.style.display = this.mode === 'wave' ? 'none' : '';
     this.specLabel.textContent = `${this.spec.scale === 'mel' ? 'mel' : 'linear'} · ${this.spec.fmax / 1000} kHz`;
+  }
+
+  toggleAutoPlay() {
+    this.autoPlay = !this.autoPlay;
+    ls.set('autoPlayBoundary', this.autoPlay);
+    this.autoBtn.sync();
+    toast(`Auto-play after moving a border: ${this.autoPlay ? 'on' : 'off'}`, { timeout: 1500 });
   }
 
   toggleFollow() {
@@ -518,7 +532,12 @@ export class Timeline {
     const dense = xs.size > W / 3;
     g.fillStyle = kind === 'spec' ? 'rgba(255,255,255,0.78)' : this.colors.bnd;
     for (const x of xs) g.fillRect(x, dense ? H - 8 : 0, 1, dense ? 8 : H);
-    const hb = this.dragB ? this.dragB.t : this.hoverB;
+    const hv = this.dragB || this.hoverB;
+    if (hv?.id) {  // the word that will move (independent borders)
+      const ts = segs.find(s => s.id === hv.id);
+      if (ts) { g.fillStyle = this.colors.warn + '2a'; g.fillRect(this.t2x(ts.start), 0, this.t2x(ts.end) - this.t2x(ts.start), H); }
+    }
+    const hb = hv ? hv.t : null;
     if (hb != null) {
       const x = this.t2x(hb);
       g.fillStyle = this.colors.warn;
@@ -547,16 +566,46 @@ export class Timeline {
     if (this.mode !== 'wave') this.drawSpec();
   }
 
+  /** Border under the pointer: {t, id, edge}. On a border shared by two words, the selected word wins,
+   *  otherwise the word on the side of the pointer (left of the line = end of the left word). */
   hitBoundary(x) {
     if (!this.bTierId) return null;
-    let best = null, bd = 6;
+    const cands = [];
     for (const s0 of this.ed.doc.visible(this.bTierId, this.x2t(x - 8), this.x2t(x + 8))) {
-      for (const t of [s0.start, s0.end]) {
-        const d = Math.abs(this.t2x(t) - x);
-        if (d < bd) { bd = d; best = t; }
+      for (const edge of ['start', 'end']) {
+        const ex = this.t2x(s0[edge]), d = Math.abs(ex - x);
+        if (d <= 6) cands.push({ s: s0, edge, d, ex });
       }
     }
-    return best;
+    if (!cands.length) return null;
+    const minD = Math.min(...cands.map(c => c.d));
+    const near = cands.filter(c => c.d <= minD + 1.5);
+    const pick = near.find(c => c.s.id === this.ed.selId)
+      || near.find(c => (x < c.ex ? c.edge === 'end' : c.edge === 'start')) || near[0];
+    return { t: pick.s[pick.edge], id: pick.s.id, edge: pick.edge };
+  }
+
+  /** Independent border: only this segment's edge moves (its phones are rescaled); it stops at the neighbour. */
+  independentPlan(tid, hint) {
+    const doc = this.ed.doc, s = doc.seg(hint.id), tol = 0.012;
+    const tier = doc.tier(tid);
+    const { down } = this.family(tid);
+    const { prev, next } = doc.neighbors(s);
+    let lo = 0, hi = this.dur, block = null;
+    if (hint.edge === 'start') {
+      hi = s.end - 0.01;
+      if (prev && NON_OVERLAP.has(tier.granularity) && prev.end <= s.start + tol) { lo = Math.max(lo, prev.end); block = 'lo'; }
+    } else {
+      lo = s.start + 0.01;
+      if (next && NON_OVERLAP.has(tier.granularity) && next.start >= s.end - tol) { hi = Math.min(hi, next.start); block = 'hi'; }
+    }
+    const kids = [];
+    for (const T of down) {
+      for (const k of doc.visible(T.id, s.start, s.end)) {
+        if (k.start >= s.start - tol && k.end <= s.end + tol) kids.push({ k, parent: s });
+      }
+    }
+    return { t0: s[hint.edge], lo, hi, block, items: [{ s, edge: hint.edge, own: true }], kids };
   }
 
   /** The tier, its ancestors (e.g. ASR above words) and descendants (e.g. phones below words). */
@@ -637,23 +686,28 @@ export class Timeline {
   }
 
   /** Drag a boundary: linked edges move together, child segments are rescaled, optional auto-play on release. */
-  startBoundaryDrag(tid, t0, xAt, hint) {
-    const plan = this.boundaryPlan(tid, t0, hint);
+  startBoundaryDrag(tid, t0, xAt, hint, linked = this.linked) {
+    const plan = linked || !hint ? this.boundaryPlan(tid, t0, hint) : this.independentPlan(tid, hint);
     if (!plan.items.length) return false;
-    this.dragB = { t: t0 };
-    let t = t0, moved = false;
+    this.dragB = { t: plan.t0 ?? t0, id: linked ? null : hint?.id };
+    let t = this.dragB.t, moved = false;
     this.drag((ev) => {
       moved = true;
-      t = clamp(this.x2t(xAt(ev)), plan.lo, plan.hi);
+      const raw = this.x2t(xAt(ev));
+      t = clamp(raw, plan.lo, plan.hi);
+      if (!linked && !Timeline.blockHintShown && ((plan.block === 'lo' && raw < plan.lo - 4 / this.view.pps) || (plan.block === 'hi' && raw > plan.hi + 4 / this.view.pps))) {
+        Timeline.blockHintShown = true;
+        toast('This word touches its neighbour. Shrink the neighbour first, or hold Alt (or switch on linked borders) to move both.', { timeout: 6000 });
+      }
       this.dragB.t = t;
       this.preview = this.applyPlan(plan, t);
       this.schedule();
     }, () => {
-      const map = moved && Math.abs(t - t0) > 5e-4 ? this.applyPlan(plan, t) : null;
+      const map = moved && Math.abs(t - (plan.t0 ?? t0)) > 5e-4 ? this.applyPlan(plan, t) : null;
       this.preview = null;
       this.dragB = null;
       if (map) {
-        this.ed.commitTimes(map, new Set(plan.items.map(i => i.s.id)), 'Move boundary');
+        this.ed.commitTimes(map, new Set(plan.items.map(i => i.s.id)), linked ? 'Move shared border' : 'Move word border');
         if (this.autoPlay) {
           const own = plan.items.filter(i => i.own).map(i => map.get(i.s.id));
           if (own.length) this.ed.player.playRange(Math.min(...own.map(r => r.start)), Math.max(...own.map(r => r.end)));
@@ -952,8 +1006,9 @@ export class Timeline {
     this.hovTime.textContent = fmtTime(this.x2t(x));
     const onSignal = this.waveRow.contains(e.target) || this.specRow.contains(e.target);
     const hb = onSignal ? this.hitBoundary(x) : null;
-    if (hb !== this.hoverB) { this.hoverB = hb; this.redrawSignal(); }
-    if (onSignal) e.target.closest('.tl-lane').style.cursor = hb != null ? 'ew-resize' : '';
+    const key = (b) => (b ? `${b.id}:${b.edge}` : '');
+    if (key(hb) !== key(this.hoverB)) { this.hoverB = hb; this.redrawSignal(); }
+    if (onSignal) e.target.closest('.tl-lane').style.cursor = hb ? 'ew-resize' : '';
     // resize cursor near segment edges
     const el = e.target.closest?.('.seg');
     if (el) {
@@ -991,7 +1046,7 @@ export class Timeline {
     const onSignal = this.waveRow.contains(e.target) || this.specRow.contains(e.target);
     if (onSignal) {
       const hb = this.hitBoundary(x0);
-      if (hb != null && this.startBoundaryDrag(this.bTierId, hb, (ev) => this.laneX(ev))) return;
+      if (hb && this.startBoundaryDrag(this.bTierId, hb.t, (ev) => this.laneX(ev), { id: hb.id, edge: hb.edge }, this.linked !== e.altKey)) return;
     }
     const tA = clamp(this.x2t(x0), 0, this.dur);
     this.ed.player.seek(tA);
@@ -1081,7 +1136,7 @@ export class Timeline {
       this.ed.select(s.id, { seek: !mode && !this.ed.player.playing, scroll: false });
       if (!mode) return;
       if ((mode === 'start' || mode === 'end') && (['word', 'phone'].includes(r.tier.granularity) || r.tier.id === this.bTierId)) {
-        this.startBoundaryDrag(r.tier.id, s[mode], xAt, { id: s.id, edge: mode });
+        this.startBoundaryDrag(r.tier.id, s[mode], xAt, { id: s.id, edge: mode }, this.linked !== e.altKey);
         return;
       }
       const { prev, next } = doc.neighbors(s);

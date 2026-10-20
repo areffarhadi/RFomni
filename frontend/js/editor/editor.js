@@ -483,6 +483,7 @@ export class Editor extends BaseEditor {
       case '0': tl.fit(); break;
       case 'z': case 'Z': { const s = this.selId && this.doc.seg(this.selId); if (s) tl.zoomTo(s.start, s.end); break; }
       case 'f': case 'F': tl.toggleFollow(); break;
+      case 'l': case 'L': tl.toggleAutoPlay(); break;
       case '[': this.dv.step(-1); break;
       case ']': this.dv.step(1); break;
       default:
