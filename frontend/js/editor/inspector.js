@@ -30,16 +30,18 @@ export function srcBadge(src) {
 }
 
 /** Editor widget for a value of the given tier. onChange(value, {merge}) */
-export function valueEditor(tier, value, onChange, { doc, autofocus = false } = {}) {
+export function valueEditor(tier, value, onChange, { doc, autofocus = false, allowEmpty = false } = {}) {
   if (tier.output === 'label') {
     const labels = tierLabels(tier, doc);
+    const none = allowEmpty ? h('span.chip' + (!value ? '.on' : ''), { style: { '--c': 'var(--faint)' }, onclick: () => onChange(''), title: 'Keep the region without a label' },
+      ico('x', 11), 'No label') : null;
     const custom = h('input.input.sm', {
       placeholder: labels.length ? 'Other label…' : 'Type a label and press Enter', style: { width: '160px' },
       onkeydown: (e) => { if (e.key === 'Enter' && custom.value.trim()) { onChange(custom.value.trim()); custom.value = ''; } },
     });
     const next = tier.task_id === 'diarization' ? `SPEAKER_${labels.filter(l => /^SPEAKER_\d+$/.test(l)).length}` : null;
     return h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
-      h('div.label-chips', labels.map((l, i) => h('span.chip' + (l === value ? '.on' : ''), {
+      h('div.label-chips', none, labels.map((l, i) => h('span.chip' + (l === value ? '.on' : ''), {
         style: { '--c': segColor(tier, l) }, onclick: () => onChange(l), title: i < 9 ? `Key ${i + 1}` : '',
       }, h('i.dot'), l, i < 9 ? h('kbd', i + 1) : null))),
       h('div.row', custom, next && !labels.includes(next) ? h('button.btn.sm', { onclick: () => onChange(next) }, ico('plus', 12), next) : null));
@@ -80,7 +82,7 @@ export function valueEditor(tier, value, onChange, { doc, autofocus = false } = 
 }
 
 /** Popover to pick a label / tags / score for a segment. */
-export function pickValue(anchor, tier, seg, doc, onPick) {
+export function pickValue(anchor, tier, seg, doc, onPick, { allowEmpty = false } = {}) {
   if (tier.output === 'tags' || tier.output === 'score') {
     const pop = popover(anchor, h('div', { style: { padding: '8px', width: '300px' } },
       valueEditor(tier, seg.value, (v) => { onPick(v); if (tier.output === 'score') pop.close(); }, { doc })));
@@ -94,10 +96,16 @@ export function pickValue(anchor, tier, seg, doc, onPick) {
     const q = filter.value.trim().toLowerCase();
     shown = labels.filter(l => !q || l.toLowerCase().includes(q));
     if (q && !labels.some(l => l.toLowerCase() === q)) shown.push(filter.value.trim());
+    if (allowEmpty && !q) shown.unshift('');
     hl = clamp(hl, 0, Math.max(0, shown.length - 1));
-    opts.replaceChildren(...shown.map((l, i) => h('button.opt' + (i === hl ? '.hl' : '') + (l === seg.value ? '.on' : ''), {
-      onclick: () => { pop.close(); onPick(l); },
-    }, h('i', { style: { '--c': segColor(tier, l) } }), labels.includes(l) ? l : `Use "${l}"`, i < 9 && !q ? h('kbd', i + 1) : null)));
+    opts.replaceChildren(...shown.map((l, i) => {
+      if (l === '') return h('button.opt' + (i === hl ? '.hl' : '') + (!seg.value ? '.on' : ''), { onclick: () => { pop.close(); onPick(''); } },
+        h('i', { style: { '--c': 'var(--faint)' } }), h('span.muted', 'No label'), h('kbd', 'Esc'));
+      const n = labels.indexOf(l);
+      return h('button.opt' + (i === hl ? '.hl' : '') + (l === seg.value ? '.on' : ''), {
+        onclick: () => { pop.close(); onPick(l); },
+      }, h('i', { style: { '--c': segColor(tier, l) } }), labels.includes(l) ? l : `Use "${l}"`, n >= 0 && n < 9 && !q ? h('kbd', n + 1) : null);
+    }));
   };
   filter.addEventListener('input', () => { hl = 0; render(); });
   filter.addEventListener('keydown', (e) => {

@@ -61,6 +61,17 @@ def _geom(g):
             out = {"type": "keypoints", "points": pts, "skeleton": g.get("skeleton") or "coco17"}
             if g.get("box"):
                 out["box"] = [f(v) for v in g["box"][:4]]
+            if isinstance(g.get("names"), list):  # custom names (extra points beyond COCO-17)
+                out["names"] = [str(x or "")[:40] for x in g["names"][: len(pts)]]
+            if isinstance(g.get("edges"), list):  # connections edited by hand (else: COCO skeleton)
+                seen, edges = set(), []
+                for e in g["edges"]:
+                    a, b = int(e[0]), int(e[1])
+                    key = (min(a, b), max(a, b))
+                    if a != b and 0 <= a < len(pts) and 0 <= b < len(pts) and key not in seen:
+                        seen.add(key)
+                        edges.append([a, b])
+                out["edges"] = edges
             return out
     except (KeyError, TypeError, ValueError, IndexError):
         return None

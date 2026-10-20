@@ -714,3 +714,14 @@ table.list tbody tr:hover td { background: var(--bg-2); }
 .kp-chip:hover { border-color: var(--faint); }
 .file-field.flash { animation: flash 1.6s ease-out; }
 @keyframes flash { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); } 100% { box-shadow: none; } }
+.shape .bone { pointer-events: none; }
+.shape .bone.esel { stroke-width: 7; filter: drop-shadow(0 0 2px #fff); }
+.shape .bone-hit { stroke: transparent; stroke-width: 14; vector-effect: non-scaling-stroke; stroke-linecap: round; cursor: pointer; }
+.shape .kp.extra { stroke: #fff; }
+.shape .kp-name { font: 600 11px "IBM Plex Sans", system-ui, sans-serif; fill: #f5f3ff; paint-order: stroke; stroke: #2e1065; stroke-width: 3px; pointer-events: none; }
+.img-svg .connect-line { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.shape .tag text.nolabel { fill: #f8fafc; font-style: italic; }
+.kp-chip.extra { border-color: color-mix(in srgb, #c084fc 45%, var(--line-2)); }
+.kp-chip.add { border-style: dashed; color: var(--accent); justify-content: center; }
+.kp-detail { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.kp-detail .chip { height: 22px; font-size: 11.5px; }

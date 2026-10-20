@@ -265,6 +265,10 @@ def spatial_items(doc, tier):
             item["box"] = [g["x"], g["y"], g["w"], g["h"]]
         else:
             item["keypoints"] = g["points"]
+            if g.get("names") and any(g["names"]):
+                item["names"] = [n or (COCO_KP[i] if i < 17 else f"point {i + 1}") for i, n in enumerate(g["names"])]
+            if "edges" in g:
+                item["edges"] = g["edges"]
             if g.get("box"):
                 item["box"] = g["box"]
         out.append(item)
@@ -346,14 +350,22 @@ def export_coco(pairs) -> str:
                  "score": s.get("confidence"), "source": s.get("source"), "reviewed": bool(s.get("reviewed"))}
             if g["type"] == "box":
                 b = [g["x"] * W, g["y"] * H, g["w"] * W, g["h"] * H]
-                a.update(category_id=cat(val_str(s["value"]) or "object"), bbox=[round(v, 2) for v in b],
-                         area=round(b[2] * b[3], 2))
+                default = {"face_boxes": "face", "person_boxes": "person"}.get(t.get("task_id"), "object")
+                a.update(category_id=cat(val_str(s["value"]) or default), bbox=[round(v, 2) for v in b],
+                         area=round(b[2] * b[3], 2), label=val_str(s["value"]))
             else:
-                pts = g["points"]
+                pts = g["points"][:17] + [[0, 0, 0]] * max(0, 17 - len(g["points"]))
+                extra = g["points"][17:]
+                if extra:  # points added by hand beyond the COCO-17 set
+                    names = g.get("names") or []
+                    a["extra_keypoints"] = [{"name": (names[17 + i] if 17 + i < len(names) and names[17 + i] else f"point {18 + i}"),
+                                             "x": round(x * W, 2), "y": round(y * H, 2), "v": int(v)} for i, (x, y, v) in enumerate(extra)]
+                if "edges" in g:  # skeleton edited by hand (1-based, COCO style; indices > 17 refer to extra_keypoints)
+                    a["skeleton"] = [[i + 1, j + 1] for i, j in g["edges"]]
                 kp = []
                 for x, y, v in pts:
                     kp += [round(x * W, 2), round(y * H, 2), int(v)] if v else [0, 0, 0]
-                vis = [(x * W, y * H) for x, y, v in pts if v]
+                vis = [(x * W, y * H) for x, y, v in g["points"] if v]
                 if g.get("box"):
                     bx = g["box"]
                     b = [bx[0] * W, bx[1] * H, bx[2] * W, bx[3] * H]

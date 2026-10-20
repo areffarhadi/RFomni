@@ -10,6 +10,11 @@
 - Prompt tasks can produce boxes or keypoints (the prompt asks for 0-1000 coordinates).
 - COCO JSON export (per image and per project), geometry in CSV and the training manifest.
 - Showcase: new full-body `pose_park.png` and pseudo boxes / keypoints with deliberate mistakes to fix.
+- Pose: add single points to a skeleton (P or "+ Point"), name them or use them as a missing COCO point;
+  edit the connections per person (Shift + drag between two points, "connect to…", click a line + Delete).
+  Extra points and edited skeletons are exported to COCO (`extra_keypoints`, per-annotation `skeleton`).
+- Boxes can stay unlabelled: new boxes start without a label; "No label" option in the picker and the panel;
+  pressing a label's number again clears it. Unlabelled boxes export as face / person / object.
 
 ## v0.1.0 "Tessera" (2026-10-20)
 

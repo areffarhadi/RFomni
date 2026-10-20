@@ -3,7 +3,7 @@
 import { urls } from '../api.js';
 import { h, ico, isTyping, clamp, ls, segColor, valStr } from '../util.js';
 import { state } from '../state.js';
-import { modalOpen, toast } from '../ui.js';
+import { modalOpen, toast, popover } from '../ui.js';
 import { openRunDialog } from '../views/run.js';
 import { confBar } from '../views/review.js';
 import { BaseEditor } from './base.js';
@@ -23,6 +23,16 @@ const side = (i) => (i === 0 ? 'c' : i % 2 ? 'l' : 'r');
 const POSE_TEMPLATE = [[.50, .08], [.54, .06], [.46, .06], [.58, .07], [.42, .07], [.66, .20], [.34, .20], [.73, .37], [.27, .37],
   [.75, .53], [.25, .53], [.60, .55], [.40, .55], [.61, .76], [.39, .76], [.61, .96], [.39, .96]];
 const SPATIAL = new Set(['boxes', 'keypoints']);
+const EXTRA_COLOR = '#c084fc';
+const kpColor = (i) => (i < 17 ? SIDE_COLOR[side(i)] : EXTRA_COLOR);
+/** Connections of a skeleton: its own list if edited, otherwise the COCO skeleton. */
+export function poseEdges(g) {
+  const n = g.points.length;
+  return (Array.isArray(g.edges) ? g.edges : SKELETON).filter(([a, b]) => a < n && b < n && a !== b);
+}
+export const kpName = (g, i) => g.names?.[i] || KP_NAMES[i] || `point ${i + 1}`;
+const kpShort = (g, i) => g.names?.[i] || KP_SHORT[i] || `point ${i + 1}`;
+const hasEdge = (edges, a, b) => edges.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 const SVGNS = 'http://www.w3.org/2000/svg';
 
 function sv(tag, attrs = {}, ...kids) {
@@ -46,6 +56,8 @@ export class ImageEditor extends BaseEditor {
     this.onKeyUp = (e) => { if (e.key === ' ') { this.space = false; this.stage?.classList.remove('panning'); } };
     this.selId = null;
     this.selKp = null;
+    this.selEdge = null;
+    this.connect = null;
     this.mode = 'select';
     this.placing = null;
     this.preview = null;
@@ -187,7 +199,8 @@ export class ImageEditor extends BaseEditor {
     const drawName = this.spatialTargets('boxes').find(b => b.key === this.drawKey)?.title || 'a box task';
     const poseName = this.spatialTargets('keypoints').find(b => b.key === this.poseKey)?.title || 'pose';
     let text;
-    if (this.placing) text = `Click on the image to place the ${KP_NAMES[this.placing.k]} · Esc to cancel`;
+    if (this.placing) text = this.placing.k === 'new' ? 'Click on the image to add a new point to this person · Esc to cancel'
+      : `Click on the image to place the ${KP_NAMES[this.placing.k]} · Esc to cancel`;
     else if (this.mode === 'box') text = `Drag on the image to draw a box into "${drawName}" · Esc to stop`;
     else if (this.mode === 'pose') text = `Drag a box around a person to add a skeleton (${poseName}), then drag each point into place`;
     else text = 'Drag a box or point to move it · corners resize · wheel zooms · drag empty space (or hold Space) to pan';
@@ -289,6 +302,10 @@ export class ImageEditor extends BaseEditor {
     const area = (g) => (g.type === 'box' ? g.w * g.h : -1);
     items.sort((a, b) => (a.seg.id === this.selId) - (b.seg.id === this.selId) || area(b.g) - area(a.g));
     const kids = items.map(({ seg, t, g }) => (g.type === 'box' ? this.boxEl(seg, t, g, S) : this.poseEl(seg, t, g, S)));
+    if (this.connect) {
+      const c = this.connect;
+      kids.push(sv('line', { class: 'connect-line', x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2 }));
+    }
     if (this.ghost) {
       const gh = this.ghost;
       kids.push(sv('rect', { class: 'ghost', x: gh.x, y: gh.y, width: gh.w, height: gh.h }));
@@ -297,14 +314,16 @@ export class ImageEditor extends BaseEditor {
   }
 
   tag(seg, t, x, y, S, color) {
-    let label = valStr(seg.value) || t.name;
+    const unlabelled = !valStr(seg.value);
+    let label = unlabelled ? t.name : valStr(seg.value);
+    if (unlabelled) color = 'rgba(100, 116, 139, 0.9)';
     if (seg.confidence != null && !seg.reviewed && seg.source !== 'human') label += ` ${seg.confidence.toFixed(2)}`;
     if (seg.reviewed) label += ' ✓';
     const w = measure(label) + 10;
     const inside = y * this.zoom + this.pan.y < 22;
     return sv('g', { class: 'tag', transform: `translate(${x} ${inside ? y + 19 * S : y}) scale(${S})`, 'data-seg': seg.id },
       sv('rect', { x: -1, y: -19, width: w, height: 18, rx: 3, fill: color }),
-      sv('text', { x: 5, y: -6 }, label));
+      sv('text', { x: 5, y: -6, class: unlabelled ? 'nolabel' : null }, label));
   }
 
   boxEl(seg, t, g, S) {
@@ -332,27 +351,35 @@ export class ImageEditor extends BaseEditor {
     const grp = sv('g', { class: `shape pose${sel ? ' sel' : ''}${low ? ' low' : ''}`, 'data-seg': seg.id, style: `--c:${t.color}` });
     const b = this.poseBounds(g);
     if (sel && b) grp.append(sv('rect', { class: 'pbox', x: b.x - 8 * S, y: b.y - 8 * S, width: b.w + 16 * S, height: b.h + 16 * S }));
-    for (const [a, c] of SKELETON) {
+    for (const [a, c] of poseEdges(g)) {
       if (!P[a]?.[2] || !P[c]?.[2]) continue;
-      grp.append(sv('line', { class: 'bone' + (P[a][2] === 1 || P[c][2] === 1 ? ' occ' : ''), x1: P[a][0], y1: P[a][1], x2: P[c][0], y2: P[c][1],
-        stroke: SIDE_COLOR[side(a) === 'c' ? side(c) : side(a)], 'data-seg': seg.id }));
+      const eSel = sel && this.selEdge && hasEdge([this.selEdge], a, c);
+      const col = a >= 17 || c >= 17 ? EXTRA_COLOR : SIDE_COLOR[side(a) === 'c' ? side(c) : side(a)];
+      const at = { x1: P[a][0], y1: P[a][1], x2: P[c][0], y2: P[c][1] };
+      grp.append(sv('line', { class: 'bone' + (P[a][2] === 1 || P[c][2] === 1 ? ' occ' : '') + (eSel ? ' esel' : ''), ...at, stroke: col }));
+      grp.append(sv('line', { class: 'bone-hit', ...at, 'data-seg': seg.id, 'data-e': `${a}-${c}` },
+        sv('title', {}, `${kpName(g, a)} — ${kpName(g, c)} · click to select, Delete to remove`)));
     }
     P.forEach(([x, y, v], i) => {
       if (!v) return;
       const isSel = sel && this.selKp === i;
       const r = (isSel ? 7 : sel ? 5.5 : 4.5) * S;
-      grp.append(sv('circle', { class: 'kp' + (v === 1 ? ' occ' : '') + (isSel ? ' kpsel' : ''), cx: x, cy: y, r,
-        fill: v === 1 ? 'rgba(0,0,0,0.35)' : SIDE_COLOR[side(i)], stroke: v === 1 ? SIDE_COLOR[side(i)] : null,
-        'data-seg': seg.id, 'data-k': i }, sv('title', {}, KP_NAMES[i] + (v === 1 ? ' (occluded)' : ''))));
+      grp.append(sv('circle', { class: 'kp' + (v === 1 ? ' occ' : '') + (isSel ? ' kpsel' : '') + (i >= 17 ? ' extra' : ''), cx: x, cy: y, r,
+        fill: v === 1 ? 'rgba(0,0,0,0.35)' : kpColor(i), stroke: v === 1 ? kpColor(i) : null,
+        'data-seg': seg.id, 'data-k': i }, sv('title', {}, kpName(g, i) + (v === 1 ? ' (occluded)' : '') + ' · Shift + drag to another point to connect')));
+      if (i >= 17 && sel) {
+        grp.append(sv('text', { class: 'kp-name', transform: `translate(${x + 9 * S} ${y - 7 * S}) scale(${S})` }, kpName(g, i)));
+      }
     });
     if (b && sel) grp.append(this.tag(seg, t, b.x - 8 * S, b.y - 8 * S, S, t.color));
     return grp;
   }
 
   // ------------------------------------------------------------------ selection & editing
-  select(id, kp = null) {
+  select(id, kp = null, edge = null) {
     this.selId = id && this.doc.seg(id) ? id : null;
     this.selKp = this.selId ? kp : null;
+    this.selEdge = this.selId ? edge : null;
     this.renderShapes();
     this.renderPanel();
     const row = this.side.querySelector(`[data-row="${this.selId}"]`);
@@ -386,6 +413,105 @@ export class ImageEditor extends BaseEditor {
     this.update(id, { geom: { ...seg.geom, points: pts } }, label, merge);
   }
 
+  /** Remove an extra (non-COCO) point: drop it, its name and its connections, and renumber. */
+  removePoint(id, i) {
+    const g = this.doc.seg(id).geom;
+    const pts = g.points.map(p => p.slice());
+    pts.splice(i, 1);
+    const names = (g.names || []).slice();
+    names.splice(i, 1);
+    const edges = poseEdges(g).filter(([a, b]) => a !== i && b !== i).map(([a, b]) => [a > i ? a - 1 : a, b > i ? b - 1 : b]);
+    this.update(id, { geom: { ...g, points: pts, names, edges } }, 'Remove point');
+    this.select(id, null);
+  }
+
+  addEdge(id, a, b) {
+    const g = this.doc.seg(id).geom;
+    const edges = poseEdges(g).map(e => e.slice());
+    if (hasEdge(edges, a, b)) { toast('These points are already connected', { timeout: 1600 }); return; }
+    edges.push([a, b]);
+    this.update(id, { geom: { ...g, edges } }, 'Connect points');
+    this.select(id, b);
+  }
+
+  removeEdge(id, a, b) {
+    const g = this.doc.seg(id).geom;
+    const edges = poseEdges(g).filter(([x, y]) => !((x === a && y === b) || (x === b && y === a)));
+    this.update(id, { geom: { ...g, edges } }, 'Remove connection');
+    this.select(id, this.selKp);
+  }
+
+  /** Nearest visible point of a skeleton within 14 px of the pointer. */
+  hitKp(id, ev) {
+    const g = this.doc.seg(id)?.geom;
+    if (!g) return null;
+    const p = this.toImg(ev);
+    let best = null, bd = 14 / this.zoom;
+    g.points.forEach(([x, y, v], i) => {
+      if (!v) return;
+      const d = Math.hypot(x * this.W - p.x, y * this.H - p.y);
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+
+  startConnect(id, k) {
+    const a = this.doc.seg(id).geom.points[k];
+    this.select(id, k);
+    this.connect = { x1: a[0] * this.W, y1: a[1] * this.H, x2: a[0] * this.W, y2: a[1] * this.H };
+    this.drag((ev) => {
+      const p = this.toImg(ev);
+      this.connect.x2 = p.x;
+      this.connect.y2 = p.y;
+      this.renderShapes();
+    }, (ev) => {
+      const b = this.hitKp(id, ev);
+      this.connect = null;
+      this.renderShapes();
+      if (b != null && b !== k) this.addEdge(id, k, b);
+      else toast('Release on another point of the same person to connect the two', { timeout: 2500 });
+    });
+  }
+
+  /** Name a new point: a missing standard keypoint (fills that slot) or a custom name. */
+  askPointName(id, i) {
+    const g = this.doc.seg(id)?.geom;
+    if (!g) return;
+    const el = this.svg.querySelector(`[data-seg="${id}"][data-k="${i}"]`);
+    const rect = el ? el.getBoundingClientRect() : this.stage.getBoundingClientRect();
+    const missing = KP_NAMES.map((n, j) => [n, j]).filter(([, j]) => !g.points[j]?.[2]);
+    const input = h('input.input.sm', { value: kpName(g, i), placeholder: 'Point name' });
+    const done = () => { pop.close(); };
+    const useCustom = () => {
+      const name = input.value.trim() || `point ${i + 1}`;
+      const g2 = this.doc.seg(id).geom;
+      const names = (g2.names || []).slice();
+      while (names.length < g2.points.length) names.push('');
+      names[i] = name;
+      this.update(id, { geom: { ...g2, names } }, 'Name point');
+      done();
+    };
+    const useSlot = (j) => {
+      const g2 = this.doc.seg(id).geom;
+      const pts = g2.points.map(p => p.slice());
+      pts[j] = pts[i];
+      pts.splice(i, 1);
+      const names = (g2.names || []).slice();
+      names.splice(i, 1);
+      const edges = poseEdges(g2).filter(([a, b]) => a !== i && b !== i).map(([a, b]) => [a > i ? a - 1 : a, b > i ? b - 1 : b]);
+      this.update(id, { geom: { ...g2, points: pts, names, ...(Array.isArray(g2.edges) ? { edges } : {}) } }, `Add ${KP_NAMES[j]}`);
+      done();
+      this.select(id, j);
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); useCustom(); } });
+    const pop = popover(rect, h('div.label-pop',
+      h('div.menu-head', 'Name this point'),
+      h('div.row', input, h('button.btn.sm', { onclick: useCustom }, 'OK')),
+      missing.length ? [h('div.menu-head', 'or use it as a missing body point'),
+        h('div.opts', missing.map(([n, j]) => h('button.opt', { onclick: () => useSlot(j) }, h('i', { style: { '--c': kpColor(j) } }), n)))] : null));
+    setTimeout(() => { input.focus(); input.select(); }, 20);
+  }
+
   deleteSeg(id) {
     this.doc.transact('Delete region', (tx) => tx.remove(id));
     this.select(null);
@@ -397,10 +523,7 @@ export class ImageEditor extends BaseEditor {
     let seg;
     this.doc.transact('Add box', (tx) => {
       const tid = this.ensureTier(tx, key);
-      const tier = this.doc.tier(tid) || tierFromTask(state.taskById.get(key));
-      const labels = tier.labels || [];
-      const value = labels.length === 1 ? labels[0] : (this.lastLabel[tid] ?? labels[0] ?? '');
-      seg = tx.add({ tier_id: tid, start: null, end: null, value, geom, reviewed: true, source: 'human' });
+      seg = tx.add({ tier_id: tid, start: null, end: null, value: '', geom, reviewed: true, source: 'human' });
     });
     this.select(seg.id);
     const tier = this.doc.tier(seg.tier_id);
@@ -428,9 +551,8 @@ export class ImageEditor extends BaseEditor {
     const el = this.svg.querySelector(`.shape[data-seg="${id}"] .body`) || this.svg.querySelector(`.shape[data-seg="${id}"]`);
     const rect = el ? el.getBoundingClientRect() : this.stage.getBoundingClientRect();
     pickValue(rect, { ...tier, output: 'label' }, seg, this.doc, (v) => {
-      this.lastLabel[tier.id] = v;
-      this.update(id, { value: v }, 'Edit label');
-    });
+      if (v !== seg.value) this.update(id, { value: v }, 'Edit label');
+    }, { allowEmpty: true });
   }
 
   // ------------------------------------------------------------------ pointer
@@ -449,11 +571,13 @@ export class ImageEditor extends BaseEditor {
     const segId = t.closest?.('[data-seg]')?.getAttribute('data-seg') || null;
     const handle = t.getAttribute?.('data-h');
     const k = t.getAttribute?.('data-k');
+    const edge = t.getAttribute?.('data-e');
     if (this.placing) { this.placeKp(p); return; }
     if (e.button === 1 || this.space) { this.startPan(e); return; }
     if (handle && segId) { this.startResize(e, segId, handle); return; }
     if (this.mode === 'box' || this.mode === 'pose') { this.startDraw(e, p); return; }
     if (k != null && segId) { this.startKp(e, segId, +k); return; }
+    if (edge && segId) { this.startMove(e, segId, edge.split('-').map(Number)); return; }
     if (segId) { this.select(segId); this.startMove(e, segId); return; }
     if (this.selId) this.select(null);
     this.startPan(e);
@@ -475,7 +599,7 @@ export class ImageEditor extends BaseEditor {
     }, () => this.stage.classList.remove('panning'));
   }
 
-  startMove(e, id) {
+  startMove(e, id, edge = null) {
     const seg = this.doc.seg(id), g0 = seg.geom;
     if (!g0) return;
     const p0 = this.toImg(e);
@@ -497,6 +621,7 @@ export class ImageEditor extends BaseEditor {
     }, () => {
       this.preview = null;
       if (moved) this.update(id, { geom }, g0.type === 'box' ? 'Move box' : 'Move pose');
+      else if (edge) this.select(id, null, edge);
       else this.renderShapes();
     });
   }
@@ -524,6 +649,7 @@ export class ImageEditor extends BaseEditor {
 
   startKp(e, id, k) {
     const seg = this.doc.seg(id), g0 = seg.geom;
+    if (e.shiftKey) { this.startConnect(id, k); return; }
     this.select(id, k);
     if (e.altKey) { this.startMove(e, id); return; }
     let moved = false, pt = g0.points[k];
@@ -568,7 +694,23 @@ export class ImageEditor extends BaseEditor {
   placeKp(p) {
     const { id, k } = this.placing;
     this.placing = null;
-    this.setPoint(id, k, [clamp(p.x, 0, this.W) / this.W, clamp(p.y, 0, this.H) / this.H, 2], 'Add keypoint');
+    const pt = [clamp(p.x, 0, this.W) / this.W, clamp(p.y, 0, this.H) / this.H, 2];
+    if (k === 'new') {
+      const g = this.doc.seg(id).geom;
+      const pts = g.points.map(q => q.slice());
+      while (pts.length < 17) pts.push([0, 0, 0]);
+      pts.push(pt);
+      const i = pts.length - 1;
+      const names = (g.names || []).slice();
+      while (names.length < i) names.push('');
+      names[i] = `point ${i + 1}`;
+      this.update(id, { geom: { ...g, points: pts, names } }, 'Add point');
+      this.select(id, i);
+      this.renderTools();
+      requestAnimationFrame(() => this.askPointName(id, i));
+      return;
+    }
+    this.setPoint(id, k, pt, 'Add keypoint');
     this.select(id, k);
     this.renderTools();
   }
@@ -645,7 +787,7 @@ export class ImageEditor extends BaseEditor {
     const nVis = g.type === 'keypoints' ? g.points.filter(p => p[2]).length : null;
     const row = h('div.region-row' + (sel ? '.sel' : ''), { dataset: { row: s.id }, onclick: (e) => { if (!e.target.closest('button')) this.select(s.id); } },
       h('i.dot', { style: { '--c': color } }),
-      h('span.rl', valStr(s.value) || '(no label)', nVis != null ? h('small', ` ${nVis}/17 points`) : null),
+      h('span.rl', valStr(s.value) || h('span.muted', 'no label'), nVis != null ? h('small', ` ${nVis}/${Math.max(17, g.points.length)} points`) : null),
       s.confidence != null ? confBar(s.confidence, this.lowThr) : null,
       srcBadge(s.source),
       h('button.icon-btn.sm' + (s.reviewed ? '.active' : ''), { title: s.reviewed ? 'Reviewed (R)' : 'Mark reviewed (R)', onclick: () => this.update(s.id, { reviewed: !s.reviewed }, 'Review') }, ico('check', 13)),
@@ -653,26 +795,59 @@ export class ImageEditor extends BaseEditor {
     if (!sel) return row;
     const detail = [];
     if (tier.output === 'boxes') {
-      detail.push(valueEditor({ ...tier, output: 'label' }, s.value, (v) => { this.lastLabel[tier.id] = v; this.update(s.id, { value: v }, 'Edit label'); }, { doc: this.doc }));
+      detail.push(valueEditor({ ...tier, output: 'label' }, s.value, (v) => this.update(s.id, { value: v }, 'Edit label'), { doc: this.doc, allowEmpty: true }));
     } else {
       const pts = g.points || [];
-      detail.push(h('div.kp-grid', KP_SHORT.map((name, i) => {
+      const n = Math.max(17, pts.length);
+      const chips = [];
+      for (let i = 0; i < n; i++) {
         const v = pts[i]?.[2] || 0;
         const cls = v === 2 ? 'vis' : v === 1 ? 'occ' : 'miss';
-        return h(`button.kp-chip.${cls}${this.selKp === i ? '.on' : ''}`, {
-          title: v ? `${KP_NAMES[i]} (${v === 1 ? 'occluded' : 'visible'}) · click to select` : `${KP_NAMES[i]} is missing · click, then click on the image to place it`,
-          style: { '--k': SIDE_COLOR[side(i)] },
+        chips.push(h(`button.kp-chip.${cls}${this.selKp === i ? '.on' : ''}${i >= 17 ? '.extra' : ''}`, {
+          title: v ? `${kpName(g, i)} (${v === 1 ? 'occluded' : 'visible'}) · click to select` : `${kpName(g, i)} is missing · click, then click on the image to place it`,
+          style: { '--k': kpColor(i) },
           onclick: () => (v ? this.select(s.id, i) : this.startPlacing(s.id, i)),
-        }, h('i'), name, v ? null : ico('plus', 10));
-      })));
+        }, h('i'), kpShort(g, i), v ? null : ico('plus', 10)));
+      }
+      chips.push(h('button.kp-chip.add', { title: 'Add a new point (P), then name it and connect it', onclick: () => this.startPlacing(s.id, 'new') }, ico('plus', 11), 'Point'));
+      detail.push(h('div.kp-grid', chips));
+      const edges = poseEdges(g);
       if (this.selKp != null && pts[this.selKp]?.[2]) {
         const k = this.selKp, v = pts[k][2];
-        detail.push(h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } },
-          h('span.muted', { style: { fontSize: '12px' } }, KP_NAMES[k]),
-          h('button.btn.sm', { onclick: () => this.setPoint(s.id, k, [pts[k][0], pts[k][1], v === 2 ? 1 : 2], 'Toggle occluded') }, v === 2 ? 'Mark occluded (O)' : 'Mark visible (O)'),
-          h('button.btn.sm', { onclick: () => { this.setPoint(s.id, k, [0, 0, 0], 'Remove keypoint'); this.select(s.id, null); } }, ico('x', 12), 'Not visible (Del)')));
+        const nb = edges.filter(([a, b]) => a === k || b === k).map(([a, b]) => (a === k ? b : a));
+        const others = pts.map((p, j) => j).filter(j => j !== k && pts[j][2] && !nb.includes(j));
+        const nameInput = k >= 17 ? h('input.input.sm', {
+          value: kpName(g, k), style: { width: '150px' },
+          onchange: (e) => {
+            const names = (g.names || []).slice();
+            while (names.length < pts.length) names.push('');
+            names[k] = e.target.value.trim() || `point ${k + 1}`;
+            this.update(s.id, { geom: { ...g, names } }, 'Name point');
+          },
+        }) : h('b', { style: { fontSize: '12.5px' } }, kpName(g, k));
+        detail.push(h('div.kp-detail',
+          h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, nameInput,
+            h('button.btn.sm', { onclick: () => this.setPoint(s.id, k, [pts[k][0], pts[k][1], v === 2 ? 1 : 2], 'Toggle occluded') }, v === 2 ? 'Occluded (O)' : 'Visible (O)'),
+            k >= 17
+              ? h('button.btn.sm', { onclick: () => this.removePoint(s.id, k) }, ico('trash', 12), 'Remove point')
+              : h('button.btn.sm', { onclick: () => { this.setPoint(s.id, k, [0, 0, 0], 'Remove keypoint'); this.select(s.id, null); } }, ico('x', 12), 'Not visible (Del)')),
+          h('div.row', { style: { gap: '5px', flexWrap: 'wrap', alignItems: 'center' } },
+            h('span.muted', { style: { fontSize: '12px' } }, 'Connected to'),
+            nb.length ? nb.map(j => h('span.chip', { style: { '--c': kpColor(j) } }, h('i.dot'), kpShort(g, j),
+              h('span.x', { title: 'Remove connection', onclick: () => this.removeEdge(s.id, k, j) }, ico('x', 11))))
+              : h('span.muted', { style: { fontSize: '12px' } }, 'nothing'),
+            others.length ? h('select.select.sm', {
+              style: { width: 'auto' },
+              onchange: (e) => { if (e.target.value !== '') this.addEdge(s.id, k, +e.target.value); },
+            }, h('option', { value: '' }, '+ connect to…'), others.map(j => h('option', { value: j }, kpName(g, j)))) : null)));
       }
-      detail.push(h('div.muted', { style: { fontSize: '11.5px' } }, 'Drag points on the image · Alt + drag moves the whole skeleton · missing points (dashed) can be placed by clicking their name.'));
+      if (this.selEdge) {
+        const [a, b] = this.selEdge;
+        detail.push(h('div.row', { style: { gap: '6px' } }, h('span.muted', { style: { fontSize: '12px' } }, `Connection ${kpName(g, a)} — ${kpName(g, b)}`),
+          h('button.btn.sm', { onclick: () => this.removeEdge(s.id, a, b) }, ico('trash', 12), 'Remove (Del)')));
+      }
+      detail.push(h('div.muted', { style: { fontSize: '11.5px', lineHeight: 1.5 } },
+        'Drag points to move them · Alt + drag moves the whole skeleton · Shift + drag from one point to another connects them · click a line and press Delete to remove it · dashed chips are missing points: click to place.'));
     }
     if (s.meta?.model_geom || (s.meta?.model_value != null && s.meta.model_value !== s.value)) {
       detail.push(h('div.muted', { style: { fontSize: '11.5px' } }, 'Corrected by hand',
@@ -777,13 +952,16 @@ export class ImageEditor extends BaseEditor {
       case 'b': case 'B': this.setMode('box'); break;
       case 'k': case 'K': this.setMode('pose'); break;
       case 'h': case 'H': this.toggleOverlay(); break;
+      case 'p': case 'P': if (s?.geom?.type === 'keypoints') this.startPlacing(s.id, 'new'); break;
       case '0': this.fit(); break;
       case '+': case '=': this.zoomBy(1.4); break;
       case '-': case '_': this.zoomBy(1 / 1.4); break;
       case 'Delete': case 'Backspace':
         if (!s) break;
         e.preventDefault();
-        if (s.geom?.type === 'keypoints' && this.selKp != null) { this.setPoint(s.id, this.selKp, [0, 0, 0], 'Remove keypoint'); this.select(s.id, null); }
+        if (s.geom?.type === 'keypoints' && this.selEdge) this.removeEdge(s.id, ...this.selEdge);
+        else if (s.geom?.type === 'keypoints' && this.selKp != null && this.selKp >= 17) this.removePoint(s.id, this.selKp);
+        else if (s.geom?.type === 'keypoints' && this.selKp != null) { this.setPoint(s.id, this.selKp, [0, 0, 0], 'Remove keypoint'); this.select(s.id, null); }
         else this.deleteSeg(s.id);
         break;
       case 'o': case 'O':
@@ -820,7 +998,7 @@ export class ImageEditor extends BaseEditor {
         if (/^[1-9]$/.test(k) && s && s.geom?.type === 'box') {
           const tier = this.doc.tier(s.tier_id);
           const l = tierLabels({ ...tier, output: 'label' }, this.doc)[+k - 1];
-          if (l != null) { this.lastLabel[tier.id] = l; this.update(s.id, { value: l }, 'Edit label'); }
+          if (l != null) this.update(s.id, { value: l === s.value ? '' : l }, 'Edit label');  // same key again clears the label
         }
     }
   }
