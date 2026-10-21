@@ -42,20 +42,25 @@ export class ExportView {
     if (!anchors.some(t => t.id === 'asr')) this.anchor = anchors[0]?.id || 'asr';
     const anchorSel = h('select.select', { style: { width: '240px' }, onchange: (e) => { this.anchor = e.target.value; } },
       anchors.length ? anchors.map(t => h('option', { value: t.id, selected: t.id === this.anchor }, t.title)) : h('option', { value: 'asr' }, 'Speech recognition'));
-    this.btn = h('button.btn.primary.lg', { onclick: () => download(urls.exportZip(pid, { formats: [...this.sel].join(','), scope: this.scope, anchor: this.anchor })) },
-      ico('download', 16), 'Download ZIP');
+    this.btn = h('button.btn.primary', { onclick: () => download(urls.exportZip(pid, { formats: [...this.sel].join(','), scope: this.scope, anchor: this.anchor })) },
+      ico('download', 15), 'Download ZIP');
+    this.summary = h('span.muted');
     this.el = h('div.page', h('div.page-inner',
       h('div.page-head', h('div', h('h1', 'Export'),
         h('p', 'Download annotations for the whole project. Single files can also be exported from the editor menu (⋯).'))),
       h('div.section', h('div.section-head', h('h3', 'Formats')), h('div.section-body', grid)),
-      h('div.section', h('div.section-head', h('h3', 'Options')), h('div.section-body',
-        h('div.row', { style: { gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' } },
+      h('div.section', h('div.section-head', h('h3', 'Options')),
+        h('div.section-body', h('div.exp-fields',
           h('label.field', h('span', 'Files'), scopeSel),
-          h('label.field', h('span', 'Manifest: one line per segment of'), anchorSel, h('span.hint', 'Other tiers are attached by time overlap.'))),
-        this.btn))));
+          h('label.field', h('span', 'Manifest: one line per segment of'), anchorSel, h('span.hint', 'Other tiers are attached by time overlap.')))),
+        h('div.exp-foot', this.btn, this.summary))));
     this.update();
   }
 
-  update() { this.btn.disabled = !this.sel.size; }
+  update() {
+    const n = FORMATS.filter(f => this.sel.has(f.id)).length;
+    this.btn.disabled = !this.sel.size;
+    this.summary.textContent = n ? `${n} of ${FORMATS.length} formats selected` : 'Select at least one format';
+  }
   destroy() {}
 }

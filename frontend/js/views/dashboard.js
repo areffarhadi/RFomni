@@ -25,12 +25,12 @@ export class Dashboard {
     const media = state.media;
     const s = p.stats || {};
     const tasks = projectTasks();
-    const moreBtn = h('button.icon-btn.owner-only', { title: 'Project settings', onclick: () => this.projectMenu(moreBtn) }, ico('more', 18));
+    const moreBtn = h('button.icon-btn.owner-only', { title: 'Project settings', 'aria-label': 'Project settings', onclick: () => this.projectMenu(moreBtn) }, ico('more', 18));
     const addBtn = h('button.btn.owner-only', { onclick: () => menu(addBtn, addDataMenuItems(p.id)) }, ico('plus', 15), 'Add data');
     const head = h('div.dash-head',
       h('div', h('h1', p.name), h('p', p.description || 'No description')),
       h('div.row', addBtn,
-        h('button.btn.primary.owner-only', { onclick: () => openRunDialog(), disabled: !media.length }, ico('sparkles', 15), 'Run tasks'),
+        h('button.btn.primary.owner-only', { onclick: () => openRunDialog(), disabled: !media.length }, ico('sparkles', 15), 'Run tasks…'),
         h('button.btn', { onclick: () => go(links.tab(p.id, 'stats')) }, ico('chart', 15), 'Statistics'),
         moreBtn));
     const sh = shareInfo();
@@ -49,7 +49,7 @@ export class Dashboard {
         ico('upload', 34),
         h('h3', 'Add audio, video and images'),
         h('p', 'Drop files or whole folders anywhere here. Mixed folders are fine: each file is detected as audio, video or image automatically.'),
-        h('div.row', { style: { marginTop: '6px' } },
+        h('div.row', { style: { marginTop: '8px' } },
           h('button.btn.primary', { onclick: () => pickAndUpload(p.id) }, ico('upload', 15), 'Upload files'),
           h('button.btn', { onclick: () => pickAndUpload(p.id, { folder: true }) }, ico('folder', 15), 'Upload a folder'),
           h('button.btn', { onclick: () => openLinkDialog(p.id) }, ico('link', 15), 'Link local folder'))),
@@ -75,10 +75,10 @@ export class Dashboard {
   tasksSection(tasks) {
     const p = state.project;
     return h('div.section',
-      h('div.section-head', h('h3', ico('tasks', 15), 'Tasks in this project'),
+      h('div.section-head', h('h3', 'Tasks in this project'),
         h('button.btn.sm.owner-only', { onclick: () => go(links.tab(p.id, 'tasks')) }, ico('edit', 13), tasks.length ? 'Edit tasks' : 'Choose tasks')),
       h('div.section-body', tasks.length
-        ? h('div.row', { style: { flexWrap: 'wrap', gap: '6px' } }, tasks.map(taskChip))
+        ? h('div.dash-tasks', tasks.map(taskChip))
         : h('div.muted', 'No tasks yet. Pick tasks from the library or write your own prompt task.')));
   }
 
@@ -87,32 +87,35 @@ export class Dashboard {
     const cols = tasks.filter(t => media.some(m => t.modalities.includes(m.modality)));
     const LIMIT = 400;
     const rows = media.slice().sort((a, b) => (a.rel_path || '').localeCompare(b.rel_path || '', undefined, { numeric: true })).slice(0, LIMIT);
+    // review state in a fixed slot after the number, so the numbers stay right-aligned
+    const mark = (d) => d.reviewed >= d.n ? h('span.cv-m.rev', ico('check', 12))
+      : d.reviewed ? h('span.cv-m.part', { style: { '--p': Math.min(85, Math.max(15, Math.round((d.reviewed / d.n) * 100))) + '%' } })
+        : h('span.cv-m');
     const table = h('table.cov',
-      h('thead', h('tr', h('th', 'File'), h('th', 'Status'), cols.map(t => h('th', { title: t.title }, h('span.tchip', { style: { '--c': t.color } }, t.name))))),
+      h('thead', h('tr', h('th', 'File'), h('th', 'Status'),
+        cols.map(t => h('th.n', { title: t.title }, h('span.cov-th', h('i.dot', { style: { '--c': t.color } }), t.name))))),
       h('tbody', rows.map(m => {
         const tiers = m.summary?.tiers || {};
+        const st = m.status || 'new';
         return h('tr', { onclick: () => go(links.file(p.id, m.id)) },
-          h('td', { title: m.rel_path }, h('span.row', { style: { gap: '6px' } }, ico(modalityIcon(m.modality), 13), m.name)),
-          h('td.c', h('span.row', { style: { gap: '5px', justifyContent: 'center', fontSize: '11.5px', color: 'var(--text-2)' } }, h('i.st.' + (m.status || 'new')), STATUS[m.status || 'new'])),
+          h('td', { title: m.rel_path }, h('span.cov-file', ico(modalityIcon(m.modality), 13), h('span', m.name))),
+          h('td', h('span.cov-status', h('i.st.' + st), STATUS[st])),
           cols.map(t => {
-            if (!t.modalities.includes(m.modality)) return h('td.c', h('span.cell.na', '—'));
+            if (!t.modalities.includes(m.modality)) return h('td.n', { title: `${t.name} does not apply to ${m.modality} files` });
             const d = tiers[t.id];
-            if (!d || !d.n) return h('td.c', h('span.cell.miss', '·'));
-            const cls = d.reviewed === d.n ? 'rev' : d.reviewed ? 'part' : 'has';
-            return h('td.c', h(`span.cell.${cls}${d.low ? '.low' : ''}`, {
-              style: { '--c': t.color },
-              title: `${d.n} segments · ${d.reviewed} reviewed · ${d.low} low confidence · source: ${d.source || '?'}`,
-            }, cls === 'rev' ? '✓' : d.n));
+            if (!d || !d.n) return h('td.n', { title: `${t.name}: not run` }, h('span.cv', h('span.cv-none', '–'), h('span.cv-m')));
+            return h('td.n', { title: `${d.n} segments · ${d.reviewed} reviewed · ${d.low} low confidence · source: ${d.source || '?'}` },
+              h('span.cv', d.low ? h('i.cv-low') : null, h('span.cv-n', d.n), mark(d)));
           }));
       })));
     return h('div.section',
-      h('div.section-head', h('h3', ico('grid', 15), 'Coverage'),
+      h('div.section-head', h('h3', 'Coverage'),
         h('div.legend',
-          h('span', h('span.cell.has', { style: { '--c': 'var(--accent)' } }, 'n'), 'segments'),
-          h('span', h('span.cell.part', 'n'), 'partly reviewed'),
-          h('span', h('span.cell.rev', '✓'), 'reviewed'),
-          h('span', h('span.cell.has.low', { style: { '--c': 'var(--accent)' } }, 'n'), 'has low confidence'),
-          h('span', h('span.cell.miss', '·'), 'not run'))),
+          h('span', h('span.lg-n', 'n'), 'segments'),
+          h('span', h('span.cv-m.rev', ico('check', 12)), 'reviewed'),
+          h('span', h('span.cv-m.part', { style: { '--p': '50%' } }), 'partly reviewed'),
+          h('span', h('i.cv-low'), 'has low confidence'),
+          h('span', h('span.cv-none', '–'), 'not run'))),
       cols.length ? h('div.cov-wrap', table) : h('div.section-body.muted', 'Select tasks to see per-file coverage.'),
       media.length > LIMIT ? h('div.section-body.muted', `Showing the first ${LIMIT} of ${media.length} files.`) : null);
   }

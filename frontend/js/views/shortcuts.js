@@ -1,4 +1,4 @@
-import { h } from '../util.js';
+import { h, ico } from '../util.js';
 import { openModal } from '../ui.js';
 
 const mod = navigator.platform.includes('Mac') ? '⌘' : 'Ctrl';
@@ -15,10 +15,40 @@ const GROUPS = [
     ['L  or  ▶ Auto-play (toolbar)', 'Switch auto-play after moving a border on / off'], ['🔗 Linked (toolbar)', 'Off: each word has its own border · On: touching words share it']]],
 ];
 
+// A key spec like "Shift Space  or  P" or "Alt + drag segment" becomes separate <kbd> keys,
+// with "or", "/" and "+" as quiet separators and mouse gestures as plain text.
+const KEY = /^(Space|Shift|Tab|Enter|Delete|Alt|Ctrl|Esc|⌘|[A-Z0-9]|[←→↑↓[\]+−])$/;
+const GLYPH = { '▶': 'play', '🔗': 'link' };  // toolbar buttons: show their icon, not a glyph
+
+function combo(spec) {
+  const out = [];
+  const sep = (t) => out.push(h('span.keys-sep', t));
+  spec.split(/ {2}or {2}/).forEach((alt, i) => {
+    if (i) sep('or');
+    alt.split(' / ').forEach((part, j) => {
+      if (j) sep('/');
+      part.split(' + ').forEach((chunk, k) => {
+        if (k) sep('+');
+        let words = [];
+        const flush = () => { if (words.length) out.push(h('span', words.join(' '))); words = []; };
+        for (const tok of chunk.split(' ').filter(Boolean)) {
+          if (KEY.test(tok)) { flush(); out.push(h('kbd', tok)); }
+          else if (GLYPH[tok]) { flush(); out.push(ico(GLYPH[tok], 12)); }
+          else words.push(tok);
+        }
+        flush();
+      });
+    });
+  });
+  return h('span.keys-combo', out);
+}
+
 export function showShortcuts() {
   if (document.querySelector('.modal.keys-modal')) return;
   openModal({
     title: 'Keyboard & mouse', width: 760, className: 'keys-modal',
-    body: h('div.keys', GROUPS.map(([g, rows]) => [h('h4', g), rows.map(([k, d]) => h('div', h('span', d), h('kbd', k)))])),
+    // groups whose gestures are long sentences get the full width
+    body: h('div.keys', GROUPS.map(([g, rows]) => h('div.keys-group' + (rows.some(([k]) => k.length > 24) ? '.wide' : ''),
+      h('h4', g), rows.map(([k, d]) => h('div.keys-row', h('span.keys-desc', d), combo(k)))))),
   });
 }

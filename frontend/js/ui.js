@@ -117,14 +117,18 @@ export function popover(anchor, content, { placement = 'bottom-start', onClose, 
   const el = h('div.popover' + (className ? '.' + className : ''), content);
   document.body.append(el);
   const r = anchor instanceof Element ? anchor.getBoundingClientRect() : anchor;
-  const pw = el.offsetWidth, ph = el.offsetHeight;
-  let x = placement.endsWith('end') ? r.right - pw : r.left;
-  let y = placement.startsWith('top') ? r.top - ph - offset : r.bottom + offset;
-  if (y + ph > innerHeight - 8) y = Math.max(8, r.top - ph - offset);
-  if (y < 8) y = Math.min(innerHeight - ph - 8, r.bottom + offset);
-  x = Math.max(8, Math.min(x, innerWidth - pw - 8));
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
+  const place = () => {
+    const pw = el.offsetWidth, ph = el.offsetHeight;
+    let x = placement.endsWith('end') ? r.right - pw : r.left;
+    let y = placement.startsWith('top') ? r.top - ph - offset : r.bottom + offset;
+    if (y + ph > innerHeight - 8) y = Math.max(8, r.top - ph - offset);
+    if (y < 8) y = Math.max(8, Math.min(innerHeight - ph - 8, r.bottom + offset));
+    x = Math.max(8, Math.min(x, innerWidth - pw - 8));
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  };
+  place();
+  requestAnimationFrame(place);  // callers often fill the content right after this returns
   const onDown = (e) => {
     if (!el.contains(e.target) && !(anchor instanceof Element && anchor.contains(e.target))) api.close();
   };

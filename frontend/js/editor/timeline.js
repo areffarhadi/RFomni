@@ -59,16 +59,16 @@ export class Timeline {
 
   // ------------------------------------------------------------------ DOM
   build() {
-    this.playBtn = h('button.icon-btn.play', { title: 'Play / pause (Space)', onclick: () => this.ed.player.toggle() }, ico('play', 15));
+    this.playBtn = h('button.icon-btn.play', { title: 'Play / pause (Space)', 'aria-label': 'Play / pause', onclick: () => this.ed.player.toggle() }, ico('play', 15));
     this.clock = h('div.clock');
     this.selInfo = h('span.selinfo');
     const rate = h('select.select', { title: 'Playback speed', onchange: (e) => { this.ed.player.rate = +e.target.value; } },
       [0.5, 0.75, 1, 1.25, 1.5, 2].map(r => h('option', { value: r, selected: r === 1 }, `${r}×`)));
     this.modeCtl = h('div.seg-ctl.sm', [['wave', 'wave', 'Waveform'], ['spec', 'spectrum', 'Spectrogram'], ['both', 'split', 'Both']].map(([k, i, t]) =>
       h('button', { dataset: { v: k }, title: t, onclick: () => this.setMode(k) }, ico(i, 13), h('span', t === 'Both' ? 'Both' : t === 'Waveform' ? 'Wave' : 'Spec'))));
-    const specBtn = h('button.icon-btn', { title: 'Signal display settings', onclick: () => this.specPopover(specBtn) }, ico('settings', 16));
-    this.followBtn = h('button.icon-btn' + (this.follow ? '.active' : ''), { title: 'Follow playhead (F)', onclick: () => this.toggleFollow() }, ico('target', 16));
-    const tiersBtn = h('button.btn.sm', { title: 'Show / hide tiers', onclick: () => this.ed.tiersPopover(tiersBtn) }, ico('layers', 14), 'Tiers');
+    const specBtn = h('button.icon-btn', { title: 'Signal display settings', 'aria-label': 'Signal display settings', onclick: () => this.specPopover(specBtn) }, ico('settings', 16));
+    this.followBtn = h('button.icon-btn' + (this.follow ? '.active' : ''), { title: 'Follow playhead (F)', 'aria-label': 'Follow playhead', 'aria-pressed': String(this.follow), onclick: () => this.toggleFollow() }, ico('target', 16));
+    const tiersBtn = h('button.btn.sm.tiers-btn', { title: 'Show / hide tiers', 'aria-label': 'Tiers', onclick: () => this.ed.tiersPopover(tiersBtn) }, ico('layers', 14), h('span', 'Tiers'));
     this.bSel = h('select.select', {
       title: 'Draw the boundaries of this tier on the waveform / spectrogram, where you can drag them',
       onchange: (e) => { this.bTierId = e.target.value || null; this.bPref = e.target.value || 'none'; ls.set('btier:' + this.pid, this.bPref); this.schedule(); },
@@ -83,13 +83,17 @@ export class Timeline {
       () => this.autoPlay, (v) => { this.autoPlay = v; ls.set('autoPlayBoundary', v); });
     this.linkBtn = toggle('link', 'Linked', 'Linked borders: move the shared border of two touching words together. Off: every word has its own border. Alt while dragging does the opposite.',
       () => this.linked, (v) => { this.linked = v; ls.set('linkedBorders', v); });
-    this.bar = h('div.tl-bar', this.playBtn, this.clock, rate, h('span.sep'),
-      this.modeCtl, specBtn, h('span.sep'),
-      h('span.blab', ico('split', 13), 'Boundaries'), this.bSel, this.linkBtn, this.autoBtn, h('span.sep'),
-      h('button.icon-btn', { title: 'Zoom out (−)', onclick: () => this.zoomCenter(1 / 1.6) }, ico('zoom-out', 16)),
-      h('button.icon-btn', { title: 'Zoom in (+)', onclick: () => this.zoomCenter(1.6) }, ico('zoom-in', 16)),
-      h('button.icon-btn', { title: 'Fit whole file (0)', onclick: () => this.fit() }, ico('fit', 16)),
-      this.followBtn, h('div.grow'), this.selInfo, tiersBtn);
+    // groups: transport | view mode | boundaries | zoom ... selection, tiers
+    const grp = (...kids) => h('div.tl-grp', ...kids);
+    this.bar = h('div.tl-bar',
+      grp(this.playBtn, this.clock, rate), h('span.sep'),
+      grp(this.modeCtl, specBtn), h('span.sep'),
+      grp(h('span.blab', { title: 'Boundaries drawn on the signal' }, ico('split', 13), h('span', 'Boundaries')), this.bSel, this.linkBtn, this.autoBtn), h('span.sep'),
+      grp(h('button.icon-btn', { title: 'Zoom out (−)', 'aria-label': 'Zoom out', onclick: () => this.zoomCenter(1 / 1.6) }, ico('zoom-out', 16)),
+        h('button.icon-btn', { title: 'Zoom in (+)', 'aria-label': 'Zoom in', onclick: () => this.zoomCenter(1.6) }, ico('zoom-in', 16)),
+        h('button.icon-btn', { title: 'Fit whole file (0)', 'aria-label': 'Fit whole file', onclick: () => this.fit() }, ico('fit', 16)),
+        this.followBtn),
+      h('div.grow'), this.selInfo, tiersBtn);
 
     this.ovCanvas = h('canvas');
     this.ovLane = h('div.tl-lane', { style: { cursor: 'pointer' } }, this.ovCanvas);
@@ -102,8 +106,8 @@ export class Timeline {
     this.waveCanvas = h('canvas');
     this.specCanvas = h('canvas');
     this.frameCanvas = h('canvas');
-    this.waveRow = h('div.tl-row.sig', h('div.tl-head', h('div.hl', ico('wave', 13), 'Waveform'), h('div.hl', { style: { fontSize: '10px' } }, 'Alt + scroll: gain')), h('div.tl-lane', this.waveCanvas));
-    this.specRow = h('div.tl-row.sig', h('div.tl-head', h('div.hl', ico('spectrum', 13), 'Spectrogram'), this.specLabel = h('div.hl', { style: { fontSize: '10px' } })), h('div.tl-lane', this.specCanvas));
+    this.waveRow = h('div.tl-row.sig', h('div.tl-head', h('div.hl', ico('wave', 13), 'Waveform'), h('div.hl.sub', 'Alt + scroll: gain')), h('div.tl-lane', this.waveCanvas));
+    this.specRow = h('div.tl-row.sig', h('div.tl-head', h('div.hl', ico('spectrum', 13), 'Spectrogram'), this.specLabel = h('div.hl.sub')), h('div.tl-lane', this.specCanvas));
     this.frameRow = h('div.tl-row.frames', { style: { height: '46px' } }, h('div.tl-head', h('div.hl', ico('film', 13), 'Frames')), h('div.tl-lane', this.frameCanvas));
     this.topOvl = ovl();
     this.topOvl.querySelector('.ph').classList.add('top');
@@ -248,6 +252,7 @@ export class Timeline {
     this.follow = !this.follow;
     ls.set('follow', this.follow);
     this.followBtn.classList.toggle('active', this.follow);
+    this.followBtn.setAttribute('aria-pressed', String(this.follow));
   }
 
   specPopover(anchor) {
@@ -306,7 +311,7 @@ export class Timeline {
     const small = tier.granularity === 'word' || tier.granularity === 'phone';
     const height = small ? 28 : tier.output === 'text' ? 38 : 30;
     const count = h('small');
-    const more = h('button.icon-btn.sm', { title: 'Tier options', onclick: (e) => { e.stopPropagation(); this.ed.tierMenu(tier.id, more); } }, ico('more', 14));
+    const more = h('button.icon-btn.sm', { title: 'Tier options', 'aria-label': `${tier.name} options`, onclick: (e) => { e.stopPropagation(); this.ed.tierMenu(tier.id, more); } }, ico('more', 14));
     const head = h('div.tl-head', { title: `${tier.title || tier.name}\nDrag to reorder (applies to every file in the project)`, onclick: () => this.ed.setActiveTier(tier.id) },
       h('span.grip', ico('grip', 12)), h('span.sw'), h('span.tn', tier.name, count), more);
     const layer = h('div', { style: { position: 'absolute', inset: '0' } });
@@ -395,7 +400,7 @@ export class Timeline {
     const step = niceStep(90 / this.view.pps);
     const minor = step / (String(step)[0] === '2' ? 4 : 5);
     const t0 = Math.floor(this.view.start / minor) * minor;
-    g.font = '10.5px "IBM Plex Mono", ui-monospace, monospace';
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
     g.textBaseline = 'top';
     for (let t = t0; t <= this.end + minor; t += minor) {
       const x = Math.round(this.t2x(t)) + 0.5;
@@ -533,7 +538,7 @@ export class Timeline {
       if (x >= -1 && x <= W + 1) xs.add(x);
     }
     const dense = xs.size > W / 3;
-    g.fillStyle = kind === 'spec' ? 'rgba(255,255,255,0.78)' : this.colors.bnd;
+    g.fillStyle = kind === 'spec' ? 'rgba(255,255,255,0.55)' : this.colors.bnd;
     for (const x of xs) g.fillRect(x, dense ? H - 8 : 0, 1, dense ? 8 : H);
     const hv = this.dragB || this.hoverB;
     if (hv?.id) {  // the word that will move (independent borders)
@@ -800,7 +805,7 @@ export class Timeline {
         el.style.top = top == null ? '' : top + 'px';
         el.style.bottom = top == null ? '' : 'auto';
         el.style.height = top == null ? '' : Math.max(6, rh - 1) + 'px';
-        el.style.fontSize = nRows > 2 ? '10px' : '';
+        el.style.fontSize = nRows > 2 ? '11px' : '';
         seen.add(s.id);
       }
       for (const [id, el] of r.els) if (!seen.has(id)) { el.remove(); r.els.delete(id); }
@@ -862,7 +867,7 @@ export class Timeline {
       el.classList.toggle('low', low);
       el.classList.toggle('rev', !!s.reviewed);
       el.classList.toggle('mock', s.source === 'mock');
-      el.classList.toggle('empty', !v);
+      el.classList.toggle('blank', !v);
       el.title = `${v || '(empty)'}\n${fmtTime(s.start)} – ${fmtTime(s.end)}` +
         (s.confidence != null ? `\nconfidence ${s.confidence.toFixed(2)}` : '') + `\n${s.source}${s.reviewed ? ' · reviewed' : ''}`;
     }

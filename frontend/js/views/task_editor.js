@@ -137,7 +137,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   }
   const labelsDefault = h('div.default-hint');
   const labelsField = h('div.field',
-    h('div.row', h('span', { style: { fontSize: '12px', color: 'var(--text-2)', fontWeight: 500 } }, openVocab ? 'Suggested labels ' : 'Classes '),
+    h('div.row', h('span.te-label', openVocab ? 'Suggested labels ' : 'Classes '),
       h('span.hint', openVocab ? '(open set: other labels are allowed)' : '(the model must choose from these)'), countEl, h('div.grow'), textToggle),
     labelsBox, labelsText, labelsDefault);
 
@@ -148,7 +148,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
     }), ico(modalityIcon(m), 14), m)));
 
   const swatches = h('div.swatches', COLORS.map(c => h('button' + (c === t.color ? '.on' : ''), {
-    style: { '--c': c }, type: 'button',
+    style: { '--c': c }, type: 'button', title: c, 'aria-label': `Tier color ${c}`,
     onclick: (e) => { t.color = c; [...swatches.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); previewTier(); },
   })));
 
@@ -183,13 +183,13 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   const fetchPreview = debounce(async () => {
     try {
       const r = await api.previewPrompt(t);
-      promptOut.textContent = r.prompt;
+      promptOut.textContent = (r.prompt || '').trim();
     } catch { /* ignore */ }
   }, 250);
   function preview() { fetchPreview(); }
   function previewTier() {
     if (t.output === 'boxes' || t.output === 'keypoints') {
-      tierOut.replaceChildren(h('div', { style: { padding: '10px 12px', fontSize: '12.5px', color: 'var(--text-2)' } },
+      tierOut.replaceChildren(h('div.tp-note',
         t.output === 'boxes' ? 'Shown as labelled rectangles on the image; you can move, resize, relabel and add boxes.'
           : 'Shown as a skeleton of 17 keypoints per person; you can drag, add and hide points.'));
       return;
@@ -200,7 +200,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
     const segs = t.granularity === 'file' ? [[0, 100]] : t.granularity === 'word' || t.granularity === 'phone' ? [[2, 12], [13, 24], [25, 33], [34, 47], [48, 60], [62, 75], [76, 90]]
       : [[3, 30], [36, 62], [70, 95]];
     tierOut.replaceChildren(h('div.tp-row',
-      h('div.tp-head', h('span', { style: { width: '4px', height: '16px', borderRadius: '2px', background: t.color } }), t.name || 'New task'),
+      h('div.tp-head', h('i.dot', { style: { '--c': t.color } }), t.name || 'New task'),
       h('div.tp-lane', segs.map(([a, b], i) => {
         const v = vals[i % vals.length];
         return h('div.seg.mock' + (t.output === 'label' ? '.label' : ''), { style: { left: a + '%', width: (b - a) + '%', '--c': segColor(fake, v) } }, h('span.t', v));
@@ -283,7 +283,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   actions.push({ label: 'Cancel', ghost: true, onClick: (a) => a.close() });
   actions.push({ label: edit ? 'Save changes' : 'Create task', primary: true, icon: 'check', onClick: save });
   openModal({
-    title: builtinEdit ? `Edit built-in task: ${base.title || base.name}` : edit ? `Edit task: ${base.name}` : 'New prompt task', width: 980,
+    title: builtinEdit ? `Edit built-in task: ${base.title || base.name}` : edit ? `Edit task: ${base.name}` : 'New prompt task', width: 980, className: 'te-dlg',
     subtitle: builtinEdit ? 'Change the classes, the prompt or the names. Changed tasks are listed on the right of the Tasks page.'
       : 'Describe an annotation or captioning task in plain language. It becomes a tier that can be run on every file.',
     body, actions,
@@ -329,7 +329,7 @@ export function openTaskDetail(task, { onChange } = {}) {
   }
   const d = task.default || {};
   openModal({
-    title: task.title || task.name, subtitle: task.description, width: 720,
+    title: task.title || task.name, subtitle: task.description, width: 720, className: 'td-dlg',
     body: h('div',
       h('div.row', { style: { flexWrap: 'wrap', gap: '6px', marginBottom: '14px' } },
         h('span.tchip', { style: { '--c': task.color } }, task.name),
@@ -338,7 +338,7 @@ export function openTaskDetail(task, { onChange } = {}) {
         h('span.badge', GRANS[task.granularity] + (task.granularity === 'window' ? ` (${task.window_sec} s)` : '')),
         task.modalities.map(m => h('span.badge', ico(modalityIcon(m), 11), m)),
         task.parent ? h('span.badge', `after ${state.taskById.get(task.parent)?.name || task.parent}`) : null,
-        !task.builtin ? h('span.badge.warn', 'new task') : task.modified ? h('span.badge.warn', `changed: ${changedSummary(task)}`) : h('span.badge.accent', 'default')),
+        !task.builtin ? h('span.badge.warn', 'new task') : task.modified ? h('span.badge.warn', `changed: ${changedSummary(task)}`) : h('span.badge', 'default')),
       task.labels?.length ? [h('h4', `Classes (${task.labels.length})`), h('div.label-chips', task.labels.map(l => h('span.chip', { style: { '--c': segColor(task, l) } }, h('i.dot'), l)))] : null,
       task.modified && d.labels && JSON.stringify(d.labels) !== JSON.stringify(task.labels)
         ? h('div.default-hint', h('span', 'Default classes: ', d.labels.join(', ') || '(open set)')) : null,

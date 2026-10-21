@@ -28,11 +28,12 @@ export class FileList {
       h('button.icon-btn', { title: 'Project overview', onclick: () => go(links.project(this.pid)) }, ico('grid', 16)),
       h('button.icon-btn.owner-only', { title: 'Run tasks on files', onclick: () => openRunDialog({ mediaIds: this.checked.size ? [...this.checked] : null }) }, ico('sparkles', 16)),
       addBtn);
-    const search = h('input.input', { placeholder: 'Search files', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.render(); } });
-    this.modChips = h('div.fp-chips', ['all', 'audio', 'video', 'image'].map(m =>
-      h('span.chip' + (m === 'all' ? '.on' : ''), { dataset: { m }, onclick: () => { this.mod = m; this.render(); } },
+    const search = this.search = h('input.input', { placeholder: 'Search files', 'aria-label': 'Search files', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.render(); } });
+    // media type is a single choice: segmented control (same pattern as the task library filters)
+    this.modChips = h('div.seg-ctl.sm.fp-mods', { role: 'group', 'aria-label': 'Media type' }, ['all', 'audio', 'video', 'image'].map(m =>
+      h('button' + (m === 'all' ? '.on' : ''), { type: 'button', dataset: { m }, onclick: () => { this.mod = m; this.render(); } },
         m === 'all' ? 'All' : [ico(modalityIcon(m), 12), m[0].toUpperCase() + m.slice(1)])));
-    const statusSel = h('select.select.sm', { onchange: (e) => { this.status = e.target.value; this.render(); } },
+    const statusSel = this.statusSel = h('select.select.sm', { 'aria-label': 'Status', onchange: (e) => { this.status = e.target.value; this.render(); } },
       h('option', { value: 'all' }, 'Any status'),
       Object.entries(STATUS).map(([k, v]) => h('option', { value: k }, v)),
       h('option', { value: 'low' }, 'Has low-confidence segments'));
@@ -102,12 +103,20 @@ export class FileList {
       }
     }
     if (!items.length) {
-      nodes.push(h('div.empty', { style: { padding: '30px 10px' } },
-        state.media.length ? 'No files match the filters' : h('div', 'No files yet.', h('br'), 'Use + or drop files here.')));
+      nodes.push(h('div.empty.fp-empty', state.media.length
+        ? [h('div', 'No files match the filters'), h('button.btn.sm', { onclick: () => this.clearFilters() }, 'Clear filters')]
+        : h('div', 'No files yet.', h('br'), 'Use + or drop files here.')));
     }
     this.list.classList.toggle('selecting', this.checked.size > 0);
     this.list.replaceChildren(...nodes);
     this.renderSelbar();
+  }
+
+  clearFilters() {
+    this.q = ''; this.search.value = '';
+    this.mod = 'all';
+    this.status = 'all'; this.statusSel.value = 'all';
+    this.render();
   }
 
   row(m) {
@@ -119,7 +128,7 @@ export class FileList {
     const st = m.status || 'new';
     const low = m.summary?.n_low || 0;
     const cb = h('input.fp-check', {
-      type: 'checkbox', checked: this.checked.has(m.id),
+      type: 'checkbox', checked: this.checked.has(m.id), 'aria-label': `Select ${m.name}`,
       onclick: (e) => {
         e.stopPropagation();
         e.target.checked ? this.checked.add(m.id) : this.checked.delete(m.id);
@@ -137,7 +146,7 @@ export class FileList {
     h('div.fp-meta',
       h('div.fp-name', m.name),
       h('div.fp-sub', h('i.st.' + st), STATUS[st],
-        m.duration ? h('span', '· ' + fmtDur(m.duration)) : (m.width ? h('span', `· ${m.width}×${m.height}`) : null),
+        m.duration ? h('span.fp-dim', '· ' + fmtDur(m.duration)) : (m.width ? h('span.fp-dim', `· ${m.width}×${m.height}`) : null),
         low ? h('span.fp-low', { title: 'Low-confidence segments' }, '· ', ico('flag', 10), low) : null)));
   }
 
@@ -146,7 +155,7 @@ export class FileList {
     this.selbar.style.display = n ? '' : 'none';
     if (!n) return;
     this.selbar.replaceChildren(h('span.grow', `${n} selected`),
-      h('button.btn.sm.owner-only', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('sparkles', 13), 'Run tasks'),
+      h('button.btn.sm.owner-only', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('sparkles', 13), 'Run tasks…'),
       h('button.btn.sm.ghost', { onclick: () => { this.checked.clear(); this.render(); } }, 'Clear'));
   }
 

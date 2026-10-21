@@ -52,13 +52,13 @@ export class NowPanel {
       if (key !== this.key) {
         this.key = key;
         this.words = [];
-        this.ctxLine(this.prevEl, prev, 'before');
-        this.ctxLine(this.nextEl, next, cur ? 'next' : 'up next');
+        this.ctxLine(this.prevEl, prev, 'Before');
+        this.ctxLine(this.nextEl, next, cur ? 'Next' : 'Up next');
         if (!this.asr) {
-          this.textEl.className = 'now-text empty';
+          this.textEl.className = 'now-text is-empty';
           this.textEl.textContent = 'No transcript tier yet. Run ASR (or import ELAN / Praat / JSON) and the text will follow playback here.';
         } else if (!cur) {
-          this.textEl.className = 'now-text empty';
+          this.textEl.className = 'now-text is-empty';
           this.textEl.textContent = '(no speech at the playhead)';
         } else {
           this.textEl.className = 'now-text';

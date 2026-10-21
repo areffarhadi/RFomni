@@ -139,7 +139,7 @@ export class Editor extends BaseEditor {
       .filter(t => t && !present.has(t.id) && t.modalities.includes(this.media.modality));
     const list = h('div.tiers-pop',
       h('div.menu-head', 'Visible tiers'),
-      ordered.length ? ordered.map(({ tier, depth }) => h('label', { style: { paddingLeft: 8 + depth * 14 + 'px' } },
+      ordered.length ? ordered.map(({ tier, depth }) => h('label', { style: { paddingLeft: 10 + depth * 16 + 'px' } },
         h('input', { type: 'checkbox', checked: !this.hidden.has(tier.id), onchange: (e) => this.setHidden(tier.id, !e.target.checked), style: { accentColor: 'var(--accent)' } }),
         h('i', { style: { '--c': tier.color } }), tier.name, h('small', this.doc.list(tier.id).length))) : h('div.muted', { style: { padding: '6px 8px' } }, 'No tiers yet'),
       h('div.menu-sep'),

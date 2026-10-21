@@ -143,18 +143,19 @@ export class BaseEditor {
   buildHeader() {
     const m = this.media;
     this.statusBtn = h('button.btn.sm.edit-only', { onclick: () => this.toggleFileReviewed() });
-    const more = h('button.icon-btn', { title: 'More', onclick: () => this.fileMenu(more) }, ico('more', 17));
+    const more = h('button.icon-btn', { title: 'More', 'aria-label': 'More file actions', onclick: () => this.fileMenu(more) }, ico('more', 17));
     this.renderStatus();
     return h('div.ed-head',
       h('div.ed-title', ico(modalityIcon(m.modality), 18),
-        h('div', h('div.nm', m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
+        h('div', h('div.nm', { title: m.name }, m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
           m.duration ? fmtDur(m.duration) : null, m.width ? `${m.width}×${m.height}` : null].filter(Boolean).join(' · ')))),
       this.saveEl,
-      h('button.icon-btn.edit-only', { title: 'Undo (⌘Z)', onclick: () => this.undo() }, ico('undo', 16)),
-      h('button.icon-btn.edit-only', { title: 'Redo (⌘⇧Z)', onclick: () => this.redo() }, ico('redo', 16)),
-      h('span', { style: { width: '1px', height: '20px', background: 'var(--line-2)' } }),
-      h('button.icon-btn', { title: 'Previous file ([)', onclick: () => this.dv.step(-1) }, ico('chev-l', 17)),
-      h('button.icon-btn', { title: 'Next file (])', onclick: () => this.dv.step(1) }, ico('chev-r', 17)),
+      h('button.icon-btn.edit-only', { title: 'Undo (⌘Z)', 'aria-label': 'Undo', onclick: () => this.undo() }, ico('undo', 16)),
+      h('button.icon-btn.edit-only', { title: 'Redo (⌘⇧Z)', 'aria-label': 'Redo', onclick: () => this.redo() }, ico('redo', 16)),
+      h('span.ed-sep'),
+      h('button.icon-btn', { title: 'Previous file ([)', 'aria-label': 'Previous file', onclick: () => this.dv.step(-1) }, ico('chev-l', 17)),
+      h('button.icon-btn', { title: 'Next file (])', 'aria-label': 'Next file', onclick: () => this.dv.step(1) }, ico('chev-r', 17)),
+      h('span.ed-sep'),
       this.statusBtn,
       h('button.btn.sm.owner-only', { onclick: () => this.flush().then(() => openRunDialog({ mediaIds: [m.id] })) }, ico('sparkles', 13), 'Run'),
       more);

@@ -59,7 +59,7 @@ export async function openShareDialog() {
       h('div.field.wide', h('span', 'What they see'), tierChips),
       h('label.field.wide', h('span', 'Note'), note),
       h('div.row.wide', { style: { gap: '18px', flexWrap: 'wrap' } },
-        h('label.row', { style: { gap: '8px', cursor: 'pointer' } }, dl, 'Allow downloading the annotations'),
+        h('label.share-dl', dl, 'Allow downloading the annotations'),
         exp, h('div.grow'), createBtn)));
 
   // ---- reach + links
@@ -97,7 +97,7 @@ export async function openShareDialog() {
     const url = `${base()}/s/${s.token}`;
     const net = data.server.tunnel?.running && data.server.tunnel.url ? `${data.server.tunnel.url}/s/${s.token}` : null;
     const tiers = s.tasks.length ? s.tasks.map(id => state.taskById.get(id)?.name || id).join(', ') : 'all tiers';
-    const status = !s.active ? h('span.badge.danger', s.revoked ? 'turned off' : 'expired') : null;
+    const status = !s.active ? h('span.badge' + (s.revoked ? '' : '.warn'), s.revoked ? 'turned off' : 'expired') : null;
     return h('div.share-item' + (s.active ? '' : '.off'),
       h('div.share-item-top',
         h('span.share-ico', ico(s.access === 'edit' ? 'edit' : 'eye', 15)),
@@ -111,20 +111,21 @@ export async function openShareDialog() {
             s.access === 'edit' ? `${s.edits || 0} edits` : null,
           ].filter(Boolean).join(' · '))),
         h('button.icon-btn.sm', { type: 'button', title: s.active ? 'Turn this link off' : 'Turn this link on again',
+          'aria-label': s.active ? 'Turn this link off' : 'Turn this link on again',
           onclick: () => update(s, { revoked: s.active }) }, ico(s.active ? 'lock' : 'repeat', 14)),
-        h('button.icon-btn.sm', { type: 'button', title: 'Delete link', onclick: () => remove(s) }, ico('trash', 14))),
+        h('button.icon-btn.sm', { type: 'button', title: 'Delete link', 'aria-label': 'Delete link', onclick: () => remove(s) }, ico('trash', 14))),
       s.active ? h('div.share-urls',
-        h('div.share-url', ico('wifi', 13), h('input.input.sm.mono', { readOnly: true, value: url, onfocus: (e) => e.target.select() }),
+        h('div.share-url', ico('wifi', 13), h('input.input.sm.mono', { readOnly: true, value: url, 'aria-label': 'Link on the same network', onfocus: (e) => e.target.select() }),
           h('button.btn.sm', { type: 'button', onclick: () => copy(url) }, ico('copy', 13), 'Copy'),
           h('button.btn.sm.ghost', { type: 'button', title: 'Open the link yourself to see what they see', onclick: () => window.open(`${data.server.local_base}/s/${s.token}`, '_blank') }, 'Preview')),
-        net ? h('div.share-url', ico('globe', 13), h('input.input.sm.mono', { readOnly: true, value: net, onfocus: (e) => e.target.select() }),
+        net ? h('div.share-url', ico('globe', 13), h('input.input.sm.mono', { readOnly: true, value: net, 'aria-label': 'Internet link', onfocus: (e) => e.target.select() }),
           h('button.btn.sm', { type: 'button', onclick: () => copy(net) }, ico('copy', 13), 'Copy')) : null) : null);
   }
 
   function paintList() {
     const items = data.shares.slice().sort((a, b) => (b.active - a.active) || b.created_at.localeCompare(a.created_at));
     list.replaceChildren(items.length ? items.map(linkRow)
-      : h('div.muted', { style: { padding: '6px 2px' } }, 'No links yet. Anyone with a link can open this project in a browser, nothing to install.'));
+      : h('div.share-empty', 'No links yet. Anyone with a link can open this project in a browser, nothing to install.'));
   }
 
   function paintAll() { paintReach(); paintList(); }

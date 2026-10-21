@@ -187,9 +187,9 @@ export class Inspector {
         h('div.tname', { style: { '--c': tier.color } }, h('i'), tier.title || tier.name),
         h('span.pos', `${i + 1} / ${n}`),
         h('div.grow'),
-        h('button.icon-btn.sm', { title: 'Previous (Shift+Tab)', disabled: !prev, onclick: () => ed.select(prev.id, { seek: true }) }, ico('chev-l', 15)),
-        h('button.icon-btn.sm', { title: 'Next (Tab)', disabled: !next, onclick: () => ed.select(next.id, { seek: true }) }, ico('chev-r', 15)),
-        h('button.icon-btn.sm', { title: 'Deselect (Esc)', onclick: () => ed.select(null) }, ico('x', 15))),
+        h('button.icon-btn.sm', { title: 'Previous (Shift+Tab)', 'aria-label': 'Previous segment', disabled: !prev, onclick: () => ed.select(prev.id, { seek: true }) }, ico('chev-l', 15)),
+        h('button.icon-btn.sm', { title: 'Next (Tab)', 'aria-label': 'Next segment', disabled: !next, onclick: () => ed.select(next.id, { seek: true }) }, ico('chev-r', 15)),
+        h('button.icon-btn.sm', { title: 'Deselect (Esc)', 'aria-label': 'Deselect', onclick: () => ed.select(null) }, ico('x', 15))),
       h('div.insp-body',
         value,
         fileLevel ? null : h('div.times',
@@ -257,11 +257,11 @@ export class Inspector {
       const rev = list.filter(s => s.reviewed).length;
       const low = list.filter(s => !s.reviewed && s.confidence != null && s.confidence < ed.lowThr).length;
       return h('tr', { style: { cursor: 'pointer' }, onclick: () => { ed.setActiveTier(t.id); if (list[0]) ed.select((list.find(s => !s.reviewed) || list[0]).id, { seek: true }); } },
-        h('td', h('span.tchip', { style: { '--c': t.color } }, t.name)), h('td', list.length), h('td', rev),
+        h('td', h('span.ov-tier', { style: { '--c': t.color } }, h('i'), t.name)), h('td', list.length), h('td', rev),
         h('td', low ? h('span', { style: { color: 'var(--danger)' } }, low) : '0'));
     });
     this.el.replaceChildren(
-      h('div.insp-head', h('div.tname', { style: { '--c': 'var(--accent)' } }, h('i'), 'File overview'), h('div.grow'),
+      h('div.insp-head', h('div.tname', 'File overview'), h('div.grow'),
         h('span.pos', `${doc.segs.size} segments`)),
       h('div.insp-empty',
         fields.length ? fields : null,

@@ -29,19 +29,19 @@ export function openTaskTest({ task, saved = true }) {
     [1, 3, 5, 10].map(k => h('option', { value: k, selected: k === n }, `${k} file${k > 1 ? 's' : ''}`)));
   const body = h('div.tt-results');
   const promptBox = h('div.prompt-box', { style: { maxHeight: '120px' } });
-  const info = h('span.muted', { style: { fontSize: '12px' } });
+  const info = h('span.tt-info');
   const engine = state.info?.engine;
   const m = openModal({
-    title: `Test: ${task.title || task.name}`, width: 920,
+    title: `Test: ${task.title || task.name}`, width: 920, className: 'tt-dlg',
     subtitle: 'Runs the task on a few random files of this project. Nothing is saved to your annotations.',
     body: h('div',
       engine && !engine.connected ? h('div.notice', { style: { marginBottom: '12px' } }, ico('alert', 16),
         h('div', 'No model connected: the mock engine returns placeholder values. Segment timing (speech regions) is real. With Qwen3-Omni connected this preview shows real output.')) : null,
-      h('div.row', { style: { gap: '8px', marginBottom: '10px' } },
-        h('span.muted', { style: { fontSize: '12.5px' } }, 'Sample'), sizeSel,
+      h('div.tt-bar',
+        h('span.tt-label', 'Sample'), sizeSel,
         h('button.btn.sm', { onclick: () => { seed = Math.floor(Math.random() * 1e6); run(); } }, ico('repeat', 13), 'Shuffle'),
         h('div.grow'), info),
-      h('details', h('summary.muted', { style: { fontSize: '12px', cursor: 'pointer', marginBottom: '6px' } }, 'Prompt sent to the model'), promptBox),
+      h('details.tt-prompt', h('summary', ico('chev-r', 12), 'Prompt sent to the model'), promptBox),
       body),
     onClose: () => { audio.pause(); audio.src = ''; },
     actions: [
@@ -80,9 +80,9 @@ export function openTaskTest({ task, saved = true }) {
     const spatial = segs.some(s => s.geom);
     let content;
     if (spatial && md.modality === 'image') content = imagePreview(md, segs);
-    else if (!segs.length) content = h('div.muted', { style: { fontSize: '12.5px' } }, 'No output for this file.');
+    else if (!segs.length) content = h('div.tt-none', 'No output for this file.');
     else content = h('div.tt-rows', segs.slice(0, MAX_ROWS).map(s => row(md, s)),
-      segs.length > MAX_ROWS ? h('div.muted', { style: { fontSize: '12px', padding: '4px 0' } }, `+ ${segs.length - MAX_ROWS} more`) : null);
+      segs.length > MAX_ROWS ? h('div.tt-more', `+ ${segs.length - MAX_ROWS} more`) : null);
     return h('div.tt-file', head, content);
   }
 

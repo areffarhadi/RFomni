@@ -15,7 +15,7 @@ const enginePill = h('div.engine-pill', h('i'), h('span', 'Engine…'));
 const themeBtn = h('button.icon-btn', { title: 'Toggle light / dark', onclick: toggleTheme });
 const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
-const brand = h('a.brand', { href: '#/' }, ico('logo', 25, ''), h('b', 'Omni'), h('span.light', 'Studio'));
+const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,
   crumbs, h('div.grow'), sharedPill, shareBtn, enginePill,

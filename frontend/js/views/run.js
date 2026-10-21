@@ -57,9 +57,9 @@ export function openRunDialog({ mediaIds = null, taskIds = null } = {}) {
     '(marked "mock", with random confidence) so you can try the editing workflow. Real annotations will come from Qwen3-Omni once it is connected.')) : null;
 
   const m = openModal({
-    title: 'Run tasks', width: 640,
+    title: 'Run tasks', width: 640, className: 'run-dlg',
     subtitle: 'Each selected task is applied to every matching file and written to its own tier.',
-    body: h('div', notice && h('div', { style: { marginBottom: '14px' } }, notice),
+    body: h('div', notice && h('div', { style: { marginBottom: '16px' } }, notice),
       h('h4', 'Tasks'), taskList, h('h4', 'Files'), scopeEls, h('h4', 'Existing annotations'), modeEls),
     actions: [
       { label: 'Cancel', ghost: true, onClick: (a) => a.close() },

@@ -9,6 +9,11 @@ import { openRunDialog } from './run.js';
 import { mergeOrder } from '../editor/order.js';
 
 const changed = (t) => [...new Set((t.modified_fields || []).map(k => FIELD_NAMES[k] || k))].join(' · ');
+const classCount = (n) => `${n} class${n === 1 ? '' : 'es'}`;
+const MODS = ['audio', 'video', 'image'];
+/** The three media types as small icons; the ones the task does not apply to are dimmed. */
+const mods = (t) => h('span.tc-mods', { title: `Applies to ${t.modalities.join(', ')}` },
+  MODS.map(m => ico(modalityIcon(m), 13, t.modalities.includes(m) ? '' : 'dim')));
 
 export class TasksView {
   constructor(pv) {
@@ -19,7 +24,7 @@ export class TasksView {
     this.pipe = h('div.pipeline');
     this.lib = h('div');
     this.mine = h('aside.tv-mine');
-    const search = h('input.input', { placeholder: 'Search tasks', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.renderLib(); } });
+    const search = h('input.input', { placeholder: 'Search tasks', 'aria-label': 'Search tasks', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.renderLib(); } });
     this.kindCtl = h('div.seg-ctl', [['all', 'All'], ['annotation', 'Annotation'], ['captioning', 'Captioning']].map(([k, v]) =>
       h('button', { dataset: { v: k }, onclick: () => { this.kind = k; this.renderLib(); } }, v)));
     this.modCtl = h('div.seg-ctl', [['all', 'Any media'], ['audio', 'Audio'], ['video', 'Video'], ['image', 'Image']].map(([k, v]) =>
@@ -33,11 +38,12 @@ export class TasksView {
           h('button.btn', { onclick: () => openRunDialog() }, ico('sparkles', 15), 'Run tasks…'),
           h('button.btn.primary', { onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 15), 'New prompt task'))),
       h('div.section',
-        h('div.section-head', h('h3', ico('layers', 15), 'Tiers in this project', h('span.badge', { dataset: { n: '' } })),
+        h('div.section-head', h('h3', 'Tiers in this project', h('span.badge', { dataset: { n: '' } })),
           h('span.muted', { style: { fontSize: '12px' } }, 'Drag to reorder · click × to remove')),
         h('div.section-body', this.pipe)),
       h('div.tv-split',
         h('div.tv-left',
+          h('div.tv-col-head', h('h3', 'Task library'), h('span.muted', 'defaults')),
           h('div.tv-filters', h('div.fp-search', ico('search', 14), search), this.kindCtl, this.modCtl),
           this.lib),
         h('div.tv-divider'),
@@ -95,9 +101,9 @@ export class TasksView {
           this.setTasks(arr);
         },
       }, h('span.grip', ico('grip', 13)), h('span.sw'), t.name,
-      t.modified || !t.builtin ? h('span.pipe-mark', { title: t.builtin ? `Changed: ${changed(t)}` : 'Your task' }, t.builtin ? '✎' : '★') : null,
+      t.modified || !t.builtin ? h('span.pipe-mark', { title: t.builtin ? `Changed: ${changed(t)}` : 'Your task' }, ico(t.builtin ? 'edit' : 'user', 12)) : null,
       t.parent ? h('span.child', `↳ ${state.taskById.get(t.parent)?.name || ''}`) : null,
-      h('button.icon-btn.sm', { title: 'Remove', onclick: () => this.toggle(id) }, ico('x', 12)));
+      h('button.icon-btn.sm', { title: 'Remove', 'aria-label': `Remove ${t.name}`, onclick: () => this.toggle(id) }, ico('x', 12)));
       return chip;
     }));
   }
@@ -118,24 +124,25 @@ export class TasksView {
         h('div.task-grid', tasks.map(t => this.card(t, sel.has(t.id)))));
     }
     if (!out.length) out.push(h('div.empty', 'No default tasks match.'));
-    this.lib.replaceChildren(h('div.tv-col-head', h('h3', 'Task library'), h('span.muted', 'defaults')), ...out);
+    this.lib.replaceChildren(...out);
   }
 
   card(t, on) {
     const sw = h('label.switch', { onclick: (e) => e.stopPropagation(), title: on ? 'In this project' : 'Add to this project' },
-      h('input', { type: 'checkbox', checked: on, onchange: () => this.toggle(t.id) }), h('span'));
+      h('input', { type: 'checkbox', checked: on, 'aria-label': `${t.name} in this project`, onchange: () => this.toggle(t.id) }), h('span'));
     return h('div.task-card' + (on ? '.on' : ''), { style: { '--c': t.color }, onclick: () => openTaskDetail(t, { onChange: () => this.render() }) },
-      h('div.tc-top', h('div.grow', h('div.tc-name', t.name), h('div.tc-title', t.title)), sw),
+      h('div.tc-top', h('div.grow', h('div.tc-name', h('i.dot'), t.name), h('div.tc-title', t.title)), sw),
       h('div.tc-desc', t.description || t.prompt),
       h('div.tc-badges',
         h('span.badge', OUTPUTS[t.output]),
         h('span.badge', GRANS[t.granularity]),
-        t.labels?.length && t.output !== 'keypoints' ? h('span.badge', `${t.labels.length} classes`) : null,
-        t.kind === 'captioning' ? h('span.badge.accent', 'caption') : null,
-        h('span.tc-mods', ['audio', 'video', 'image'].map(m => ico(modalityIcon(m), 13, t.modalities.includes(m) ? '' : 'dim')))),
-      h('div.tc-actions',
-        h('button.btn.sm.ghost', { title: 'Change classes or prompt', onclick: (e) => { e.stopPropagation(); openTaskEditor({ base: t, edit: true, onSaved: () => this.render() }); } }, ico('edit', 12), 'Edit'),
-        state.project ? h('button.btn.sm.ghost', { title: 'Try it on a few files', onclick: (e) => { e.stopPropagation(); openTaskTest({ task: t }); } }, ico('play', 12), 'Test') : null));
+        t.labels?.length && t.output !== 'keypoints' ? h('span.badge', classCount(t.labels.length)) : null,
+        t.kind === 'captioning' ? h('span.badge', 'caption') : null),
+      h('div.tc-foot',
+        mods(t),
+        h('div.tc-actions',
+          h('button.btn.sm.ghost', { title: 'Change classes or prompt', onclick: (e) => { e.stopPropagation(); openTaskEditor({ base: t, edit: true, onSaved: () => this.render() }); } }, ico('edit', 12), 'Edit'),
+          state.project ? h('button.btn.sm.ghost', { title: 'Try it on a few files', onclick: (e) => { e.stopPropagation(); openTaskTest({ task: t }); } }, ico('play', 12), 'Test') : null)));
   }
 
   /** Right: tasks you created and built-in tasks you changed. */
@@ -151,25 +158,25 @@ export class TasksView {
         ico('edit', 22),
         h('div', 'Tasks you create or change show up here, so you always know what differs from the defaults.'),
         h('div.muted', 'Edit a task in the library to change its classes or prompt; you can reset it any time.'),
-        h('button.btn.primary.sm', { onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 13), 'New prompt task')),
+        h('button.btn.sm', { onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 13), 'New prompt task')),
       group('New', 'created by you', created),
       group('Changed defaults', 'reset brings back the original', modified));
   }
 
   mineCard(t, on) {
     const sw = h('label.switch', { onclick: (e) => e.stopPropagation(), title: on ? 'In this project' : 'Add to this project' },
-      h('input', { type: 'checkbox', checked: on, onchange: () => this.toggle(t.id) }), h('span'));
+      h('input', { type: 'checkbox', checked: on, 'aria-label': `${t.name} in this project`, onchange: () => this.toggle(t.id) }), h('span'));
     const d = t.default || {};
     const diff = [];
     if (t.modified && t.modified_fields?.includes('labels')) diff.push(`classes ${(d.labels || []).length} → ${(t.labels || []).length}`);
     if (t.modified && t.modified_fields?.includes('prompt')) diff.push('prompt edited');
     const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
     return h('div.mine-card' + (on ? '.on' : ''), { style: { '--c': t.color }, onclick: () => openTaskDetail(t, { onChange: () => this.render() }) },
-      h('div.tc-top', h('div.grow', h('div.tc-name', t.name, ' ', t.builtin ? h('span.badge.warn', 'changed') : h('span.badge.accent', 'new')),
+      h('div.tc-top', h('div.grow', h('div.tc-name', h('i.dot'), t.name, t.builtin ? h('span.badge.warn', 'changed') : h('span.badge.accent', 'new')),
         h('div.tc-title', t.title)), sw),
       h('div.tc-badges', h('span.badge', OUTPUTS[t.output]), h('span.badge', GRANS[t.granularity]),
-        t.labels?.length && t.output !== 'keypoints' ? h('span.badge', `${t.labels.length} classes`) : null,
-        h('span.tc-mods', ['audio', 'video', 'image'].map(m => ico(modalityIcon(m), 13, t.modalities.includes(m) ? '' : 'dim')))),
+        t.labels?.length && t.output !== 'keypoints' ? h('span.badge', classCount(t.labels.length)) : null,
+        mods(t)),
       diff.length ? h('div.mine-diff', diff.join(' · ')) : (t.builtin ? h('div.mine-diff', `changed: ${changed(t)}`) : null),
       h('div.tc-actions',
         h('button.btn.sm', { onclick: stop(() => openTaskEditor({ base: t, edit: true, onSaved: () => this.render() })) }, ico('edit', 12), 'Edit'),

@@ -10,23 +10,23 @@ export class ReviewView {
     this.pv = pv;
     this.thr = state.project?.settings?.low_confidence ?? 0.6;
     this.task = '';
-    this.thrLabel = h('span.mono', this.thr.toFixed(2));
+    this.thrLabel = h('span.thr-val', this.thr.toFixed(2));
     const slider = h('input', {
-      type: 'range', min: 0.05, max: 1, step: 0.05, value: this.thr, style: { width: '200px', accentColor: 'var(--accent)' },
+      type: 'range', min: 0.05, max: 1, step: 0.05, value: this.thr,
       oninput: (e) => { this.thr = +e.target.value; this.thrLabel.textContent = this.thr.toFixed(2); this.loadSoon(); },
       onchange: () => updateProject({ settings: { low_confidence: this.thr } }).then(refreshProject).catch(errorToast),
     });
     const taskSel = h('select.select', { style: { width: '220px' }, onchange: (e) => { this.task = e.target.value; this.load(); } },
       h('option', { value: '' }, 'All tiers'), projectTasks().map(t => h('option', { value: t.id }, t.title)));
-    this.count = h('span.badge.danger');
+    this.count = h('span.badge');
     this.body = h('div');
     this.el = h('div.page', h('div.page-inner',
       h('div.page-head', h('div', h('h1', 'Review queue'),
         h('p', 'Segments the model was least sure about, lowest confidence first. Open one to listen, fix it and mark it reviewed (R); reviewed segments leave the queue.'))),
       h('div.section',
         h('div.section-head',
-          h('div.row', { style: { gap: '18px' } },
-            h('label.row', h('span.muted', 'Confidence below'), slider, this.thrLabel),
+          h('div.review-tools',
+            h('label.thr', h('span', 'Confidence below'), slider, this.thrLabel),
             taskSel),
           this.count),
         this.body)));
@@ -46,15 +46,15 @@ export class ReviewView {
     }
     const pid = state.project.id;
     this.body.replaceChildren(h('div', { style: { maxHeight: 'calc(100vh - 260px)', overflow: 'auto' } }, h('table.list',
-      h('thead', h('tr', h('th', 'Confidence'), h('th', 'File'), h('th', 'Tier'), h('th', 'Time'), h('th', 'Value'), h('th', ''))),
+      h('thead', h('tr', h('th', 'Confidence'), h('th', 'File'), h('th', 'Tier'), h('th.num', 'Time'), h('th', 'Value'), h('th.go', ''))),
       h('tbody', d.items.map(r => h('tr', { onclick: () => go(links.file(pid, r.media_id, { seg: r.segment_id })) },
         h('td', confBar(r.confidence, this.thr)),
-        h('td', h('span.row', { style: { gap: '6px' } }, ico(modalityIcon(r.modality), 13), r.media_name)),
+        h('td', h('span.file', ico(modalityIcon(r.modality), 13), r.media_name)),
         h('td', h('span.tchip', { style: { '--c': r.color } }, r.tier_name)),
-        h('td.mono', { style: { fontSize: '12px' } }, r.start == null ? 'file' : `${fmtTime(r.start)}`),
+        h('td.num', r.start == null ? 'file' : `${fmtTime(r.start)}`),
         h('td.val-cell', { title: r.value }, r.value || h('span.muted', '(empty)')),
-        h('td', ico('chev-r', 14))))))),
-    d.total > d.items.length ? h('div.section-body.muted', `Showing the ${d.items.length} lowest of ${d.total}.`) : null);
+        h('td.go', ico('chev-r', 14))))))),
+    d.total > d.items.length ? h('div.review-more', `Showing the ${d.items.length} lowest of ${d.total}.`) : null);
   }
 
   destroy() {}

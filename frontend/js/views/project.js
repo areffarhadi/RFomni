@@ -48,7 +48,7 @@ export class ProjectView {
     const low = state.project?.stats?.low || 0;
     const a = this.links.review;
     a.querySelector('.count')?.remove();
-    if (low) a.append(h('span.count', low > 999 ? '999+' : String(low)));
+    if (low) a.append(h('span.count', low > 99 ? '99+' : String(low)));
   }
 
   async update({ tab, mid, params }) {

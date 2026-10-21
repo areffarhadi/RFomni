@@ -169,15 +169,15 @@ export class ImageEditor extends BaseEditor {
 
   // ------------------------------------------------------------------ toolbar
   buildToolbar() {
-    const tool = (mode, icon, label, key) => h('button', { dataset: { v: mode }, title: `${label} (${key})`, onclick: () => this.setMode(mode) }, ico(icon, 14), label);
+    const tool = (mode, icon, label, key) => h('button', { dataset: { v: mode }, title: `${label} (${key})`, onclick: () => this.setMode(mode) }, ico(icon, 14), h('span', label));
     this.toolCtl = h('div.seg-ctl.sm', tool('select', 'target', 'Select', 'V'), tool('box', 'grid', 'Box', 'B'), tool('pose', 'user', 'Pose', 'K'));
     this.drawSel = h('select.select.sm', { title: 'New boxes go into this task', onchange: (e) => { this.drawKey = e.target.value; this.setMode('box'); } });
-    this.overlayBtn = h('button.icon-btn.active', { title: 'Show / hide all regions (H)', onclick: () => this.toggleOverlay() }, ico('eye', 16));
-    return h('div.img-tools', this.toolCtl, h('span.blab', 'Draw into'), this.drawSel, this.overlayBtn, h('div.grow'),
-      h('button.icon-btn', { title: 'Zoom out (−)', onclick: () => this.zoomBy(1 / 1.4) }, ico('zoom-out', 16)),
+    this.overlayBtn = h('button.icon-btn.active', { title: 'Show / hide all regions (H)', 'aria-label': 'Show regions', 'aria-pressed': 'true', onclick: () => this.toggleOverlay() }, ico('eye', 16));
+    return h('div.img-tools', this.toolCtl, h('span.sep'), h('span.blab', 'Draw into'), this.drawSel, this.overlayBtn, h('div.grow'),
+      h('button.icon-btn', { title: 'Zoom out (−)', 'aria-label': 'Zoom out', onclick: () => this.zoomBy(1 / 1.4) }, ico('zoom-out', 16)),
       this.zoomLbl,
-      h('button.icon-btn', { title: 'Zoom in (+)', onclick: () => this.zoomBy(1.4) }, ico('zoom-in', 16)),
-      h('button.icon-btn', { title: 'Fit (0)', onclick: () => this.fit() }, ico('fit', 16)));
+      h('button.icon-btn', { title: 'Zoom in (+)', 'aria-label': 'Zoom in', onclick: () => this.zoomBy(1.4) }, ico('zoom-in', 16)),
+      h('button.icon-btn', { title: 'Fit (0)', 'aria-label': 'Fit to view', onclick: () => this.fit() }, ico('fit', 16)));
   }
 
   setMode(m) {
@@ -189,6 +189,7 @@ export class ImageEditor extends BaseEditor {
   toggleOverlay() {
     this.overlay = !this.overlay;
     this.overlayBtn.classList.toggle('active', this.overlay);
+    this.overlayBtn.setAttribute('aria-pressed', String(this.overlay));
     this.overlayBtn.replaceChildren(ico(this.overlay ? 'eye' : 'eye-off', 16));
     this.renderShapes();
   }
@@ -742,7 +743,7 @@ export class ImageEditor extends BaseEditor {
     const suggested = (state.project.tasks || []).map(id => state.taskById.get(id))
       .filter(t => t && !SPATIAL.has(t.output) && t.modalities.includes('image') && !present.has(t.id));
     if (!doc.tiers.length) {
-      cards.unshift(h('div.empty', { style: { padding: '16px 10px' } }, h('div', 'No annotations yet. Run the project tasks, or draw / write them by hand.'),
+      cards.unshift(h('div.empty', h('div','No annotations yet. Run the project tasks, or draw / write them by hand.'),
         h('button.btn.primary.sm', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('sparkles', 13), 'Run tasks')));
     }
     if (suggested.length) {
@@ -770,7 +771,7 @@ export class ImageEditor extends BaseEditor {
       },
     }, ico('plus', 12), isPose ? 'Person' : 'Box');
     const eye = t && h('button.icon-btn.sm', {
-      title: hidden ? 'Show on image' : 'Hide on image',
+      title: hidden ? 'Show on image' : 'Hide on image', 'aria-label': hidden ? 'Show on image' : 'Hide on image',
       onclick: () => { hidden ? this.hidden.delete(t.id) : this.hidden.add(t.id); ls.set('imgHidden:' + this.pid, [...this.hidden]); this.renderShapes(); this.renderPanel(); },
     }, ico(hidden ? 'eye-off' : 'eye', 14));
     const rows = segs.map(s => this.regionRow(tier, s));
@@ -790,8 +791,8 @@ export class ImageEditor extends BaseEditor {
       h('span.rl', valStr(s.value) || h('span.muted', 'no label'), nVis != null ? h('small', ` ${nVis}/${Math.max(17, g.points.length)} points`) : null),
       s.confidence != null ? confBar(s.confidence, this.lowThr) : null,
       srcBadge(s.source, s.meta?.edited_by),
-      h('button.icon-btn.sm' + (s.reviewed ? '.active' : ''), { title: s.reviewed ? 'Reviewed (R)' : 'Mark reviewed (R)', onclick: () => this.update(s.id, { reviewed: !s.reviewed }, 'Review') }, ico('check', 13)),
-      h('button.icon-btn.sm', { title: 'Delete (Del)', onclick: () => this.deleteSeg(s.id) }, ico('trash', 13)));
+      h('button.icon-btn.sm' + (s.reviewed ? '.active' : ''), { title: s.reviewed ? 'Reviewed (R)' : 'Mark reviewed (R)', 'aria-label': 'Reviewed', 'aria-pressed': String(!!s.reviewed), onclick: () => this.update(s.id, { reviewed: !s.reviewed }, 'Review') }, ico('check', 13)),
+      h('button.icon-btn.sm', { title: 'Delete (Del)', 'aria-label': 'Delete region', onclick: () => this.deleteSeg(s.id) }, ico('trash', 13)));
     if (!sel) return row;
     const detail = [];
     if (tier.output === 'boxes') {
@@ -824,7 +825,7 @@ export class ImageEditor extends BaseEditor {
             names[k] = e.target.value.trim() || `point ${k + 1}`;
             this.update(s.id, { geom: { ...g, names } }, 'Name point');
           },
-        }) : h('b', { style: { fontSize: '12.5px' } }, kpName(g, k));
+        }) : h('b', { style: { fontSize: '13px', fontWeight: 600 } }, kpName(g, k));
         detail.push(h('div.kp-detail',
           h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, nameInput,
             h('button.btn.sm', { onclick: () => this.setPoint(s.id, k, [pts[k][0], pts[k][1], v === 2 ? 1 : 2], 'Toggle occluded') }, v === 2 ? 'Occluded (O)' : 'Visible (O)'),
@@ -846,11 +847,11 @@ export class ImageEditor extends BaseEditor {
         detail.push(h('div.row', { style: { gap: '6px' } }, h('span.muted', { style: { fontSize: '12px' } }, `Connection ${kpName(g, a)} — ${kpName(g, b)}`),
           h('button.btn.sm', { onclick: () => this.removeEdge(s.id, a, b) }, ico('trash', 12), 'Remove (Del)')));
       }
-      detail.push(h('div.muted', { style: { fontSize: '11.5px', lineHeight: 1.5 } },
+      detail.push(h('div.muted', { style: { fontSize: '12px', lineHeight: 1.5 } },
         'Drag points to move them · Alt + drag moves the whole skeleton · Shift + drag from one point to another connects them · click a line and press Delete to remove it · dashed chips are missing points: click to place.'));
     }
     if (s.meta?.model_geom || (s.meta?.model_value != null && s.meta.model_value !== s.value)) {
-      detail.push(h('div.muted', { style: { fontSize: '11.5px' } }, 'Corrected by hand',
+      detail.push(h('div.muted', { style: { fontSize: '12px' } }, 'Corrected by hand',
         s.meta.model_value != null && s.meta.model_value !== s.value ? ` · model said "${valStr(s.meta.model_value)}"` : '',
         h('button.btn.sm.ghost', { style: { marginLeft: '6px' }, onclick: () => this.restoreModel(s.id) }, ico('undo', 12), 'Restore model output')));
     }

@@ -88,8 +88,8 @@ export async function uploadMany(pid, list) {
 
 export function openLinkDialog(pid) {
   const pathInput = h('input.input.mono', { value: ls.get('linkPath', ''), placeholder: '/path/to/your/data' });
-  const list = h('div', { style: { border: '1px solid var(--line-2)', borderRadius: '8px', height: '260px', overflow: 'auto', padding: '4px' } });
-  const info = h('div.muted', { style: { fontSize: '12px', minHeight: '18px' } });
+  const list = h('div.link-list');
+  const info = h('div.link-info');
   const recursive = h('input', { type: 'checkbox', checked: true });
   let cur = null;
 
@@ -101,7 +101,7 @@ export function openLinkDialog(pid) {
       const rows = [];
       if (d.parent) rows.push(dirRow('..', d.parent, 'chev-u'));
       d.dirs.forEach(x => rows.push(dirRow(x.name, x.path, 'folder')));
-      if (!d.dirs.length) rows.push(h('div.muted', { style: { padding: '10px' } }, 'No subfolders'));
+      if (!d.dirs.length) rows.push(h('div.muted', 'No subfolders'));
       list.replaceChildren(...rows);
       info.textContent = d.media_here ? `${d.media_here} media file(s) directly in this folder` : 'No media files directly in this folder (subfolders are included when linking recursively)';
     } catch (e) {
@@ -134,10 +134,9 @@ export function openLinkDialog(pid) {
     title: 'Link a local folder', width: 600,
     subtitle: 'Files stay where they are. Omni Studio only stores a reference, so large datasets do not need to be copied.',
     body: h('div',
-      h('div.row', { style: { marginBottom: '8px' } }, pathInput, h('button.btn', { onclick: () => browse(pathInput.value) }, 'Go')),
+      h('div.row.link-path', pathInput, h('button.btn', { onclick: () => browse(pathInput.value) }, 'Go')),
       list,
-      h('div.row', { style: { marginTop: '8px', justifyContent: 'space-between' } }, info,
-        h('label.check', recursive, 'Include subfolders'))),
+      h('div.row.link-foot', info, h('label.check', recursive, 'Include subfolders'))),
     actions: [
       { label: 'Cancel', ghost: true, onClick: (a) => a.close() },
       { id: 'link', label: 'Link folder', icon: 'link', primary: true, onClick: doLink },
