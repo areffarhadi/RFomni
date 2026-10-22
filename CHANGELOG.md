@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Themes**: the theme button in the top bar opens a menu with Dark, Light and the new **Forest** theme
+  (deep greens #051F20 to #235347, sage accent #8EB69B, mint text #DAF1DE). Forest is checked for WCAG AA contrast
+  (text, secondary text, buttons, input borders). Primary buttons and switches now take their text colour from the
+  theme instead of fixed white, and inputs have their own border token.
 - Tasks page: change the classes (add, remove, rename, edit as a list) and the prompt of any task, including built-in ones.
   Changed and new tasks move to their own column behind a vertical line, with Edit / Test / Reset to default / Delete;
   the editor shows the default next to each change. Editors offer the current classes right away.

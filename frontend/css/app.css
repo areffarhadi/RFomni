@@ -40,7 +40,32 @@
   --overlay: rgba(16, 18, 24, .32);
   color-scheme: light;
 }
+/* Forest: a dark theme built from a six-step green palette
+   #051F20 #0B2B26 #163832 #235347 #8EB69B #DAF1DE (darkest to lightest).
+   Surfaces step up through the dark greens, text is the pale mint, the sage is the accent.
+   Checked for WCAG AA: text 10-14:1, secondary text >= 4.9:1 on every surface, button text 7.6:1,
+   input borders >= 3:1. #235347 is used for borders only, never behind small text. */
+:root[data-theme="forest"] {
+  --bg: #051f20; --bg-1: #0b2b26; --bg-2: #10312c; --bg-3: #163832; --bg-4: #1f4a40;
+  --line: #173f37; --line-2: #235347;
+  --text: #daf1de; --text-2: #b6d6bf; --muted: #8fa79a; --faint: #6e9381;
+  --input-bg: #072522; --input-line: #4f8370;
+  --accent: #8eb69b; --accent-strong: #b3d6bd; --accent-ink: #051f20; --accent-soft: rgba(142, 182, 155, .15);
+  --accent-fill: #8eb69b; --accent-fill-hover: #a3c8ae; --accent-line: rgba(142, 182, 155, .5);
+  --warn: #e2c275; --warn-soft: rgba(226, 194, 117, .12);
+  --danger: #f0907f; --danger-soft: rgba(240, 144, 127, .12); --danger-fill: #c9302c;
+  --ok: #7ed6a0; --ok-soft: rgba(126, 214, 160, .13);
+  --wave: #8eb69b; --wave-2: rgba(142, 182, 155, .3);
+  --lane: #06211f; --lane-2: #082522; --ruler: #062220;
+  --seg-text: #e4f5e7; --seg-alpha: .22;
+  --bnd: rgba(218, 241, 222, .5); --bnd-bg: rgba(5, 31, 32, .78);
+  --shadow: 0 8px 28px rgba(0, 0, 0, .5), 0 0 0 1px rgba(218, 241, 222, .05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
+  --overlay: rgba(2, 14, 14, .6);
+  color-scheme: dark;
+}
 :root {
+  --input-line: var(--line-2);  /* Dark and Light keep their look; Forest sets a stronger border */
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   /* type scale: 11 / 12 / 13 / 14 / 16 / 20 / 22 */
@@ -87,7 +112,7 @@ kbd {
 .btn:active { background: var(--bg-4); }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn .ico { color: var(--muted); }
-.btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+.btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-ink); }
 .btn.primary .ico { color: inherit; }
 .btn.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
 .btn.danger { background: var(--danger-fill); border-color: var(--danger-fill); color: #fff; }
@@ -109,11 +134,11 @@ kbd {
 .icon-btn.active { color: var(--accent); background: var(--accent-soft); }
 .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
 .input, .select, .textarea {
-  width: 100%; height: 32px; padding: 0 10px; border-radius: var(--r); border: 1px solid var(--line-2);
+  width: 100%; height: 32px; padding: 0 10px; border-radius: var(--r); border: 1px solid var(--input-line);
   background: var(--input-bg); color: var(--text); outline: none; transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
 }
 .input::placeholder, .textarea::placeholder { color: var(--muted); }
-.input:hover, .select:hover, .textarea:hover { border-color: color-mix(in srgb, var(--line-2) 50%, var(--faint)); }
+.input:hover, .select:hover, .textarea:hover { border-color: color-mix(in srgb, var(--input-line) 50%, var(--faint)); }
 .textarea { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.5; }
 .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: none; }
@@ -132,7 +157,7 @@ kbd {
 }
 .seg-ctl button:hover { color: var(--text); }
 .seg-ctl button.on { background: var(--bg-1); color: var(--text); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line-2); }
-:root[data-theme="dark"] .seg-ctl button.on, :root:not([data-theme]) .seg-ctl button.on { background: var(--bg-4); box-shadow: none; }
+:root[data-theme="dark"] .seg-ctl button.on, :root[data-theme="forest"] .seg-ctl button.on, :root:not([data-theme]) .seg-ctl button.on { background: var(--bg-4); box-shadow: none; }
 .seg-ctl.sm button { height: 22px; padding: 0 8px; font-size: var(--fs-sm); }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r);
@@ -167,6 +192,7 @@ kbd {
 .switch span::after { content: ""; position: absolute; width: 14px; height: 14px; left: 2px; top: 2px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s var(--ease); }
 :root[data-theme="light"] .switch span { background: var(--faint); }
 .switch input:checked + span { background: var(--accent-fill); }
+.switch input:checked + span::after { background: var(--accent-ink); }
 .switch input:checked + span::after { transform: translateX(12px); }
 .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
@@ -834,8 +860,8 @@ table.list .file .ico { color: var(--muted); }
 .tl-bar .selinfo:empty { display: none; }
 .tl-bar .select { width: auto; height: 28px; font-size: var(--fs-sm); padding: 0 6px; max-width: 140px; }
 .tl-bar .blab { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; margin-right: 2px; }
-.tl-bar .play { background: var(--accent-fill); color: #fff; border-radius: var(--r); }
-.tl-bar .play:hover { background: var(--accent-fill-hover); color: #fff; }
+.tl-bar .play { background: var(--accent-fill); color: var(--accent-ink); border-radius: var(--r); }
+.tl-bar .play:hover { background: var(--accent-fill-hover); color: var(--accent-ink); }
 /* narrow timelines: drop text labels before the toolbar wraps (every control keeps its title) */
 .tl { container-type: inline-size; }
 @container (max-width: 1100px) {
@@ -1343,3 +1369,15 @@ body.readonly .edit-only { display: none !important; }
 }
 /* editor header overflow guards (kept with the editor section rules above) */
 .ed-head .ed-title { min-width: 0; flex: 1 1 auto; }
+
+/* ---------- theme menu ---------- */
+.theme-menu { min-width: 240px; }
+.theme-item { gap: 10px; padding-top: 7px; padding-bottom: 7px; height: auto; }
+.theme-item .menu-label { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.theme-item .menu-label b { font-weight: 500; color: var(--text); }
+.theme-item .menu-label small { font-size: var(--fs-xs); color: var(--muted); }
+.theme-item.active .menu-label b { color: var(--accent); }
+.theme-item > .ico { color: var(--accent); }
+.theme-sw { display: flex; width: 36px; height: 24px; border-radius: var(--r-sm); overflow: hidden; flex: none; box-shadow: 0 0 0 1px var(--line-2); }
+.theme-sw i { flex: 1; }
+.theme-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { $, h, ico, isTyping, ls } from './util.js';
 import { state, on, loadInfo, loadTasks, shareInfo } from './state.js';
 import { parseHash, links } from './nav.js';
-import { errorToast, modalOpen } from './ui.js';
+import { errorToast, modalOpen, popover } from './ui.js';
 import { HomeView } from './views/home.js';
 import { ProjectView } from './views/project.js';
 import { showShortcuts } from './views/shortcuts.js';
@@ -12,7 +12,7 @@ import { openShareDialog } from './views/share.js';
 const app = $('#app');
 const crumbs = h('div.crumbs');
 const enginePill = h('div.engine-pill', h('i'), h('span', 'Engine…'));
-const themeBtn = h('button.icon-btn', { title: 'Toggle light / dark', onclick: toggleTheme });
+const themeBtn = h('button.icon-btn', { onclick: () => openThemeMenu(), 'aria-haspopup': 'menu' });
 const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
@@ -29,15 +29,46 @@ const verEl = h('span');
 const statusbar = h('footer.statusbar', jobEl, h('div.sb-right', saveEl, wsEl, verEl));
 app.append(topbar, main, statusbar);
 
+// ---- themes ----------------------------------------------------------------
+// The colours of each theme live in app.css; `sw` only previews them in the menu (page, surface, accent).
+const THEMES = [
+  { id: 'dark', label: 'Dark', hint: 'Neutral greys, blue accent', icon: 'moon', sw: ['#0f1012', '#24262a', '#5d9bff'] },
+  { id: 'light', label: 'Light', hint: 'Bright, for daylight', icon: 'sun', sw: ['#f5f6f8', '#ffffff', '#0969da'] },
+  { id: 'forest', label: 'Forest', hint: 'Deep greens, sage accent', icon: 'leaf', sw: ['#051f20', '#235347', '#8eb69b'] },
+];
+const curTheme = () => THEMES.find(t => t.id === document.documentElement.dataset.theme) || THEMES[0];
+
 function setThemeIcon() {
-  themeBtn.replaceChildren(ico(document.documentElement.dataset.theme === 'light' ? 'moon' : 'sun', 17));
+  const t = curTheme();
+  themeBtn.replaceChildren(ico(t.icon, 17));
+  themeBtn.title = `Theme: ${t.label}`;
+  themeBtn.setAttribute('aria-label', `Theme: ${t.label}. Change theme`);
 }
-function toggleTheme() {
-  const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-  document.documentElement.dataset.theme = t;
-  ls.set('theme', t);
+function setTheme(id) {
+  document.documentElement.dataset.theme = id;
+  ls.set('theme', id);
   setThemeIcon();
   window.dispatchEvent(new Event('themechange'));
+}
+function openThemeMenu() {
+  const cur = curTheme().id;
+  const items = THEMES.map(t => h('button.menu-item.theme-item' + (t.id === cur ? '.active' : ''), {
+    type: 'button', role: 'menuitemradio', 'aria-checked': String(t.id === cur),
+    onclick: () => { pop.close(); setTheme(t.id); themeBtn.focus(); },
+  }, h('span.theme-sw', { 'aria-hidden': 'true' }, t.sw.map(c => h('i', { style: { background: c } }))),
+  h('span.menu-label', h('b', t.label), h('small', t.hint)),
+  t.id === cur ? ico('check', 15) : h('span.ico-spacer')));
+  const list = h('div.menu.theme-menu', { role: 'menu', 'aria-label': 'Theme' }, h('div.menu-head', 'Theme'), items);
+  list.addEventListener('keydown', (e) => {  // arrow keys move between the options
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+    }
+  });
+  const pop = popover(themeBtn, list, { placement: 'bottom-end', onClose: () => themeBtn.setAttribute('aria-expanded', 'false') });
+  themeBtn.setAttribute('aria-expanded', 'true');
+  (items.find(b => b.classList.contains('active')) || items[0]).focus();
 }
 setThemeIcon();
 
