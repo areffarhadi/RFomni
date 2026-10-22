@@ -13,6 +13,11 @@
   Both break into dust around the cursor; at each new window the figure blends into the next movement and the
   letters flow into the next word, with a timeline of the windows (`dust.js`, canvas; the figure is built from
   body keypoints like the Pose task).
+  A **Your own tasks** section: "Can't find your task? Describe it." A prompt box with a running colour border writes,
+  sends and erases example prompts (a Persian translation, accents from {en-US, en-GB, en-CA}, describing the scene,
+  laughter over speech, read or spontaneous speech, people on screen); visitors can type their own. Below it nine
+  agents are always at work, each with its own moving orb and shimmering label: listening, reasoning, searching,
+  fetching data, connecting, drafting a response, generating output, synthesizing sources, idle (`ask.js`).
   Plain HTML/CSS/JS, no libraries, nothing loaded from the internet; respects reduced motion.
   Day / Night / Green switch in its header (shared with the app), with app screenshots in each mode.
   Fonts: Instrument Serif and Poppins are included (SIL OFL); Satoshi is downloaded per install by

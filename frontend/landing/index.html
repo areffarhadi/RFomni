@@ -264,6 +264,28 @@
       </div>
     </section>
 
+    <!-- ============================== your own task ============================== -->
+    <section class="section" id="ask">
+      <div class="wrap">
+        <p class="eyebrow center reveal">Your own tasks</p>
+        <h2 class="h2 center" data-words>Can't find your task? <em>Describe it.</em></h2>
+        <p class="sub center reveal">Write what you want labelled, in your own words. Omni Studio turns it into a task,
+          tests it on a few of your files, and adds it to your list once the results look right.</p>
+        <!-- a prompt box with a running colour border that writes example prompts, and nine agents always at work (ask.js) -->
+        <div class="ask reveal" data-ask>
+          <form class="ask-box" autocomplete="off">
+            <label class="sr-only" for="ask-input">Describe the annotation you are looking for</label>
+            <textarea id="ask-input" rows="2" maxlength="160" placeholder="What should the model mark in your data?"></textarea>
+            <div class="ask-row">
+              <button class="ask-send" type="submit" aria-label="Send the prompt">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
+            </div>
+          </form>
+          <ul class="ask-agents" aria-label="Nine agents at work"></ul>
+        </div>
+      </div>
+    </section>
+
     <!-- ============================== workflow ============================== -->
     <section class="section" id="workflow">
       <div class="wrap">
@@ -385,5 +407,6 @@
   <script src="landing.js"></script>
   <script src="pile.js"></script>
   <script src="dust.js"></script>
+  <script src="ask.js"></script>
 </body>
 </html>

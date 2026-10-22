@@ -80,6 +80,7 @@ of the studio for new users, served by the same local server: no hosting, no ext
 Its *Open the studio* buttons take you back to the page you last had open in the studio.
 In the Features section, all 44 tasks drop into a box as pills you can grab and throw (`frontend/landing/pile.js`).
 The Video & action section shows action recognition on a clip: a golden-dust figure acts out each window's action next to its label (`frontend/landing/dust.js`).
+The Your own tasks section shows writing a task as a prompt: a prompt box that writes example prompts, and nine agents at work (`frontend/landing/ask.js`).
 Its main font, Satoshi, is free but may not be redistributed, so `start.sh` downloads your own copy from Fontshare
 (`scripts/get_fonts.py`); without it the page uses the system font.
 
