@@ -8,6 +8,7 @@ import { Dashboard } from './dashboard.js';
 import { filesFromDrop, uploadMany } from './upload.js';
 import { Editor } from '../editor/editor.js';
 import { ImageEditor } from '../editor/image.js';
+import { swap } from '../motion.js';
 
 export class DataView {
   constructor(pv) {
@@ -38,12 +39,18 @@ export class DataView {
     });
   }
 
-  async open(mid, params) {
+  async open(mid, params, { animate = true } = {}) {
     if (mid && mid === this.mid && this.editor) {
       this.editor.applyParams?.(params);
       return;
     }
     await this.flush();
+    // overview -> file goes forward (from below), file -> overview back; file -> file follows the list order
+    const prev = this.mid;
+    const order = this.files.visibleOrder();
+    const dir = !mid ? -1 : !prev ? 1 : Math.sign(order.indexOf(mid) - order.indexOf(prev)) || 1;
+    const oldEl = (this.editor || this.dash)?.el;
+    animate = animate && prev !== undefined && mid !== prev;
     this.editor?.destroy();
     this.editor = null;
     this.dash?.destroy();
@@ -54,7 +61,7 @@ export class DataView {
       emit('editor-file', null);
       emit('save-state', { state: '', text: '' });
       this.dash = new Dashboard(this);
-      this.detail.replaceChildren(this.dash.el);
+      swap(this.detail, oldEl, this.dash.el, dir, animate);
       return;
     }
     const item = state.mediaById.get(mid);
@@ -66,7 +73,7 @@ export class DataView {
     emit('editor-file', item.name);
     const E = item.modality === 'image' ? ImageEditor : Editor;
     this.editor = new E(this, item, params);
-    this.detail.replaceChildren(this.editor.el);
+    swap(this.detail, oldEl, this.editor.el, dir, animate);
     await this.editor.init();
   }
 

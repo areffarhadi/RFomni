@@ -8,6 +8,7 @@ import { HomeView } from './views/home.js';
 import { ProjectView } from './views/project.js';
 import { showShortcuts } from './views/shortcuts.js';
 import { openShareDialog } from './views/share.js';
+import { swap, watchSegments } from './motion.js';
 
 const app = $('#app');
 const crumbs = h('div.crumbs');
@@ -15,10 +16,12 @@ const enginePill = h('div.engine-pill', h('i'), h('span', 'Engine…'));
 const themeBtn = h('button.icon-btn', { onclick: () => openThemeMenu(), 'aria-haspopup': 'menu' });
 const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
+// to the landing page (what Omni Studio is, how to run it); its "Open the studio" brings you back here
+const aboutLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'About Omni Studio: what it does and how to run it' }, ico('info', 14), 'About');
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,
-  crumbs, h('div.grow'), sharedPill, shareBtn, enginePill,
+  crumbs, h('div.grow'), sharedPill, aboutLink, shareBtn, enginePill,
   h('button.icon-btn', { title: 'Keyboard shortcuts (?)', onclick: showShortcuts }, ico('keyboard', 17)),
   themeBtn);
 const main = h('main.main');
@@ -31,12 +34,12 @@ app.append(topbar, main, statusbar);
 
 // ---- themes ----------------------------------------------------------------
 // The colours of each theme live in app.css; `sw` only previews them in the menu (page, surface, accent).
-const THEMES = [
-  { id: 'dark', label: 'Dark', hint: 'Neutral greys, blue accent', icon: 'moon', sw: ['#0f1012', '#24262a', '#5d9bff'] },
-  { id: 'light', label: 'Light', hint: 'Bright, for daylight', icon: 'sun', sw: ['#f5f6f8', '#ffffff', '#0969da'] },
-  { id: 'forest', label: 'Forest', hint: 'Deep greens, sage accent', icon: 'leaf', sw: ['#051f20', '#235347', '#8eb69b'] },
+const THEMES = [  // same names as the mode switch on the landing page
+  { id: 'light', label: 'Day', hint: 'Bright, for daylight', icon: 'sun', sw: ['#f5f6f8', '#ffffff', '#0969da'] },
+  { id: 'dark', label: 'Night', hint: 'Neutral greys, blue accent', icon: 'moon', sw: ['#0f1012', '#24262a', '#5d9bff'] },
+  { id: 'forest', label: 'Green', hint: 'Deep greens, sage accent', icon: 'leaf', sw: ['#051f20', '#235347', '#8eb69b'] },
 ];
-const curTheme = () => THEMES.find(t => t.id === document.documentElement.dataset.theme) || THEMES[0];
+const curTheme = () => THEMES.find(t => t.id === document.documentElement.dataset.theme) || THEMES[1];
 
 function setThemeIcon() {
   const t = curTheme();
@@ -71,6 +74,7 @@ function openThemeMenu() {
   (items.find(b => b.classList.contains('active')) || items[0]).focus();
 }
 setThemeIcon();
+watchSegments();  // every segmented control gets the sliding highlight
 
 // ---- breadcrumbs ----------------------------------------------------------
 let crumbFile = null;
@@ -128,10 +132,11 @@ async function route() {
     if (parts[0] === 'p' && parts[1]) {
       const pid = parts[1];
       if (!(view instanceof ProjectView) || view.pid !== pid) {
-        if (view) { await view.beforeLeave?.(); view.destroy?.(); }
+        const old = view;
+        if (old) { await old.beforeLeave?.(); old.destroy?.(); }
         crumbFile = null;
         view = new ProjectView(pid);
-        main.replaceChildren(view.el);
+        swap(main, old?.el, view.el, 1, !!old);  // into a project: forward
         await view.load();
       }
       let tab = parts[2] || 'data', mid = null;
@@ -139,16 +144,18 @@ async function route() {
       if (!mid) crumbFile = null;
       await view.update({ tab, mid, params });
     } else {
-      if (view) { await view.beforeLeave?.(); view.destroy?.(); }
+      const old = view;
+      if (old) { await old.beforeLeave?.(); old.destroy?.(); }
       state.project = null;
       crumbFile = null;
       view = new HomeView();
-      main.replaceChildren(view.el);
+      swap(main, old?.el, view.el, -1, !!old);  // back to the list
     }
   } catch (e) {
     errorToast(e);
     if (e.status === 404) location.hash = '#/';
   }
+  if (!shared) ls.set('last', location.hash || '#/');  // the landing page's "Open the studio" returns here
   renderCrumbs();
 }
 

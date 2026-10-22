@@ -14,6 +14,9 @@ if [ ! -f .venv/.installed ] || [ requirements.txt -nt .venv/.installed ]; then
   touch .venv/.installed
 fi
 
+# landing page font (downloaded per install; its license does not allow committing it)
+[ -f frontend/landing/fonts/satoshi/Satoshi-Regular.woff2 ] || .venv/bin/python scripts/get_fonts.py --quiet || true
+
 PORT="${OMNI_STUDIO_PORT:-8710}"
 export OMNI_STUDIO_PORT="$PORT"
 if [ "${OMNI_NO_BROWSER:-0}" != "1" ]; then

@@ -2,10 +2,30 @@
 
 ## Unreleased
 
-- **Themes**: the theme button in the top bar opens a menu with Dark, Light and the new **Forest** theme
+- **Landing page** at `/landing/` (*About* in the studio's top bar, on every page; its *Open the studio* buttons return
+  to the page you last had open in the studio, and the two pages blur into each other): animated editor demo, word-by-word headlines,
+  a tilted screenshot that straightens as you scroll, a speakers/overlap diagram whose bars draw in one by one
+  each time it comes into view, workflow, "Run it locally" and FAQ.
+  A **task pile**: all 44 tasks drop into a box as pills coloured by group; grab and throw them, click one to make it
+  jump, tap the floor, or throw them all up (`pile.js`, a small physics simulation written for the page).
+  A **Video & action** section: in a player window, a figure made of golden dust acts out the action found in each
+  4 s window of a clip (walking, running, waving, jumping, bowing, stretching) next to the action's name in gold.
+  Both break into dust around the cursor; at each new window the figure blends into the next movement and the
+  letters flow into the next word, with a timeline of the windows (`dust.js`, canvas; the figure is built from
+  body keypoints like the Pose task).
+  Plain HTML/CSS/JS, no libraries, nothing loaded from the internet; respects reduced motion.
+  Day / Night / Green switch in its header (shared with the app), with app screenshots in each mode.
+  Fonts: Instrument Serif and Poppins are included (SIL OFL); Satoshi is downloaded per install by
+  `scripts/get_fonts.py` (run by `start.sh`), because its license does not allow sharing the files in a repository.
+- **Themes**: the theme button in the top bar opens a menu with Day, Night and the new **Green** theme
   (deep greens #051F20 to #235347, sage accent #8EB69B, mint text #DAF1DE). Forest is checked for WCAG AA contrast
   (text, secondary text, buttons, input borders). Primary buttons and switches now take their text colour from the
   theme instead of fixed white, and inputs have their own border token.
+- **Motion**: the project rail is a floating dock; the active tab is a coloured bead on its edge (each tab has its own
+  colour, per theme) and the dock's outline wraps around it. The bead glides to the next tab on a soft spring
+  (run by the browser's compositor, so it stays smooth while the page loads), with a glow in the tab colour. Pages blur out and the next one comes into
+  focus, sliding in from the direction of the tab (also between the overview and files, file to file, and Projects);
+  segmented controls get a sliding highlight. `frontend/js/motion.js`, no library; off when the system asks for reduced motion.
 - Tasks page: change the classes (add, remove, rename, edit as a list) and the prompt of any task, including built-in ones.
   Changed and new tasks move to their own column behind a vertical line, with Edit / Test / Reset to default / Delete;
   the editor shows the default next to each change. Editors offer the current classes right away.

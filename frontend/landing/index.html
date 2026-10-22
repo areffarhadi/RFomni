@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Studio · label audio, video and images in one place</title>
+  <meta name="description" content="Omni Studio is a free, local annotation studio for audio, video and images: choose the labels you need, let the model do the first pass, review, correct and export.">
+  <meta name="theme-color" content="#051f20">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/satoshi/Satoshi-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="landing.css">
+  <script>
+    // mode before the first paint (shared with the app: the same saved setting)
+    document.documentElement.classList.add('js');
+    try { const t = JSON.parse(localStorage.getItem('omni:theme'));
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; }
+    catch (e) { document.documentElement.dataset.theme = 'forest'; }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <div class="wrap nav-in">
+      <a class="brand" href="#top" aria-label="Omni Studio, back to top">
+        <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>
+        <span><b>Omni</b> Studio</span>
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#speakers">Speakers</a>
+        <a href="#local">Run locally</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="modes" role="radiogroup" aria-label="Colour mode">
+        <button type="button" role="radio" data-mode="light" aria-checked="false" aria-label="Day" title="Day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+        <button type="button" role="radio" data-mode="dark" aria-checked="false" aria-label="Night" title="Night">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+        <button type="button" role="radio" data-mode="forest" aria-checked="false" aria-label="Green" title="Green">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></button>
+      </div>
+      <a class="btn btn-primary btn-sm open-studio" href="../">Open the studio</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============================== hero ============================== -->
+    <section class="hero">
+      <div class="beam" aria-hidden="true"></div>
+      <div class="wrap">
+        <p class="pill reveal"><span class="dot"></span>Free · open · runs on your own computer</p>
+        <h1 class="h1" data-words>Label audio, video and images <em>in one studio.</em></h1>
+        <div class="hero-row">
+          <p class="lead reveal">Upload a dataset, choose the labels you need and let the model do the first pass.
+            Then review, correct and export. Every file stays on your machine.</p>
+          <div class="hero-cta reveal">
+            <a class="btn btn-ghost" href="#local">Run it locally</a>
+            <a class="btn btn-primary open-studio" href="../">Open the studio
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          </div>
+        </div>
+
+        <!-- animated product demo (an illustration of the editor, not a video) -->
+        <figure class="demo-wrap reveal" aria-label="Animated example of the Omni Studio editor: a reviewer moves a word border, relabels an emotion and checks an overlap between two speakers.">
+          <div class="demo-scale">
+            <div class="demo" id="demo" aria-hidden="true">
+              <div class="d-bar">
+                <span class="d-dots"><i></i><i></i><i></i></span>
+                <span class="d-file">studio_debate.wav</span>
+                <span class="d-chip">26 s · 3 speakers</span>
+                <span class="d-grow"></span>
+                <span class="d-saved">All changes saved</span>
+                <span class="d-btn">Mark file reviewed</span>
+              </div>
+              <div class="d-body">
+                <div class="d-heads">
+                  <div class="d-h wave">Waveform</div>
+                  <div class="d-h asr"><i style="--c:#38bdf8"></i>ASR</div>
+                  <div class="d-h words"><i style="--c:#22d3ee"></i>Words</div>
+                  <div class="d-h spk"><i style="--c:#fb923c"></i>Speaker</div>
+                  <div class="d-h ovl"><i style="--c:#f43f5e"></i>Overlap</div>
+                  <div class="d-h emo"><i style="--c:#f472b6"></i>Emotion</div>
+                </div>
+                <div class="d-lanes" id="lanes">
+                  <canvas class="d-wave" id="wave" width="900" height="96"></canvas>
+                  <div class="d-row asr" data-row="asr"></div>
+                  <div class="d-row words" data-row="words"></div>
+                  <div class="d-row spk" data-row="spk"></div>
+                  <div class="d-row ovl" data-row="ovl"></div>
+                  <div class="d-row emo" data-row="emo"></div>
+                  <div class="d-play" id="playhead"></div>
+                </div>
+              </div>
+              <div class="cursor" id="cur-a" style="--cc:#8eb69b"><svg viewBox="0 0 24 24"><path d="M4 3l7 17 2.5-7.5L21 10z"/></svg><span>Sara</span></div>
+              <div class="cursor" id="cur-b" style="--cc:#facc15"><svg viewBox="0 0 24 24"><path d="M4 3l7 17 2.5-7.5L21 10z"/></svg><span>Ali</span></div>
+              <div class="d-menu" id="emo-menu"><b>Emotion</b><span data-v="neutral"><i style="--c:#94a3b8"></i>neutral</span><span data-v="happy"><i style="--c:#facc15"></i>happy</span><span data-v="frustrated"><i style="--c:#f97316"></i>frustrated</span></div>
+              <div class="d-note" id="note"></div>
+            </div>
+          </div>
+          <button class="demo-toggle" id="demo-toggle" type="button" aria-pressed="false" aria-label="Pause the animation">
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg>
+          </button>
+        </figure>
+
+        <ul class="facts reveal" aria-label="Omni Studio in numbers">
+          <li><b data-count="44">44</b><span>built-in tasks</span></li>
+          <li><b data-count="3">3</b><span>media types: audio, video, images</span></li>
+          <li><b data-count="10">10</b><span>export formats</span></li>
+          <li><b>0</b><span>accounts, fees or cloud uploads</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================== features ============================== -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <p class="eyebrow reveal">Features</p>
+        <h2 class="h2" data-words>Everything from upload to <em>export.</em></h2>
+        <p class="sub reveal">Built for people who make speech, vision and multimodal datasets: the model does the
+          repetitive part, you keep control of every label.</p>
+        <!-- every task as a pill that drops in: grab, throw, tap the floor (pile.js) -->
+        <div class="pile reveal" data-pile role="group" aria-labelledby="pile-title">
+          <div class="pile-head">
+            <p class="pile-eyebrow"><i></i>44 tasks, 7 groups</p>
+            <h3 class="pile-title" id="pile-title">Tasks you can shape</h3>
+            <p class="pile-sub"><span class="pile-hint">Grab one and throw it, or tap the floor. </span>In the studio you can
+              change any task's classes and prompt, write your own, and test it on a few files first.</p>
+            <ul class="pile-key" aria-label="Task groups"></ul>
+          </div>
+          <div class="pile-floor"></div>
+          <div class="pile-btns">
+            <button type="button" data-act="toss" aria-label="Throw all tasks up" title="Throw them up">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M6.5 9.5 12 4l5.5 5.5M5 20h14"/></svg></button>
+            <button type="button" data-act="drop" aria-label="Drop the tasks again" title="Drop again">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.35-5.65M20 4v5h-5"/></svg></button>
+          </div>
+        </div>
+        <div class="cards4 cards-3">
+          <article class="fcard reveal" style="--g:#f0907f">
+            <div class="ill" aria-hidden="true">
+              <div class="iso">
+                <div class="sheet back"><span class="ln w70"></span><span class="ln w50"></span></div>
+                <div class="sheet front rows">
+                  <span class="r"><b>0.41</b><i style="--v:.41;--c:#f0907f"></i>frustrated</span>
+                  <span class="r"><b>0.58</b><i style="--v:.58;--c:#e2c275"></i>SPEAKER_1</span>
+                  <span class="r ok"><b>0.93</b><i style="--v:.93;--c:#7ed6a0"></i>bonafide</span>
+                </div>
+              </div>
+            </div>
+            <h3>Review what the model doubts</h3>
+            <p>A queue of the least certain labels across the whole project. Listen, fix with one key, and
+              move on. The model's original answer is always kept.</p>
+          </article>
+          <article class="fcard reveal" style="--g:#facc15">
+            <div class="ill" aria-hidden="true">
+              <div class="iso">
+                <div class="sheet back"><span class="ln w60"></span><span class="ln w30"></span></div>
+                <div class="sheet front link">
+                  <span class="url">…:8711/s/jCXp042y…</span>
+                  <span class="who"><i style="--c:#8eb69b">S</i>Sara · can edit</span>
+                  <span class="who"><i style="--c:#60a5fa">P</i>Paper reviewers · view</span>
+                </div>
+              </div>
+            </div>
+            <h3>Share a link, not your disk</h3>
+            <p>Invite reviewers with a link: view only or allowed to edit, all tiers or a few. Their
+              edits carry their name, and the rest of your computer stays closed.</p>
+          </article>
+          <article class="fcard reveal" style="--g:#e879f9">
+            <div class="ill" aria-hidden="true">
+              <div class="iso">
+                <div class="sheet back"><span class="ln w50"></span><span class="ln w70"></span></div>
+                <div class="sheet front badges">
+                  <span style="--c:#7ed6a0">bonafide <b>0.93</b></span>
+                  <span style="--c:#fb7185">voice conversion <b>0.41</b></span>
+                  <span style="--c:#f59e0b">face swap</span>
+                  <span style="--c:#f87171">AI-generated</span>
+                </div>
+              </div>
+            </div>
+            <h3>Catch spoofs and deepfakes</h3>
+            <p>Label fake speech per segment, deepfake video per window, generated or edited images, and
+              draw boxes around the manipulated regions.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== showcase ============================== -->
+    <section class="section showcase" id="studio">
+      <div class="wrap">
+        <h2 class="h2 center" data-words>One project. <em>Every kind of data.</em></h2>
+        <p class="sub center reveal">Audio and video get an ELAN-style timeline, images get boxes and skeletons,
+          and the whole project gets statistics.</p>
+        <div class="tabs reveal" role="tablist" aria-label="Screens">
+          <button role="tab" aria-selected="true" aria-controls="shot" data-shot="editor" data-alt="The audio editor: waveform, transcript, word borders, speaker lanes with overlaps and emotion labels.">Audio &amp; video</button>
+          <button role="tab" aria-selected="false" aria-controls="shot" data-shot="image" data-alt="The image editor: face, body and object boxes and pose skeletons on a park scene.">Images</button>
+          <button role="tab" aria-selected="false" aria-controls="shot" data-shot="stats" data-alt="The statistics page: files, review progress and label distributions per task.">Statistics</button>
+          <button role="tab" aria-selected="false" aria-controls="shot" data-shot="tasks" data-alt="The tasks page: the task library and the column of changed and new tasks.">Tasks</button>
+        </div>
+        <div class="tilt-stage">
+          <figure class="shot tilt" id="shot" role="tabpanel">
+            <img src="img/forest/editor.webp" width="2160" height="1350" loading="lazy" decoding="async"
+                 alt="The audio editor: waveform, transcript, word borders, speaker lanes with overlaps and emotion labels.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== speakers ============================== -->
+    <section class="section" id="speakers">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow reveal">Speakers &amp; overlap</p>
+          <h2 class="h2" data-words>Who spoke when, <em>and over whom.</em></h2>
+          <p class="sub reveal">Speaker turns may overlap, just like real conversations. Omni Studio separates
+            the clean, single-speaker speech of every person from the moments two people talk at once.</p>
+          <ul class="ticks reveal">
+            <li><b>Pure speech</b> per speaker, ready for speaker verification or voice data.</li>
+            <li><b>Overlaps</b> labelled with the speaker pair, e.g. SPEAKER_0 + SPEAKER_1.</li>
+            <li><b>Speaker clips</b> export: one folder of WAV files per speaker.</li>
+          </ul>
+        </div>
+        <div class="spk-viz reveal" id="spk-viz" aria-hidden="true">
+          <div class="sv-row"><span>SPEAKER_0</span><div class="sv-lane" data-lane="0"></div></div>
+          <div class="sv-row"><span>SPEAKER_1</span><div class="sv-lane" data-lane="1"></div></div>
+          <div class="sv-row"><span>SPEAKER_2</span><div class="sv-lane" data-lane="2"></div></div>
+          <div class="sv-sep"></div>
+          <div class="sv-row"><span>Pure speech</span><div class="sv-lane" data-lane="pure"></div></div>
+          <div class="sv-row"><span>Overlap</span><div class="sv-lane" data-lane="ovl"></div></div>
+          <div class="sv-axis"><span>0 s</span><span>6 s</span><span>12 s</span><span>18 s</span><span>24 s</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== video & action ============================== -->
+    <section class="section" id="video">
+      <div class="wrap split rev">
+        <!-- the action found in each 4 s window of a clip, in golden dust that stirs around the cursor (dust.js) -->
+        <figure class="dust-win reveal" data-dust>
+          <div class="dw-bar"><span class="d-dots"><i></i><i></i><i></i></span><span class="dw-file">street_scene.mp4</span>
+            <span class="dw-task">Action recognition · 4 s windows</span></div>
+          <div class="dw-stage"><canvas aria-hidden="true"></canvas>
+            <p class="dw-now sr-only"></p></div>
+          <div class="dw-foot">
+            <div class="dw-meta"><span class="dw-time"></span><span class="dw-conf"></span></div>
+            <div class="dw-track" aria-hidden="true"></div>
+          </div>
+        </figure>
+        <div>
+          <p class="eyebrow reveal">Video &amp; action</p>
+          <h2 class="h2" data-words>What happens, <em>and when.</em></h2>
+          <p class="sub reveal">Omni Studio watches a video in short windows and names the action in each one, then fills
+            in the rest of the picture: who is on screen, how they move, and what is going on.</p>
+          <ul class="ticks reveal">
+            <li><b>Action recognition</b> every few seconds, each window with its own confidence.</li>
+            <li><b>Shot boundaries</b>, <b>active speaker</b>, <b>person boxes</b> and <b>pose</b> with 17 keypoints.</li>
+            <li><b>Dense captions</b>, one sentence per event, and <b>deepfake</b> checks per window.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== workflow ============================== -->
+    <section class="section" id="workflow">
+      <div class="wrap">
+        <p class="eyebrow center reveal">Workflow</p>
+        <h2 class="h2 center" data-words>From raw files to training data <em>in five steps.</em></h2>
+        <ol class="steps" id="steps">
+          <li class="step"><span class="num">1</span><h3>Add your data</h3><p>Upload files or whole folders, or link a folder on your disk. Audio, video and images are detected automatically.</p></li>
+          <li class="step"><span class="num">2</span><h3>Choose the labels</h3><p>Pick tasks from the library or write a prompt. Change the classes and try them on a sample.</p></li>
+          <li class="step"><span class="num">3</span><h3>Let the model label</h3><p>Built for Qwen3-Omni: every task runs on every file in the background.</p></li>
+          <li class="step"><span class="num">4</span><h3>Review and correct</h3><p>Start with the least certain labels, fix them by mouse or keyboard, invite reviewers with a link.</p></li>
+          <li class="step"><span class="num">5</span><h3>Export</h3><p>ELAN, Praat, COCO, RTTM, SRT, CSV, a JSONL training manifest and speaker clips.</p></li>
+          <li class="steps-line" aria-hidden="true"><i id="steps-fill"></i></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============================== research ============================== -->
+    <section class="section">
+      <div class="wrap">
+        <h2 class="h2 center" data-words>Made for research data, <em>not for the cloud.</em></h2>
+        <div class="cards3">
+          <article class="rcard reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <h3>Your data stays yours</h3>
+            <p>Files are read where they are or copied into a project folder. Labels are plain JSON files you can open, back up and version.</p>
+          </article>
+          <article class="rcard reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-3M11 16V9M15 16v-5M19 16V6"/></svg>
+            <h3>Every correction counts</h3>
+            <p>Edits keep the model's original answer, so Statistics can show how often reviewers changed it and which labels it confuses.</p>
+          </article>
+          <article class="rcard reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <h3>Standard formats in and out</h3>
+            <p>Import ELAN and Praat files, export to the formats your tools already read, or straight into a training manifest.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== run locally ============================== -->
+    <section class="section" id="local">
+      <div class="wrap split local">
+        <div>
+          <p class="eyebrow reveal">Run it locally</p>
+          <h2 class="h2" data-words>Free. No account. <em>No cloud.</em></h2>
+          <p class="sub reveal">Omni Studio is a small Python server and a web page. It runs on your own computer
+            and opens in your browser; nothing is uploaded anywhere.</p>
+          <ul class="ticks reveal">
+            <li>macOS or Linux with Python 3.10 or newer</li>
+            <li>The first start installs everything it needs into a local folder (about a minute)</li>
+            <li>Then open <span class="mono">http://127.0.0.1:8710</span></li>
+          </ul>
+        </div>
+        <div class="term reveal">
+          <div class="term-bar"><span class="d-dots"><i></i><i></i><i></i></span><span>Terminal</span>
+            <button class="copy" type="button" data-copy="git clone https://github.com/areffarhadi/omni-studio.git&#10;cd omni-studio&#10;./start.sh">Copy</button></div>
+          <pre><code><span class="c"># get the code</span>
+<span class="p">$</span> git clone https://github.com/areffarhadi/omni-studio.git
+<span class="p">$</span> cd omni-studio
+
+<span class="c"># start it (opens your browser)</span>
+<span class="p">$</span> ./start.sh
+
+<span class="o">  Omni Studio 0.2.0 (Mosaic)  -&gt;  http://127.0.0.1:8710</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== FAQ ============================== -->
+    <section class="section" id="faq">
+      <div class="wrap narrow">
+        <h2 class="h2 center" data-words>Questions, <em>answered.</em></h2>
+        <div class="faq reveal">
+          <details><summary>Does my data leave my computer?</summary>
+            <p>No. Omni Studio runs on your machine and keeps every file and label in a local folder. Other people only
+              see a project if you create a share link for it, and only that project.</p></details>
+          <details><summary>Which model does the labelling?</summary>
+            <p>It is built for Qwen3-Omni. Until the model is connected, a placeholder engine fills the tiers (with real
+              speech timing and placeholder values), so you can already try the whole workflow.</p></details>
+          <details><summary>Can I add my own labels?</summary>
+            <p>Yes. Change the classes and the prompt of any task, or write a new task in plain language. Test it on a
+              few files before running it on everything, and reset to the default any time.</p></details>
+          <details><summary>Can other people help review?</summary>
+            <p>Yes. A share link opens one project in any browser, view only or with editing. Edits made through a link
+              carry its name, and you can turn a link off whenever you like.</p></details>
+          <details><summary>Which formats can I export?</summary>
+            <p>Omni Studio JSON, ELAN, Praat TextGrid, SRT, WebVTT, RTTM, CSV, COCO, a JSONL training manifest and
+              speaker clips (WAV per speaker).</p></details>
+          <details><summary>Does it cost anything?</summary>
+            <p>No. There is no account, no subscription and no paid service behind it.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== final CTA ============================== -->
+    <section class="section final">
+      <div class="beam beam-2" aria-hidden="true"></div>
+      <div class="wrap center">
+        <h2 class="h2" data-words>Ready to label <em>your data?</em></h2>
+        <p class="sub center reveal">Start the studio, drop in a folder and choose your tasks.</p>
+        <div class="hero-cta center reveal">
+          <a class="btn btn-ghost" href="https://github.com/areffarhadi/omni-studio">View on GitHub</a>
+          <a class="btn btn-primary open-studio" href="../">Open the studio
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <span class="brand sm"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg><span><b>Omni</b> Studio</span></span>
+      <span class="muted">Local, free annotation for audio, video and images.</span>
+      <a href="https://github.com/areffarhadi/omni-studio">GitHub</a>
+    </div>
+  </footer>
+
+  <script src="landing.js"></script>
+  <script src="pile.js"></script>
+  <script src="dust.js"></script>
+</body>
+</html>

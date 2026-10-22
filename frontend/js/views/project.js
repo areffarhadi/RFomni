@@ -7,6 +7,7 @@ import { TasksView } from './tasks.js';
 import { ReviewView } from './review.js';
 import { ExportView } from './export.js';
 import { StatsView } from './stats.js';
+import { LiquidRail, enter, leave, nextFrame } from '../motion.js';
 
 const TABS = [
   { id: 'data', label: 'Data', icon: 'database' },
@@ -25,15 +26,22 @@ export class ProjectView {
     const home = isShared() ? null : [
       h('a.rail-home', { href: links.home(), title: 'All projects' }, ico('folder', 19), h('span', 'Projects')),
       h('div.rail-sep')];
-    this.rail = h('nav.rail', home, tabs.map(t => {
-      const a = h('a', { href: t.id === 'data' ? links.project(pid) : links.tab(pid, t.id), title: t.label },
+    this.tabInfo = {};
+    this.rail = h('nav.rail', { 'aria-label': 'Project' }, home, tabs.map(t => {
+      const color = `var(--tab-${t.id})`;
+      const a = h('a', { href: t.id === 'data' ? links.project(pid) : links.tab(pid, t.id), title: t.label, style: { '--tc': color } },
         ico(t.icon, 19), h('span', t.label));
       this.links[t.id] = a;
+      this.tabInfo[t.id] = { icon: t.icon, color };
       return a;
     }));
+    this.liquid = new LiquidRail(this.rail);
     this.body = h('div.proj-body');
     this.el = h('div.project', this.rail, this.body);
+    this.liquid.attachGlow(this.el);
     this.other = null;
+    this.tab = null;
+    this.shown = null;
     this.unsub = [on('project', () => this.updateBadges())];
   }
 
@@ -52,21 +60,53 @@ export class ProjectView {
   }
 
   async update({ tab, mid, params }) {
-    for (const [id, a] of Object.entries(this.links)) a.classList.toggle('on', id === tab);
+    if (tab !== 'data' && !this.links[tab]) tab = 'stats';  // a tab this link may not open
+    const prev = this.tab;
+    this.tab = tab;
+    for (const [id, a] of Object.entries(this.links)) {
+      a.classList.toggle('on', id === tab);
+      if (id === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    }
+    this.liquid.set(this.links[tab], this.tabInfo[tab]);
+    if (prev != null && prev !== tab) {
+      await nextFrame();              // the bead starts gliding before the next page is built
+      if (this.tab !== tab) return;   // another tab was chosen meanwhile
+    }
+    // `shown` is the page on screen (it can differ from `prev` after quick clicks)
+    const shown = this.shown;
+    this.shown = tab;
+    const moved = shown != null && shown !== tab;
+    // the new page arrives from the side it sits on in the rail: further down = from below
+    const order = Object.keys(this.links);
+    const dir = Math.sign(order.indexOf(tab) - order.indexOf(shown)) || 1;
     if (tab === 'data') {
       this.links.data.href = mid ? links.file(this.pid, mid) : links.project(this.pid);
-      if (this.other) { this.other.destroy?.(); this.other.el.remove(); this.other = null; }
+      this.dropOther(dir, moved);
       this.data.el.style.display = '';
-      await this.data.open(mid, params);
+      if (moved) enter(this.data.el, dir);
+      await this.data.open(mid, params, { animate: !moved });
       return;
     }
-    this.data.hide();
-    this.data.el.style.display = 'none';
-    if (this.other) { this.other.destroy?.(); this.other.el.remove(); }
+    if (shown === 'data') {
+      this.data.hide();
+      leave(this.data.el, dir, () => { this.data.el.style.display = 'none'; });
+    } else if (shown == null) {
+      this.data.el.style.display = 'none';  // the project was opened on another tab
+    }
+    this.dropOther(dir, moved);
     const views = { tasks: TasksView, stats: StatsView, review: ReviewView, export: ExportView };
-    const View = this.links[tab] ? views[tab] : StatsView;
-    this.other = new View(this);
+    this.other = new views[tab](this);
     this.body.append(this.other.el);
+    if (moved) enter(this.other.el, dir);
+  }
+
+  /** Close the current non-data view; its page fades out while the next one comes in. */
+  dropOther(dir, animate) {
+    const o = this.other;
+    if (!o) return;
+    this.other = null;
+    o.destroy?.();
+    if (animate) leave(o.el, dir, () => o.el.remove()); else o.el.remove();
   }
 
   isDirty() { return this.data?.isDirty(); }
@@ -74,6 +114,7 @@ export class ProjectView {
   async beforeLeave() { await this.data?.flush(); }
 
   destroy() {
+    this.liquid.destroy();
     this.unsub.forEach(f => f());
     this.data?.destroy();
     this.other?.destroy?.();
