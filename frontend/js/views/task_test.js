@@ -36,7 +36,7 @@ export function openTaskTest({ task, saved = true }) {
     subtitle: 'Runs the task on a few random files of this project. Nothing is saved to your annotations.',
     body: h('div',
       engine && !engine.connected ? h('div.notice', { style: { marginBottom: '12px' } }, ico('alert', 16),
-        h('div', 'No model connected: the mock engine returns placeholder values. Segment timing (speech regions) is real. With Qwen3-Omni connected this preview shows real output.')) : null,
+        h('div', 'No model connected: the mock engine returns placeholder values. Segment timing (speech regions) is real. With a model connected this preview shows real output.')) : null,
       h('div.tt-bar',
         h('span.tt-label', 'Sample'), sizeSel,
         h('button.btn.sm', { onclick: () => { seed = Math.floor(Math.random() * 1e6); run(); } }, ico('repeat', 13), 'Shuffle'),

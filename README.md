@@ -1,6 +1,6 @@
 # Omni Studio
 
-**Current release: v0.2.0 "Mosaic"** · see [CHANGELOG.md](CHANGELOG.md)
+**Current release: v0.3.0 "Aurora"** · see [CHANGELOG.md](CHANGELOG.md)
 
 ![Tier editor with waveform, spectrogram and forced-alignment boundaries](docs/screenshots/forced_alignment.png)
 
@@ -19,8 +19,8 @@ Version 0.1 is UI-first: **no model is connected yet**. A mock engine finds real
 ```
 
 Python 3.10+ is enough. Media decoding uses PyAV (bundled FFmpeg), so no system ffmpeg is needed.
-Pseudo showcase project (synthetic speech from the macOS voices, generated videos and images, all tiers filled
-with plausible pseudo labels):
+Pseudo showcase project (synthetic speech from the macOS voices, or espeak-ng on Linux; generated videos and images,
+all tiers filled with plausible pseudo labels):
 
 ```bash
 .venv/bin/python scripts/make_pseudo.py
@@ -77,12 +77,27 @@ Press `?` in the app for all keyboard shortcuts.
 
 `http://127.0.0.1:8710/landing/` (or *About* in the studio's top bar, on every page) is a one-page overview
 of the studio for new users, served by the same local server: no hosting, no external requests.
-Its *Open the studio* buttons take you back to the page you last had open in the studio.
+Its *Open the studio* and *Sign in* buttons go through the sign-in page (`/login/`), which then takes you back to the page
+you last had open in the studio.
+At the top, a turning sphere of light grains with "AI" inside parts around the cursor (`frontend/landing/orb.js`);
+below it a live feed of labels, and a paragraph whose words light up as you scroll.
 In the Features section, all 44 tasks drop into a box as pills you can grab and throw (`frontend/landing/pile.js`).
-The Video & action section shows action recognition on a clip: a golden-dust figure acts out each window's action next to its label (`frontend/landing/dust.js`).
 The Your own tasks section shows writing a task as a prompt: a prompt box that writes example prompts, and nine agents at work (`frontend/landing/ask.js`).
+The footer (links, contact, version) sits on rolling contour lines that drift towards you (`frontend/landing/terrain.js`).
 Its main font, Satoshi, is free but may not be redistributed, so `start.sh` downloads your own copy from Fontshare
 (`scripts/get_fonts.py`); without it the page uses the system font.
+
+## Sign-in page
+
+`http://127.0.0.1:8710/login/` is a frosted glass card over drifting lights, with the landing page's orb as the light
+source (`frontend/login/`). It has *Sign in* and *Create an account* views, a password show/hide toggle and Google /
+GitHub buttons marked *coming soon*. Accounts are not connected yet: every submit opens the studio, even with
+empty fields. When the backend has accounts, `enter()` in `frontend/login/login.js` is the one place to change.
+
+The card has a *Continue to* switch for the two apps: **Studio** (this app) and **Chat** (the agent chat, Open WebUI at
+`https://192.168.8.174:8080/`; set in `CHAT_URL` at the top of `login.js`). The landing header's *Omni Studio* and *Chat*
+links open `/login/?next=studio` and `/login/?next=chat`; *Task sharing*, *Subjective test* and *Data
+collection* are shown as *Soon* until those parts exist.
 
 ## Layout
 

@@ -1,4 +1,5 @@
-// Omni Studio landing page: scroll reveals, word focus, tilted screenshots, the animated editor demo.
+// Omni Studio landing page: scroll reveals, word focus, the hero grid, the live feed, words lit by scrolling,
+// tilted screenshots, the animated editor demo.
 // Plain JavaScript, no libraries. With "reduce motion" switched on, everything shows its final state.
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7,13 +8,17 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const el = (tag, cls, props = {}) => Object.assign(document.createElement(tag), cls ? { className: cls } : {}, props);
 
-  // ---------- links to the studio: back to the page you last had open there (the studio remembers it),
+  // ---------- links to the studio go through the sign-in page (which then returns you to the page you last had open);
   // relative when served by Omni Studio, absolute when this file is opened from disk
-  let lastPlace = '';
-  try { lastPlace = JSON.parse(localStorage.getItem('omni:last') || '""'); } catch { /* blocked storage */ }
-  if (!/^#\/[\w\-/?=&.%]*$/.test(lastPlace)) lastPlace = '';
-  const studio = (location.protocol === 'file:' ? 'http://127.0.0.1:8710/' : '../') + lastPlace;
-  $$('.open-studio').forEach(a => { a.href = studio; });
+  const signIn = location.protocol === 'file:' ? 'http://127.0.0.1:8710/login/' : '../login/';
+  $$('.open-studio').forEach(a => { a.href = signIn; });
+  $$('[data-app]').forEach(a => { a.href = signIn + '?next=' + a.dataset.app; });  // Studio / Chat: sign in, then that app
+  // phones: the platform links fold into a drop-down behind the menu button
+  const menuBtn = $('.menu-btn'), navEl = $('.nav');
+  const setMenu = (on) => { navEl.classList.toggle('open', on); menuBtn.setAttribute('aria-expanded', String(on)); };
+  menuBtn.addEventListener('click', () => setMenu(!navEl.classList.contains('open')));
+  document.addEventListener('click', (e) => { if (!navEl.contains(e.target)) setMenu(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 
   // ---------- nav background after scrolling
   const nav = $('.nav');
@@ -64,6 +69,74 @@
     }
   }
 
+  // ---------- hero grid: a few cells light up and fade, each on its own slow beat
+  const cells = $('.hero-cells');
+  if (cells) {
+    let s = 5;
+    const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 16; i++) {
+      const c = el('i');
+      c.style.cssText = `left:${Math.floor(r() * 36) * 40}px;top:${Math.floor(r() * 22) * 40}px;--d:${(r() * 9).toFixed(2)}s;--t:${(6 + r() * 6).toFixed(2)}s`;
+      cells.append(c);
+    }
+  }
+
+  // ---------- live feed: two rows of recent labels from the example project, drifting in opposite directions
+  const FEED = [
+    ['#38bdf8', 'ASR', 'signals_and_systems_ep12.wav', '“so the transfer function tells us…”', 0.94],
+    ['#fb923c', 'Diarization', 'studio_debate.wav', '3 speakers · 11 turns', 0.88],
+    ['#f472b6', 'Emotion', 'support_call_0423_noisy.wav', 'frustrated → neutral', 0.71],
+    ['#22d3ee', 'Forced alignment', 'lecture03_forced_alignment.mp4', '412 words aligned', 0.97],
+    ['#f43f5e', 'Overlap', 'studio_debate.wav', 'SPEAKER_0 + SPEAKER_2 · 1.4 s', 0.83],
+    ['#a3e635', 'Faces', 'team_photo.png', '6 boxes · happy ×4', 0.91],
+    ['#c4b5fd', 'Language ID', 'multilingual_panel.wav', 'en · de · fr · es · it', 0.96],
+    ['#fcd34d', 'Pose', 'pose_park.png', '3 people · 17 keypoints', 0.86],
+    ['#7dd3fc', 'Translation', 'weather_tokyo_ja.wav', '“You will not need an umbrella.”', 0.9],
+    ['#f0907f', 'Spoof', 'support_call_0423_noisy.wav', 'bonafide', 0.93],
+    ['#8fd3c6', 'Sound events', 'street_traffic_clip.mp4', 'car horn · engine · footsteps', 0.79],
+    ['#e879f9', 'OCR', 'meeting_notes_scan.png', '9 lines read', 0.95],
+    ['#facc15', 'Reviewed', 'signals_and_systems_ep12.wav', 'Sara accepted 12 segments', 1],
+    ['#60a5fa', 'Caption', 'street_scene.png', '“a cyclist waits at a crossing”', 0.87],
+  ];
+  const rowsEl = $$('.feed-row');
+  if (rowsEl.length) {
+    const item = ([c, task, file, val, conf], k) => {
+      const li = el('li', 'fi');
+      li.style.setProperty('--c', c);
+      li.append(el('i'), el('b', '', { textContent: task }), el('span', 'ff', { textContent: file }),
+        el('span', 'fv', { textContent: val }),
+        el('span', 'fc', { textContent: conf === 1 ? '✓' : conf.toFixed(2) }),
+        el('span', 'ft', { textContent: `${2 + ((k * 7) % 19)}s ago` }));
+      return li;
+    };
+    rowsEl.forEach((row, r) => {
+      const half = FEED.filter((_, i) => i % 2 === r);
+      // twice the items, so the row can loop seamlessly by sliding exactly one half
+      [...half, ...half].forEach((f, k) => row.append(item(f, k + r * 3)));
+    });
+  }
+
+  // ---------- "What is": words light up one after another as the paragraph scrolls through the screen
+  const what = $('[data-scrollwords]');
+  const whatWords = [];
+  if (what) {
+    const split = (node) => {
+      for (const child of [...node.childNodes]) {
+        if (child.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          child.textContent.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) frag.append(' ');
+            else { const w = el('span', 'sw', { textContent: part }); whatWords.push(w); frag.append(w); }
+          });
+          child.replaceWith(frag);
+        } else if (child.nodeType === 1 && !child.classList.contains('chip')) split(child);
+        else if (child.nodeType === 1) whatWords.push(child);
+      }
+    };
+    split(what);
+  }
+
   // ---------- scroll-linked: tilted screenshot straightens, workflow line fills
   const tilts = $$('.tilt');
   const steps = $('#steps'), stepEls = $$('.step');
@@ -71,6 +144,12 @@
   function onScroll() {
     ticking = false;
     const vh = innerHeight;
+    if (what) {
+      const r = what.getBoundingClientRect();
+      const f = reduce ? 1 : clamp((vh * 0.85 - r.top) / (r.height + vh * 0.35), 0, 1);
+      const lit = Math.round(f * whatWords.length);
+      whatWords.forEach((w, i) => w.classList.toggle('lit', i < lit));
+    }
     for (const t of tilts) {
       const r = t.getBoundingClientRect();
       t.style.setProperty('--p', reduce ? 1 : clamp((vh - r.top) / (vh * 0.72), 0, 1).toFixed(3));

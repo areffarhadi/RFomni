@@ -1,18 +1,36 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 "Aurora" (2026-10-24)
 
+- **Landing page, new look** (inspired by the Aigent Framer template): a floating header bar with corner marks;
+  a full hero with a turning sphere of light grains and "AI" written in grains inside it, which part around the
+  cursor (`orb.js`), over a grid with softly lit cells; a strip of the formats Omni Studio reads and writes.
+  A **live feed** of labels from the example project drifts by in two rows. Sections are numbered tags
+  ("01 — The editor") with the heading on the left and the text on the right, inside a frame of guide lines with
+  "+" marks. The editor demo has its own section; a **What is Omni Studio?** paragraph lights up word by word
+  as you scroll. New closing call to action, and a larger footer (product, resources, contact, version) over
+  rolling contour lines (`terrain.js`). All three modes (Day, Night, Green), phones and reduced motion supported.
+- The **Video & action** section and `dust.js` are removed from the landing page.
+- **Platform menu in the header.** The bar's links are now the parts of the platform: *Omni Studio*, *Chat* (the agent
+  chat, Open WebUI), and *Task sharing*, *Subjective test* and *Data collection* marked *Soon*. Studio and Chat go
+  through the sign-in page, which has a *Continue to Studio / Chat* switch (preset by `?next=studio|chat`, remembered)
+  and opens the chosen app. On phones the links fold into a menu button.
+- **Sign-in page** at `/login/`: a frosted glass card over soft drifting lights with the orb as the light source
+  (inspired by the Glass Login Framer template), *Sign in* / *Create an account* on the same card, show / hide password,
+  Google and GitHub marked *coming soon*, all three modes and phones. For now every submit opens the studio, even with
+  empty fields; real accounts come later. The landing page's *Open the studio* buttons now go through it.
+- The landing page no longer claims a local-only, no-account product: the *Run it locally* section is now
+  **Get started** (sign in, add data, start labelling), and the FAQ asks *Who can see my data?* and *Do I need an account?*
+- The website (landing page and studio) no longer names a specific model; it speaks of "the model".
+- The landing page no longer links to the GitHub repository (no *View on GitHub*, docs, changelog or issue links);
+  those places now point into the platform (*Chat with the agent*, *Ask in the chat*, a *Platform* footer column).
+- `scripts/make_pseudo.py` also runs on Linux: espeak-ng voices when macOS `say` is missing, Liberation / DejaVu fonts.
 - **Landing page** at `/landing/` (*About* in the studio's top bar, on every page; its *Open the studio* buttons return
   to the page you last had open in the studio, and the two pages blur into each other): animated editor demo, word-by-word headlines,
   a tilted screenshot that straightens as you scroll, a speakers/overlap diagram whose bars draw in one by one
   each time it comes into view, workflow, "Run it locally" and FAQ.
   A **task pile**: all 44 tasks drop into a box as pills coloured by group; grab and throw them, click one to make it
   jump, tap the floor, or throw them all up (`pile.js`, a small physics simulation written for the page).
-  A **Video & action** section: in a player window, a figure made of golden dust acts out the action found in each
-  4 s window of a clip (walking, running, waving, jumping, bowing, stretching) next to the action's name in gold.
-  Both break into dust around the cursor; at each new window the figure blends into the next movement and the
-  letters flow into the next word, with a timeline of the windows (`dust.js`, canvas; the figure is built from
-  body keypoints like the Pose task).
   A **Your own tasks** section: "Can't find your task? Describe it." A prompt box with a running colour border writes,
   sends and erases example prompts (a Persian translation, accents from {en-US, en-GB, en-CA}, describing the scene,
   laughter over speech, read or spontaneous speech, people on screen); visitors can type their own. Below it nine

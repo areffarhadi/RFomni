@@ -26,7 +26,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.2.0", "Mosaic"
+VERSION, CODENAME = "0.3.0", "Aurora"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 

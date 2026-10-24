@@ -16,8 +16,8 @@ const enginePill = h('div.engine-pill', h('i'), h('span', 'Engine…'));
 const themeBtn = h('button.icon-btn', { onclick: () => openThemeMenu(), 'aria-haspopup': 'menu' });
 const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
-// to the landing page (what Omni Studio is, how to run it); its "Open the studio" brings you back here
-const aboutLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'About Omni Studio: what it does and how to run it' }, ico('info', 14), 'About');
+// to the landing page (what Omni Studio is); its "Open the studio" signs you in and brings you back here
+const aboutLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'About Omni Studio: what it does' }, ico('info', 14), 'About');
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,

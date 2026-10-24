@@ -9,6 +9,7 @@ line up with what you hear and see). Labels are stored as source="model" with ma
 """
 import math
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -41,11 +42,21 @@ RATE = {"neutral": 175, "happy": 195, "surprised": 200, "sad": 145, "angry": 205
 FONT_DIR = Path("/System/Library/Fonts/Supplemental")
 
 
+LINUX_FONTS = {  # Arial-like fonts on Linux (Liberation is metric-compatible with Arial)
+    "Arial Bold.ttf": ["liberation/LiberationSans-Bold.ttf", "dejavu/DejaVuSans-Bold.ttf"],
+    "Arial.ttf": ["liberation/LiberationSans-Regular.ttf", "dejavu/DejaVuSans.ttf"],
+}
+
+
 def font(size, bold=False):
     for name in (["Arial Bold.ttf"] if bold else []) + ["Arial.ttf", "Helvetica.ttc"]:
         for d in (FONT_DIR, Path("/System/Library/Fonts"), Path("/Library/Fonts")):
             if (d / name).exists():
                 return ImageFont.truetype(str(d / name), size)
+        for rel in LINUX_FONTS.get(name, []):
+            f = Path("/usr/share/fonts/truetype") / rel
+            if f.exists():
+                return ImageFont.truetype(str(f), size)
     return ImageFont.load_default(size=size)
 
 
@@ -56,13 +67,29 @@ def conf(mu=0.9, sd=0.05, lo=0.05, hi=0.99):
 # =============================================================================
 # Audio building blocks
 # =============================================================================
+ESPEAK = {  # macOS voice -> espeak-ng voice+variant, used where `say` is missing (Linux)
+    "Samantha": "en-us+f3", "Daniel": "en-gb+m3", "Karen": "en-us+f4", "Rishi": "en-gb-x-rp+m1",
+    "Fred": "en-us+m5", "Moira": "en-gb-scotland+f2", "Anna": "de+f2", "Thomas": "fr+m3",
+    "Mónica": "es+f3", "Alice": "it+f4", "Kyoko": "ja+f2",
+}
+
+
 def tts(voice, text, emotion="neutral"):
+    rate = str(RATE.get(emotion, 175))
     with tempfile.TemporaryDirectory() as td:
         f = Path(td) / "u.wav"
-        subprocess.run(["say", "-v", voice, "-r", str(RATE.get(emotion, 175)), "--file-format=WAVE",
-                        "--data-format=LEI16@16000", "-o", str(f), text], check=True)
+        if shutil.which("say"):
+            subprocess.run(["say", "-v", voice, "-r", rate, "--file-format=WAVE",
+                            "--data-format=LEI16@16000", "-o", str(f), text], check=True)
+        elif shutil.which("espeak-ng"):
+            subprocess.run(["espeak-ng", "-v", ESPEAK[voice], "-s", rate, "-w", str(f), text], check=True)
+        else:
+            sys.exit("needs a speech engine: macOS `say`, or espeak-ng (sudo apt install espeak-ng)")
         with wave.open(str(f)) as w:
+            sr = w.getframerate()
             x = np.frombuffer(w.readframes(w.getnframes()), "<i2").astype(np.float32) / 32768
+    if sr != SR:  # espeak-ng writes 22.05 kHz
+        x = np.interp(np.arange(int(len(x) * SR / sr)) * sr / SR, np.arange(len(x)), x).astype(np.float32)
     env = np.convolve(np.abs(x), np.ones(160) / 160, "same")
     idx = np.nonzero(env > 0.01)[0]
     if len(idx):
@@ -1004,7 +1031,7 @@ def build_images():
     img = Image.new("RGB", (900, 1200), "#fbf8f1")
     d = ImageDraw.Draw(img)
     lines = ["Meeting notes — 20 October 2026", "", "Attendees: Lena, Tom, Aoife", "",
-             "• Release editor v0.1 on Friday", "• Two more days of backend testing", "• Connect Qwen3-Omni after the release", "",
+             "• Release editor v0.1 on Friday", "• Two more days of backend testing", "• Connect the model after the release", "",
              "Action items", "1. Tom: finish load tests", "2. Aoife: export screenshots", "3. Lena: update the roadmap"]
     y = 90
     for i, ln in enumerate(lines):

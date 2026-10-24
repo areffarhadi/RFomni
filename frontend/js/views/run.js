@@ -54,7 +54,7 @@ export function openRunDialog({ mediaIds = null, taskIds = null } = {}) {
   const notice = engine && !engine.connected ? h('div.notice', ico('alert', 16), h('div',
     h('b', 'No model connected. '),
     'The mock engine finds speech regions in the audio and fills every tier with placeholder values ' +
-    '(marked "mock", with random confidence) so you can try the editing workflow. Real annotations will come from Qwen3-Omni once it is connected.')) : null;
+    '(marked "mock", with random confidence) so you can try the editing workflow. Real annotations will come from the model once it is connected.')) : null;
 
   const m = openModal({
     title: 'Run tasks', width: 640, className: 'run-dlg',
