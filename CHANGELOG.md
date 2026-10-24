@@ -26,6 +26,10 @@
   (deep greens #051F20 to #235347, sage accent #8EB69B, mint text #DAF1DE). Forest is checked for WCAG AA contrast
   (text, secondary text, buttons, input borders). Primary buttons and switches now take their text colour from the
   theme instead of fixed white, and inputs have their own border token.
+- **Project folders** on the Projects page: each project is a folder with its first picture (or the colours of its
+  tasks) on the back and a frosted front with name, counts and progress. Resting on it (or focusing it) leans the
+  front forward and fans out a few of its files: thumbnails for images and videos, real waveforms for audio, and
+  "+N more". The projects list now includes a cover and up to four preview files per project.
 - **Motion**: the project rail is a floating dock; the active tab is a coloured bead on its edge (each tab has its own
   colour, per theme) and the dock's outline wraps around it. The bead glides to the next tab on a soft spring
   (run by the browser's compositor, so it stays smooth while the page loads), with a glow in the tab colour. Pages blur out and the next one comes into

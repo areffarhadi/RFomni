@@ -163,9 +163,28 @@ def preview_prompt(body: dict = Body(...)):
 # -----------------------------------------------------------------------------
 # projects
 # -----------------------------------------------------------------------------
+def _folder_preview(items: list, n: int = 4) -> list:
+    """A few files to show when a project folder opens on the Projects page, mixing the media types."""
+    queues = {mod: [m for m in items if m.get("modality") == mod] for mod in ("video", "image", "audio")}
+    out = []
+    while len(out) < n and any(queues.values()):
+        for mod in ("video", "image", "audio"):
+            if queues[mod] and len(out) < n:
+                out.append(queues[mod].pop(0))
+    keep = ("id", "name", "modality", "duration", "width", "height")
+    return [{k: m.get(k) for k in keep} for m in out]
+
+
 @app.get("/api/projects")
 def list_projects():
-    return store.list_projects()
+    projects = store.list_projects()
+    for p in projects:   # each project is drawn as a folder: a cover picture and a few files to peek at
+        items = store.list_media(p["id"])
+        cover = next((m for m in items if m.get("modality") == "image"), None) \
+            or next((m for m in items if m.get("modality") == "video"), None)
+        p["cover"] = cover["id"] if cover else None
+        p["preview"] = _folder_preview(items)
+    return projects
 
 
 @app.post("/api/projects")

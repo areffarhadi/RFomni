@@ -44,7 +44,7 @@
   --overlay: rgba(16, 18, 24, .32);
   /* label on white and white icon on the bead: all >= 4.9:1 */
   --tab-data: #0969da; --tab-tasks: #7a4fd6; --tab-stats: #a85d00; --tab-review: #1a7f37; --tab-export: #c0306f;
-  --bead-ink: #ffffff; --bead-glow: .12;
+  --bead-ink: #ffffff; --bead-glow: .12; --folder-shadow: rgba(16, 18, 24, .16);
   --dock-line: #cfd3da; --dock-shadow: .06;
   color-scheme: light;
 }
@@ -333,51 +333,77 @@ body:has(.editor) .statusbar .save-state { display: none; } /* the editor header
 .home-head h1 { margin: 0 0 4px; font-size: var(--fs-xl); line-height: 1.3; letter-spacing: -.015em; font-weight: 600; }
 .home-head p { margin: 0; color: var(--muted); max-width: 640px; }
 .home-head .btn { flex: none; }
-.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.proj-card {
-  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--r-md);
-  background: var(--bg-1); border: 1px solid var(--line); cursor: pointer; min-height: 184px; min-width: 0;
-  transition: border-color .15s var(--ease), background-color .15s var(--ease);
+/* project folders: artwork on the back, a frosted front pocket, and a few files that rise out of it
+   on hover or focus (shapes from folderPaths in views/home.js; extra top padding leaves room for the files) */
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 64px 28px; padding-top: 70px; }
+.pfold {
+  position: relative; height: 232px; min-width: 0; cursor: pointer; border: 0; padding: 0; background: none; font: inherit; color: inherit; text-align: left;
+  filter: drop-shadow(0 16px 24px var(--folder-shadow, rgba(0, 0, 0, .32))) drop-shadow(0 2px 3px rgba(0, 0, 0, .12));
+  transition: transform .5s cubic-bezier(.3, 1.3, .5, 1);
 }
-.proj-card:hover { border-color: var(--line-2); }
-.proj-card h3 {
-  margin: 0; padding-right: 32px; font-size: var(--fs-md); line-height: 1.4; font-weight: 600;
+.pfold:hover, .pfold:focus-within { transform: translateY(-3px); }
+.pf-back {
+  position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(120% 90% at 85% 0%, var(--c2), transparent 60%), linear-gradient(125deg, var(--c1), var(--c3));
+}
+.pf-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(1.2) contrast(1.05); }
+.pf-back::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .05), rgba(0, 0, 0, .25)); }
+/* the files inside: tucked behind the front, fanned out above it when the folder opens */
+.pf-files { position: absolute; left: 10%; right: 10%; top: 12px; height: 66%; pointer-events: none; }
+.pff {
+  position: absolute; left: 50%; top: 0; width: 70%; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 12px; background: var(--bg-1); color: var(--text); box-shadow: 0 0 0 1px var(--line-2), 0 10px 22px -8px rgba(0, 0, 0, .45);
+  transform-origin: 50% 100%; transform: translate(-50%, 34%) rotate(0deg);
+  transition: transform .55s cubic-bezier(.3, 1.35, .5, 1); transition-delay: calc(var(--i, 0) * 45ms);
+}
+.pfold:hover .pff, .pfold:focus-within .pff { transform: translate(calc(-50% + var(--x, 0%)), var(--y, -50%)) rotate(var(--r, 0deg)); }
+.pff-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 7px 9px 6px; font-size: 11px; flex: none; }
+.pff-head b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pff-head span { flex: none; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); }
+.pff-img { flex: 1; min-height: 0; width: 100%; object-fit: cover; display: block; }
+.pff-wave { flex: 1; min-height: 0; width: 100%; display: block; color: var(--accent); padding: 4px 8px 8px; }
+.pff.more { align-items: center; justify-content: center; gap: 2px; background: var(--bg-2); }
+.pff.more b { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.pff.more span { font-size: 11px; color: var(--muted); }
+/* the front pocket: frosted glass, leaning forward when the folder opens */
+.pf-front {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 72%; display: flex; flex-direction: column; gap: 3px;
+  padding: 34px 16px 14px 18px; background: color-mix(in srgb, var(--bg-1) 90%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent), transparent 45%);
+  transform-origin: 50% 100%; transition: transform .5s cubic-bezier(.3, 1.25, .5, 1);
+}
+.pfold:hover .pf-front, .pfold:focus-within .pf-front { transform: perspective(900px) rotateX(-13deg); }
+.pf-front h3 {
+  margin: 0; min-width: 0; font-size: var(--fs-lg); line-height: 1.3; font-weight: 600; letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.proj-card h3 a { color: inherit; text-decoration: none; border-radius: var(--r-sm); }
-.proj-card h3 a:focus-visible { outline-offset: 1px; }
-.proj-card:has(h3 a:focus-visible) { border-color: var(--line-2); }
-.proj-card .desc {
-  margin-top: 4px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+.pf-front h3 a { color: inherit; text-decoration: none; border-radius: var(--r-sm); }
+.pf-front h3 a:focus-visible { outline-offset: 2px; }
+.pf-meta { margin-top: 4px; font: var(--fs-sm)/1.4 var(--font-mono); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.pf-tasks { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-foot { margin-top: auto; display: flex; align-items: flex-end; gap: 14px; }
+.pf-prog { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pf-prog .progress { height: 4px; }
+.pf-prog span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-menu {
+  flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--line-2); background: color-mix(in srgb, var(--bg-1) 80%, transparent); color: var(--text-2);
+  box-shadow: var(--shadow-sm); transition: background-color .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);
 }
-.proj-card .stats {
-  display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap;
-  color: var(--text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums;
-}
-.proj-card .stats span { display: inline-flex; align-items: center; gap: 6px; }
-.proj-card .stats .ico { color: var(--muted); }
-.proj-card .tasks { display: flex; gap: 4px; flex-wrap: wrap; }
-.proj-card .no-tasks { font-size: var(--fs-sm); color: var(--muted); }
-/* "+n" overflow: same metrics as a task chip, no dot */
-.proj-more {
-  display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--r-sm);
-  border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: var(--fs-sm);
-  font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default;
-}
-.proj-card .foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
-.proj-card .progress { height: 4px; }
-.proj-card .foot .row { font-size: var(--fs-sm); color: var(--muted); justify-content: space-between; font-variant-numeric: tabular-nums; }
-.proj-card .card-menu { position: absolute; top: 12px; right: 12px; color: var(--muted); }
-.proj-card .card-menu:hover { color: var(--text); }
-.proj-card.new {
-  align-items: center; justify-content: center; gap: 8px; width: 100%;
-  border: 1px dashed var(--line-2); background: transparent; color: var(--text-2);
-  font: inherit; font-weight: 500; text-align: center;
-}
-.proj-card.new .ico { color: var(--muted); }
-.proj-card.new:hover { background: var(--bg-1); border-color: var(--faint); color: var(--text); }
-.proj-card.new:hover .ico { color: var(--text-2); }
+.pf-menu:hover { background: var(--bg-3); color: var(--text); }
+.pf-menu:active { transform: scale(.94); }
+/* a new project: the same folder outline, dashed */
+.pfold.new { filter: none; }
+.pf-outline { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); overflow: visible; pointer-events: none; }
+.pf-outline path { fill: color-mix(in srgb, var(--bg-1) 40%, transparent); stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 6 6; transition: stroke .2s var(--ease), fill .2s var(--ease); }
+.pfold.new:hover .pf-outline path, .pfold.new:focus-visible .pf-outline path { stroke: var(--accent); fill: var(--accent-soft); }
+.pfold.new:focus-visible { outline: none; }
+.pf-new { position: absolute; inset: 22px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); }
+.pf-new .ico { color: var(--muted); }
+.pf-new small { color: var(--muted); font-size: var(--fs-sm); }
+.pfold.new:hover .pf-new, .pfold.new:hover .pf-new .ico { color: var(--text); }
+.proj-hint { margin: 44px 0 0; text-align: center; font: 500 var(--fs-xs)/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 /* no projects yet / could not load */
 .home-empty {
   grid-column: 1 / -1; padding: 64px 24px; gap: 8px;
