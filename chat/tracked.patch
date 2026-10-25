@@ -1,0 +1,510 @@
+diff --git a/backend/open_webui/main.py b/backend/open_webui/main.py
+index c84a394..e16c27a 100644
+--- a/backend/open_webui/main.py
++++ b/backend/open_webui/main.py
+@@ -165,6 +165,7 @@ from open_webui.routers import (
+     ollama,
+     openai,
+     pipelines,
++    pipecat,
+     prompts,
+     retrieval,
+     scim,
+@@ -826,6 +827,7 @@ app.include_router(tasks.router, prefix='/api/v1/tasks', tags=['tasks'])
+ app.include_router(images.router, prefix='/api/v1/images', tags=['images'])
+ 
+ app.include_router(audio.router, prefix='/api/v1/audio', tags=['audio'])
++app.include_router(pipecat.router, prefix='/api/v1/pipecat', tags=['pipecat'])
+ app.include_router(retrieval.router, prefix='/api/v1/retrieval', tags=['retrieval'])
+ 
+ app.include_router(configs.router, prefix='/api/v1/configs', tags=['configs'])
+@@ -2375,6 +2377,11 @@ async def get_app_config(request: Request):
+                     'stt': {
+                         'engine': config.get('audio.stt.engine'),
+                     },
++                    'pipecat': {
++                        'enabled': os.environ.get('PIPECAT_ENABLED', 'true').lower()
++                        in {'1', 'true', 'yes'},
++                        'proxy': True,
++                    },
+                 },
+                 'file': {
+                     'max_size': config.get('rag.file.max_size'),
+@@ -2979,6 +2986,29 @@ async def check_db_health():
+     return {'status': True}
+ 
+ 
++def _omni_static_page(name: str):
++    """Serve a site page from the frontend build, then the backend static dir."""
++    for candidate in (
++        FRONTEND_BUILD_DIR / 'static' / name,
++        STATIC_DIR / name,
++    ):
++        if candidate.is_file():
++            return FileResponse(candidate)
++    raise HTTPException(status_code=404, detail='Page not found')
++
++
++@app.get('/hub')
++async def omni_deployment_hub():
++    """Landing page. Chat and Omni Studio both require a signed-in account."""
++    return _omni_static_page('omni-hub.html')
++
++
++@app.get('/studio')
++async def omni_studio():
++    """Omni Studio. The page itself sends anonymous visitors to the login form."""
++    return _omni_static_page('omni-studio.html')
++
++
+ # --- static assets & files ---
+ # Serve build-time static assets (CSS, JS, images, favicon, etc.)
+ app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
+diff --git a/backend/open_webui/utils/middleware.py b/backend/open_webui/utils/middleware.py
+index cc5f57e..cda6dda 100644
+--- a/backend/open_webui/utils/middleware.py
++++ b/backend/open_webui/utils/middleware.py
+@@ -1991,6 +1991,17 @@ async def chat_completion_files_handler(
+     sources = []
+ 
+     files = [item for item in (body.get('metadata', {}).get('files', None) or []) if item.get('type') != 'filesystem']
++    # Images/audio/video go to Omni as multimodal parts — do not RAG/transcribe them here.
++    try:
++        from open_webui.utils.omni_media import is_audio_or_video_file, is_image_file
++
++        files = [
++            item
++            for item in files
++            if not is_audio_or_video_file(item) and not is_image_file(item)
++        ]
++    except Exception:
++        pass
+     if files:
+         # Check if all files are in full context mode
+         all_full_context = all(item.get('context') == 'full' for item in files)
+@@ -2425,26 +2436,67 @@ async def process_chat_payload(request, form_data, user, metadata, model):
+             system_message = get_system_message(form_data.get('messages', []))
+             form_data['messages'] = [system_message, *db_messages] if system_message else db_messages
+ 
+-            # Inject image files into content as image_url parts (mirrors frontend logic)
++            # Inject image + audio/video files as multimodal parts (Omni needs real data URLs)
++            from open_webui.utils.omni_media import (
++                build_audio_url_parts,
++                build_image_url_parts,
++                build_video_url_parts,
++                is_audio_file,
++                is_image_file,
++                is_video_file,
++            )
++
+             for message in form_data['messages']:
+-                image_files = [
+-                    f
+-                    for f in message.get('files', [])
+-                    if f.get('type') == 'image' or (f.get('content_type') or '').startswith('image/')
+-                ]
+-                if message.get('role') == 'user' and image_files:
++                msg_files = message.get('files', []) or []
++                image_files = [f for f in msg_files if is_image_file(f)]
++                audio_files = [f for f in msg_files if is_audio_file(f)]
++                video_files = [f for f in msg_files if is_video_file(f)]
++                if message.get('role') == 'user' and (image_files or audio_files or video_files):
+                     text_content = message.get('content', '')
+                     if isinstance(text_content, str):
++                        parts = [{'type': 'text', 'text': text_content}]
++                        parts.extend(await build_image_url_parts(image_files))
++                        parts.extend(await build_video_url_parts(video_files))
++                        parts.extend(await build_audio_url_parts(audio_files))
++                        message['content'] = parts
++                    elif isinstance(text_content, list):
++                        # Upgrade any bare file-id media entries
++                        upgraded = await build_image_url_parts(image_files)
++                        upgraded += await build_video_url_parts(video_files)
++                        upgraded += await build_audio_url_parts(audio_files)
++                        existing_types = {
++                            (
++                                p.get('type'),
++                                (
++                                    p.get('image_url') or p.get('audio_url') or p.get('video_url') or {}
++                                ).get('url', '')[:32],
++                            )
++                            for p in text_content
++                            if isinstance(p, dict)
++                        }
++                        for part in upgraded:
++                            key = (
++                                part.get('type'),
++                                (
++                                    part.get('image_url')
++                                    or part.get('audio_url')
++                                    or part.get('video_url')
++                                    or {}
++                                ).get('url', '')[:32],
++                            )
++                            if key not in existing_types:
++                                text_content.append(part)
++                        # Drop useless image/video_url parts that are bare UUIDs / non-data URLs
+                         message['content'] = [
+-                            {'type': 'text', 'text': text_content},
+-                            *[
+-                                {
+-                                    'type': 'image_url',
+-                                    'image_url': {'url': f['url']},
+-                                }
+-                                for f in image_files
+-                                if f.get('url')
+-                            ],
++                            p
++                            for p in text_content
++                            if not (
++                                isinstance(p, dict)
++                                and p.get('type') in ('image_url', 'video_url')
++                                and not str(
++                                    (p.get('image_url') or p.get('video_url') or {}).get('url') or ''
++                                ).startswith(('data:', 'http://', 'https://'))
++                            )
+                         ]
+                 # Strip files field — it's been incorporated into content
+                 message.pop('files', None)
+@@ -3049,6 +3101,75 @@ async def process_chat_payload(request, form_data, user, metadata, model):
+         except Exception as e:
+             log.exception(e)
+ 
++    # Ensure audio/video/image attachments are multimodal parts for Omni models.
++    try:
++        from open_webui.utils.omni_media import (
++            build_audio_url_parts,
++            build_image_url_parts,
++            build_video_url_parts,
++            is_audio_file,
++            is_image_file,
++            is_video_file,
++        )
++
++        meta_files = metadata.get('files') or []
++        audio_files = [f for f in meta_files if is_audio_file(f)]
++        video_files = [f for f in meta_files if is_video_file(f)]
++        image_files = [f for f in meta_files if is_image_file(f)]
++        media_parts = []
++        if image_files:
++            media_parts.extend(await build_image_url_parts(image_files))
++        if video_files:
++            media_parts.extend(await build_video_url_parts(video_files))
++        if audio_files:
++            media_parts.extend(await build_audio_url_parts(audio_files))
++        if media_parts:
++            msgs = form_data.get('messages') or []
++            for i in range(len(msgs) - 1, -1, -1):
++                if msgs[i].get('role') == 'user':
++                    content = msgs[i].get('content', '')
++                    if isinstance(content, str):
++                        msgs[i]['content'] = [{'type': 'text', 'text': content}, *media_parts]
++                    elif isinstance(content, list):
++                        existing = {
++                            (
++                                p.get('type'),
++                                (
++                                    p.get('audio_url') or p.get('image_url') or p.get('video_url') or {}
++                                ).get('url', '')[:64],
++                            )
++                            for p in content
++                            if isinstance(p, dict)
++                            and p.get('type') in ('audio_url', 'image_url', 'video_url')
++                        }
++                        for part in media_parts:
++                            key = (
++                                part.get('type'),
++                                (
++                                    part.get('audio_url')
++                                    or part.get('image_url')
++                                    or part.get('video_url')
++                                    or {}
++                                ).get('url', '')[:64],
++                            )
++                            if key and key not in existing:
++                                content.append(part)
++                        # Remove bare file-id image/video_url stubs
++                        msgs[i]['content'] = [
++                            p
++                            for p in content
++                            if not (
++                                isinstance(p, dict)
++                                and p.get('type') in ('image_url', 'video_url')
++                                and not str(
++                                    (p.get('image_url') or p.get('video_url') or {}).get('url') or ''
++                                ).startswith(('data:', 'http://', 'https://'))
++                            )
++                        ]
++                    break
++    except Exception:
++        log.exception('omni multimodal injection failed')
++
+     # Save the pre-RAG message state so the native tool call loop can
+     # restore to the true original (before file-source injection) rather
+     # than a snapshot that already has the RAG template baked in.
+diff --git a/src/app.html b/src/app.html
+index 667808e..7b98d5d 100644
+--- a/src/app.html
++++ b/src/app.html
+@@ -37,6 +37,7 @@
+ 
+ 		<script src="/static/loader.js" defer crossorigin="use-credentials"></script>
+ 		<link rel="stylesheet" href="/static/custom.css" crossorigin="use-credentials" />
++		<script src="/static/omni-nav.js" defer></script>
+ 
+ 		<script>
+ 			function resizeIframe(obj) {
+diff --git a/src/lib/components/chat/Chat.svelte b/src/lib/components/chat/Chat.svelte
+index 9aa7ad7..6fe0fbb 100644
+--- a/src/lib/components/chat/Chat.svelte
++++ b/src/lib/components/chat/Chat.svelte
+@@ -1743,7 +1743,12 @@
+ 			fileItem.id = uploadedFile.id;
+ 			fileItem.size = file.size;
+ 			fileItem.collection_name = uploadedFile?.meta?.collection_name;
++			fileItem.content_type = uploadedFile?.meta?.content_type || uploadedFile?.content_type || file.type;
+ 			fileItem.url = `${uploadedFile.id}`;
++			const ct = (fileItem.content_type || '').toLowerCase();
++			if (ct.startsWith('image/')) fileItem.type = 'image';
++			else if (ct.startsWith('audio/')) fileItem.type = 'audio';
++			else if (ct.startsWith('video/')) fileItem.type = 'video';
+ 
+ 			files = files;
+ 			toast.success($i18n.t('File uploaded successfully'));
+@@ -2661,6 +2666,9 @@
+ 
+ 	const addMessages = async ({ modelId, parentId, messages }) => {
+ 		const model = $models.filter((m) => m.id === modelId).at(0);
++		if (!model) {
++			throw new Error('Model not found — select qwen3-omni-voice before starting Voice');
++		}
+ 
+ 		let parentMessage = history.messages[parentId];
+ 		let currentParentId = parentMessage ? parentMessage.id : null;
+@@ -2715,7 +2723,7 @@
+ 			scrollToBottom();
+ 		}
+ 
+-		if (messages.length === 0) {
++		if (!$temporaryChatEnabled && (!$chatId || isTemporaryChatId($chatId))) {
+ 			await initChatHandler(history);
+ 		} else {
+ 			await saveChatHandler($chatId, history);
+@@ -3479,12 +3487,23 @@
+ 					const imageFiles = (message?.files ?? []).filter(
+ 						(file) => file.type === 'image' || (file?.content_type ?? '').startsWith('image/')
+ 					);
++					const videoFiles = (message?.files ?? []).filter(
++						(file) =>
++							file.type === 'video' || (file?.content_type ?? '').startsWith('video/')
++					);
++					const audioFiles = (message?.files ?? []).filter(
++						(file) =>
++							file.type === 'audio' || (file?.content_type ?? '').startsWith('audio/')
++					);
+ 
+ 					if (message.output && message.role === 'assistant') {
+ 						return { role: message.role, model: message.model, output: message.output };
+ 					}
+ 
+-					if (message.role === 'user' && imageFiles.length > 0) {
++					if (
++						message.role === 'user' &&
++						(imageFiles.length > 0 || audioFiles.length > 0 || videoFiles.length > 0)
++					) {
+ 						return {
+ 							role: message.role,
+ 							content: [
+@@ -3498,7 +3517,9 @@
+ 										url: file.url
+ 									}
+ 								}))
+-							]
++							],
++							// Backend converts these to Omni image_url / video_url / audio_url data URIs
++							files: [...imageFiles, ...videoFiles, ...audioFiles]
+ 						};
+ 					}
+ 
+@@ -3967,6 +3988,12 @@
+ 	const saveChatHandler = async (_chatId, history) => {
+ 		if ($chatId == _chatId) {
+ 			if (!$temporaryChatEnabled) {
++				// Voice / first turn can run before a chat row exists (empty or temporary:* id).
++				// Creating via updateChatById would POST /chats/ → 405.
++				if (!_chatId || isTemporaryChatId(_chatId)) {
++					await initChatHandler(history);
++					return;
++				}
+ 				chat = await updateChatById(localStorage.token, _chatId, {
+ 					models: selectedModels,
+ 					history: history,
+@@ -4640,6 +4667,7 @@
+ 						submitPrompt={submitHandler}
+ 						{stopResponse}
+ 						{showMessage}
++						{addMessages}
+ 						{eventTarget}
+ 						{codeInterpreterEnabled}
+ 					/>
+diff --git a/src/lib/components/chat/ChatControls.svelte b/src/lib/components/chat/ChatControls.svelte
+index 894b545..34603ed 100644
+--- a/src/lib/components/chat/ChatControls.svelte
++++ b/src/lib/components/chat/ChatControls.svelte
+@@ -19,6 +19,7 @@
+ 
+ 	import Controls from './Controls/Controls.svelte';
+ 	import CallOverlay from './MessageInput/CallOverlay.svelte';
++	import PipecatCallOverlay from './MessageInput/PipecatCallOverlay.svelte';
+ 	import Drawer from '../common/Drawer.svelte';
+ 	import ResizableSidePanel from '../common/ResizableSidePanel.svelte';
+ 	import Artifacts from './Artifacts.svelte';
+@@ -43,11 +44,23 @@
+ 	export let submitPrompt: Function;
+ 	export let stopResponse: Function;
+ 	export let showMessage: Function;
++	export let addMessages: Function = async () => {};
+ 	export let files;
+ 	export let modelId;
+ 
+ 	export let codeInterpreterEnabled = false;
+ 
++	$: usePipecat = $config?.audio?.pipecat?.enabled !== false;
++
++	const addVoiceTurn = async (messages) => {
++		if (!addMessages) return;
++		await addMessages({
++			modelId,
++			parentId: history?.currentId ?? null,
++			messages
++		});
++	};
++
+ 	let largeScreen = false;
+ 	let dragged = false;
+ 	let mounted = false;
+@@ -204,15 +217,24 @@
+ 					<div
+ 						class="h-full max-h-[100dvh] bg-white text-gray-700 dark:bg-black dark:text-gray-300 flex justify-center"
+ 					>
+-						<CallOverlay
+-							bind:files
+-							{submitPrompt}
+-							{stopResponse}
+-							{modelId}
+-							{chatId}
+-							{eventTarget}
+-							on:close={() => showControls.set(false)}
+-						/>
++						{#if usePipecat}
++							<PipecatCallOverlay
++								{modelId}
++								{chatId}
++								{addVoiceTurn}
++								on:close={() => showControls.set(false)}
++							/>
++						{:else}
++							<CallOverlay
++								bind:files
++								{submitPrompt}
++								{stopResponse}
++								{modelId}
++								{chatId}
++								{eventTarget}
++								on:close={() => showControls.set(false)}
++							/>
++						{/if}
+ 					</div>
+ 				{:else if $showEmbeds}
+ 					<Embeds />
+@@ -327,15 +349,24 @@
+ 			>
+ 				{#if $showCallOverlay}
+ 					<div class="w-full h-full flex justify-center">
+-						<CallOverlay
+-							bind:files
+-							{submitPrompt}
+-							{stopResponse}
+-							{modelId}
+-							{chatId}
+-							{eventTarget}
+-							on:close={() => showControls.set(false)}
+-						/>
++						{#if usePipecat}
++							<PipecatCallOverlay
++								{modelId}
++								{chatId}
++								{addVoiceTurn}
++								on:close={() => showControls.set(false)}
++							/>
++						{:else}
++							<CallOverlay
++								bind:files
++								{submitPrompt}
++								{stopResponse}
++								{modelId}
++								{chatId}
++								{eventTarget}
++								on:close={() => showControls.set(false)}
++							/>
++						{/if}
+ 					</div>
+ 				{:else if $showEmbeds}
+ 					<Embeds overlay={dragged} />
+diff --git a/src/lib/components/chat/MessageInput.svelte b/src/lib/components/chat/MessageInput.svelte
+index 12f8a26..d2b40c5 100644
+--- a/src/lib/components/chat/MessageInput.svelte
++++ b/src/lib/components/chat/MessageInput.svelte
+@@ -1013,6 +1013,11 @@
+ 						uploadedFile?.meta?.collection_name || uploadedFile?.collection_name;
+ 					fileItem.content_type = uploadedFile.meta?.content_type || uploadedFile.content_type;
+ 					fileItem.url = `${uploadedFile.id}`;
++					// Tag media types so Omni multimodal injection + UI previews work
++					const ct = (fileItem.content_type || '').toLowerCase();
++					if (ct.startsWith('image/')) fileItem.type = 'image';
++					else if (ct.startsWith('audio/')) fileItem.type = 'audio';
++					else if (ct.startsWith('video/')) fileItem.type = 'video';
+ 
+ 					files = files;
+ 				} else {
+@@ -2626,7 +2631,8 @@
+ 																return;
+ 															}
+ 
+-															if ($config.audio.stt.engine === 'web') {
++															const pipecatOn = $config?.audio?.pipecat?.enabled !== false;
++															if (!pipecatOn && $config.audio.stt.engine === 'web') {
+ 																toast.error(
+ 																	$i18n.t('Call feature is not supported when using Web STT engine')
+ 																);
+@@ -2647,7 +2653,12 @@
+ 
+ 																stream = null;
+ 
+-																if ($settings.audio?.tts?.engine === 'browser-kokoro') {
++																const pipecatVoice =
++																	$config?.audio?.pipecat?.enabled !== false;
++																if (
++																	!pipecatVoice &&
++																	$settings.audio?.tts?.engine === 'browser-kokoro'
++																) {
+ 																	// If the user has not initialized the TTS worker, initialize it
+ 																	if (!$TTSWorker) {
+ 																		await TTSWorker.set(
+diff --git a/svelte.config.js b/svelte.config.js
+index 82e0595..a49aacd 100644
+--- a/svelte.config.js
++++ b/svelte.config.js
+@@ -13,8 +13,10 @@ const config = {
+ 		// If your environment is not supported or you settled on a specific environment, switch out the adapter.
+ 		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
+ 		adapter: adapter({
+-			pages: 'build',
+-			assets: 'build',
++			// BUILD_DIR builds a variant frontend somewhere else (the V5 platform builds
++			// into build_v5); unset, this is exactly the previous behaviour.
++			pages: process.env.BUILD_DIR || 'build',
++			assets: process.env.BUILD_DIR || 'build',
+ 			fallback: 'index.html'
+ 		}),
+ 		// poll for new version name every 60 seconds (to trigger reload mechanic in +layout.svelte)

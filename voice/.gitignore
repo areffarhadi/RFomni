@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.Python
+certs/key.pem
+*.log
+.DS_Store
+certs/
+client/dist/

@@ -1,0 +1,18 @@
+# Speaker verification service (platform/asv). Installed by platform/setup.sh into
+# $STACK/venvs/asv. Install CPU torch first — the default index pulls the CUDA build,
+# which is ~2.5 GB for a frontend that only computes filterbanks:
+#
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+#   pip install -r platform/requirements/asv.txt
+#
+# The checkpoints are NOT installed. They come from the shared store through
+# RFOMNI_ASV_MODELS — see platform/asv/README.md.
+
+onnxruntime>=1.17        # the inference backend; onnxruntime-gpu only if SPK_DEVICE=cuda:0
+torch>=2.0               # used only for torchaudio's Kaldi fbank; the CPU wheel is fine
+torchaudio>=2.0
+numpy>=1.24
+fastapi>=0.110
+uvicorn>=0.27
+httpx>=0.27
+loguru>=0.7

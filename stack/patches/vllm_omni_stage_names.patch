@@ -1,0 +1,16 @@
+--- a/vllm_omni/engine/stage_engine_core_proc.py
++++ b/vllm_omni/engine/stage_engine_core_proc.py
+@@ -113,7 +113,12 @@
+ 
+             stage_label = f"stage{omni_stage_id}" if omni_stage_id is not None else "noid"
+             set_death_signal(signal.SIGTERM)
+-            set_process_title(f"StageEngineCoreProc_{stage_label}_replica{omni_replica_id}_DP{dp_rank}")
++            # local patch: OMNI_STAGE_NAMES="thinker,talker,code2wav" gives the stages readable names in nvidia-smi
++            _names = os.environ.get("OMNI_STAGE_NAMES", "").split(",")
++            if omni_stage_id is not None and omni_stage_id < len(_names) and _names[omni_stage_id].strip():
++                set_process_title(_names[omni_stage_id].strip())
++            else:
++                set_process_title(f"StageEngineCoreProc_{stage_label}_replica{omni_replica_id}_DP{dp_rank}")
+             decorate_logs()
+             # Workaround for flashinfer/jit-cache version mismatch in CI.
+             # The parent process handles this gracefully via ring_globals.py,

@@ -1,0 +1,15 @@
+# runtime state and secrets stay on the machine
+stack/services/
+certs/
+**/certs/
+studio/workspace/
+studio/frontend/landing/fonts/satoshi/
+voice/client/dist/
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+*.log
+.env
+.DS_Store
+node_modules/

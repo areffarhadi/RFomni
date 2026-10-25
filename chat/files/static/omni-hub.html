@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qwen3-Omni Platform</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --card: #151b24;
+      --border: #243044;
+      --text: #e8eef7;
+      --muted: #93a4bd;
+      --accent: #5b9dff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a2740 0%, var(--bg) 55%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .wrap { max-width: 720px; width: 100%; }
+    h1 { font-size: 2rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    p.lead { color: var(--muted); margin: 0 0 2rem; line-height: 1.5; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.35rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .card h2 { margin: 0; font-size: 1.2rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+    a.btn {
+      margin-top: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      padding: 0.7rem 1.1rem;
+      border-radius: 10px;
+      font-weight: 600;
+      color: #041018;
+      background: var(--accent);
+    }
+    .note {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    code { color: #c9d7ef; }
+    ul { margin: 0.4rem 0 0; padding-left: 1.2rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Qwen3-Omni Deployment</h1>
+    <p class="lead">
+      One UI for text, images, and voice. Voice mode uses the Pipecat RFOMNI engine
+      (VAD, barge-in, interrupt, Omni talker) inside Open WebUI — not a separate page.
+    </p>
+
+    <section class="card">
+      <h2>Open WebUI</h2>
+      <p>Chat with the finetuned model. Use the black circular <strong>Voice mode</strong> button in the input bar to start a live conversation.</p>
+      <ul>
+        <li>Text &amp; image chat</li>
+        <li>Voice chat (Pipecat WebRTC → Omni talker)</li>
+        <li>Modes: Assistant / Translate / Annotator</li>
+      </ul>
+      <a class="btn" id="chat-link" href="/">Open Chat</a>
+    </section>
+
+    <div class="note">
+      Mic requires <strong>HTTPS</strong>. Accept the self-signed certificate once.
+      Backend: vLLM Omni on <code>:8400</code>, Pipecat agent on <code>:7860</code> (signaling proxied via Open WebUI).
+    </div>
+  </div>
+  <script>
+    (function () {
+      var chat = document.getElementById("chat-link");
+      if (location.protocol === "https:") {
+        chat.href = location.origin + "/";
+      } else {
+        var host = location.hostname || "10.16.12.60";
+        chat.href = "https://" + host + ":8080/";
+      }
+    })();
+  </script>
+</body>
+</html>

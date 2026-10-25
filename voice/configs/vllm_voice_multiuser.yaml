@@ -1,0 +1,135 @@
+# Pipecat voice stack — multi-user (max_num_seqs=8 per stage).
+# Used by start_pipecat_omni.sh; restart vLLM with FORCE_VLLM=1 after changes.
+#
+# Qwen3-Omni MXFP4A16 with SPEECH OUTPUT — thinker + talker + code2wav on one GPU.
+#
+# Everything else in this toolbox serves the thinker alone (text out). This config adds the
+# two speech stages so the model can talk back. The talker and code2wav weights were never
+# quantized — only the thinker's MoE experts were — so they run in BF16 exactly as shipped.
+#
+# Point it at a checkpoint whose config.json has enable_audio_output: true. The production
+# annotation checkpoint has it false, so use the symlinked voice view:
+#   …/unified_caps_ckpt30000-MXFP4A16mse-VOICE   (20 KB of symlinks, not a 27 GiB copy)
+#
+# NOTE: this uses the legacy `stage_args` schema and must be passed with
+# --stage-configs-path, not --deploy-config. Multi-stage omni deployments use that path.
+#
+# gpu_memory_utilization is PER STAGE and they must stay distinct — do not flatten them.
+# The upstream single-GPU voice template totals 0.94 (0.58/0.28/0.08). That assumes an
+# empty card. These are scaled to ~0.60 total so the stack can share GPU 3 with another
+# job; raise them proportionally on a dedicated card.
+
+async_chunk: true
+stage_args:
+  - stage_id: 0
+    stage_type: llm
+    runtime:
+      devices: "0"
+    engine_args:
+      model_stage: thinker
+      max_num_seqs: 8
+      model_arch: Qwen3OmniMoeForConditionalGeneration
+      worker_type: ar
+      scheduler_cls: vllm_omni.core.sched.omni_ar_scheduler.OmniARScheduler
+      gpu_memory_utilization: 0.58
+      enforce_eager: false
+      trust_remote_code: true
+      engine_output_type: latent
+      distributed_executor_backend: "mp"
+      enable_prefix_caching: false
+      max_num_batched_tokens: 8192
+      max_model_len: 4096
+      mm_processor_cache_gb: 0
+      hf_config_name: thinker_config
+      tensor_parallel_size: 1
+      custom_process_next_stage_input_func: vllm_omni.model_executor.stage_input_processors.qwen3_omni.thinker2talker_async_chunk
+    final_output: true
+    final_output_type: text
+    is_comprehension: true
+    output_connectors:
+      to_stage_1: connector_of_shared_memory
+    default_sampling_params:
+      temperature: 0.4
+      top_p: 0.9
+      top_k: 1
+      max_tokens: 256
+      seed: 42
+      detokenize: true
+      repetition_penalty: 1.05
+
+  - stage_id: 1
+    stage_type: llm
+    runtime:
+      devices: "0"
+    engine_args:
+      model_stage: talker
+      max_num_seqs: 8
+      model_arch: Qwen3OmniMoeForConditionalGeneration
+      worker_type: ar
+      scheduler_cls: vllm_omni.core.sched.omni_ar_scheduler.OmniARScheduler
+      gpu_memory_utilization: 0.28
+      enforce_eager: false
+      trust_remote_code: true
+      engine_output_type: latent
+      enable_prefix_caching: false
+      max_num_batched_tokens: 8192
+      distributed_executor_backend: "mp"
+      hf_config_name: talker_config
+      custom_process_next_stage_input_func: vllm_omni.model_executor.stage_input_processors.qwen3_omni.talker2code2wav_async_chunk
+    engine_input_source: [0]
+    # Must be stated explicitly. The dataclass defaults final_output to False, but this
+    # deploy path validates strictly and errors with "Missing key final_output" — the
+    # upstream voice templates omit it and no longer load as-is on vllm-omni 0.26.
+    final_output: false
+    final_output_type: null
+    is_comprehension: false
+    input_connectors:
+      from_stage_0: connector_of_shared_memory
+    default_sampling_params:
+      temperature: 0.9
+      top_k: 50
+      max_tokens: 768
+      seed: 42
+      detokenize: false
+      repetition_penalty: 1.05
+      stop_token_ids: [2150]
+
+  - stage_id: 2
+    stage_type: llm
+    runtime:
+      devices: "0"
+    engine_args:
+      model_stage: code2wav
+      max_num_seqs: 8
+      model_arch: Qwen3OmniMoeForConditionalGeneration
+      worker_type: generation
+      scheduler_cls: vllm_omni.core.sched.omni_generation_scheduler.OmniGenerationScheduler
+      enforce_eager: true
+      trust_remote_code: true
+      async_scheduling: false
+      enable_prefix_caching: false
+      engine_output_type: audio
+      gpu_memory_utilization: 0.08
+      distributed_executor_backend: "mp"
+      max_num_batched_tokens: 51200
+      hf_config_name: thinker_config
+    engine_input_source: [1]
+    final_output: true
+    final_output_type: audio
+    is_comprehension: false
+    default_sampling_params:
+      temperature: 0.0
+      top_p: 1.0
+      top_k: -1
+      max_tokens: 12288
+      seed: 42
+      detokenize: true
+      repetition_penalty: 1.1
+
+runtime:
+  connectors:
+    connector_of_shared_memory:
+      name: SharedMemoryConnector
+      extra:
+        codec_chunk_frames: 25
+        codec_left_context_frames: 25

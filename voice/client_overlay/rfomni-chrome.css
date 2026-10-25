@@ -1,0 +1,96 @@
+.rfomni-chrome {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(12, 18, 24, 0.82);
+  color: #e8eef3;
+  font: 13px/1.35 ui-sans-serif, system-ui, sans-serif;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.rfomni-chrome * { pointer-events: auto; }
+.rfomni-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.rfomni-langs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rfomni-gate { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rfomni-mode,
+.rfomni-lang {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.rfomni-mode.on,
+.rfomni-lang.on {
+  background: #3db8c5;
+  color: #06212c;
+  border-color: transparent;
+  font-weight: 600;
+}
+.rfomni-meta { display: flex; gap: 8px; align-items: center; }
+.rfomni-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  font-variant-numeric: tabular-nums;
+}
+.rfomni-pill.muted { opacity: 0.55; }
+.rfomni-hint {
+  margin: 0;
+  flex: 1 1 100%;
+  opacity: 0.75;
+  font-size: 12px;
+}
+.rfomni-mic-meter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  vertical-align: middle;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.rfomni-mic-meter canvas {
+  display: block;
+  width: 36px;
+  height: 20px;
+  color: inherit;
+}
+@media (max-width: 640px) {
+  .rfomni-chrome { bottom: 8px; left: 8px; right: 8px; }
+}
+
+/* V2 goal-speaker controls */
+.rfomni-mode:disabled { opacity: 0.4; cursor: not-allowed; }
+#rfomni-gate-toggle.on { background: #e0a23d; color: #2a1a04; }
+#rfomni-enroll.on { background: #e05d5d; color: #2a0404; }
+#rfomni-barge-toggle.on { background: #7f6ce0; color: #f2efff; }
+#rfomni-diarize-toggle.on { background: #4bab6f; color: #04240f; }
+
+/* Refusal lamp: a rejected speaker is shown, never spoken to. */
+.rfomni-reject {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-variant-numeric: tabular-nums;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.14);
+  transition: background 600ms ease, color 600ms ease;
+}
+.rfomni-reject.hot {
+  color: #fff;
+  background: #e03131;
+}

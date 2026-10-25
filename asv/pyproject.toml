@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfomni-asv"
+version = "1.0.0"
+description = "Speaker verification for voice agents: answer only the owner, and let only the owner interrupt"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# What the embedding service itself needs. The gate client needs none of this.
+service = ["onnxruntime>=1.17", "torch>=2.0", "torchaudio>=2.0", "fastapi>=0.110", "uvicorn>=0.27"]
+log = ["loguru>=0.7"]
+
+[project.scripts]
+rfomni-asv-serve = "rfomni_asv.service:main"
+
+[tool.setuptools]
+packages = ["rfomni_asv"]

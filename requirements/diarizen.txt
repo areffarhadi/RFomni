@@ -1,0 +1,11 @@
+# Speaker separation before scoring. OPTIONAL — v5.1 runs without it, and the platform
+# only starts it when DIARIZER=1. Installed by platform/setup.sh into $STACK/venvs/diarizen.
+#
+#   pip install -r platform/requirements/diarizen.txt
+#
+# Its checkpoints (BUT-FIT/diarizen-*, microsoft/wavlm-base-plus) are in the shared store's
+# hf-cache and are never downloaded.
+
+diarizen
+torch>=2.0
+torchaudio>=2.0

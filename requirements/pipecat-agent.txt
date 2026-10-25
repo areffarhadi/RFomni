@@ -1,0 +1,36 @@
+# Pipecat voice agent — what platform/agents/v5.1 and v5.2 import beyond the pipecat
+# checkout itself. Installed by platform/setup.sh into $STACK/pipecat/.venv, after the
+# checkout is installed editable from its own pyproject.
+#
+#   pip install -e $STACK/pipecat
+#   pip install -r platform/requirements/pipecat-agent.txt
+#
+# These are the contents of pipecat's own [webrtc], [runner] and [silero] extras, written
+# out rather than referenced, so the set is visible and pinnable here. onnxruntime is
+# listed explicitly: the [silero] extra is empty and the VAD analyser imports it anyway.
+
+# --- transport: the WebRTC leg the browser connects over ---
+aiortc>=1.14.0,<2
+# camera_tap.py reads frames for the avatar / vision path
+opencv-python-headless>=4.11.0.86,<5
+
+# --- the small web server the agent serves its client page from ---
+fastapi>=0.115.6,<1
+uvicorn>=0.32.0,<1
+pipecat-ai-prebuilt>=1.0.6
+python-dotenv>=1.0.0,<2.0.0
+
+# --- voice activity detection: Silero, weights inside the wheel ---
+onnxruntime>=1.17
+# V5.2 only: silero-vad's VADIterator imports torch at module level, so the CPU wheels
+# are needed even though the model itself runs through onnxruntime. V4/V5/V5.1 never
+# import torch; installing it here changes nothing for them. The --index-url CPU wheels
+# are set up in platform/setup.sh, which installs torch/torchaudio first, then
+# silero-vad without deps so the CUDA stack cannot ride in.
+
+# --- the agent's own modules ---
+# omni_client.py talks to vLLM over the OpenAI API; speaker_gate.py calls RFomni-ASV
+openai>=1.40
+httpx>=0.27
+numpy>=1.24
+loguru>=0.7

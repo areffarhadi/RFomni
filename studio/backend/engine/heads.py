@@ -1,4 +1,4 @@
-"""Client for the mix87 sidecar heads service (omni-mix87-sidecar-heads/serve).
+"""Client for the mix87 sidecar heads service (heads/serve in the RFomni repository).
 
 The heads sit on the frozen audio and vision towers of the same mix87 model and answer the
 tasks they were trained for (speech regions, speakers, voice gender, spoofing, phonemes,
