@@ -13,3 +13,4 @@ __pycache__/
 .env
 .DS_Store
 node_modules/
+heads/checkpoints
