@@ -60,7 +60,7 @@ export function openRunDialog({ mediaIds = null, taskIds = null } = {}) {
     title: 'Run tasks', width: 640, className: 'run-dlg',
     subtitle: 'Each selected task is applied to every matching file and written to its own tier.',
     body: h('div', notice && h('div', { style: { marginBottom: '16px' } }, notice),
-      h('h4', 'Tasks'), taskList, h('h4', 'Files'), scopeEls, h('h4', 'Existing annotations'), modeEls),
+      h('h3', 'Tasks'), taskList, h('h3', 'Files'), scopeEls, h('h3', 'Existing annotations'), modeEls),
     actions: [
       { label: 'Cancel', ghost: true, onClick: (a) => a.close() },
       { id: 'run', label: 'Run', icon: 'sparkles', primary: true, onClick: start },

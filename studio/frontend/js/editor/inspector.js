@@ -81,14 +81,14 @@ export function valueEditor(tier, value, onChange, { doc, autofocus = false, all
   if (tier.output === 'score') {
     const task = state.taskById.get(tier.task_id) || {};
     const lo = task.score_min ?? 1, hi = task.score_max ?? 5;
-    const num = h('input.input', { type: 'number', step: 0.5, min: lo, max: hi, value: value, style: { width: '90px' } });
-    const rng = h('input', { type: 'range', min: lo, max: hi, step: 0.5, value: value || lo, style: { flex: 1, accentColor: tier.color } });
+    const num = h('input.input', { type: 'number', step: 0.5, min: lo, max: hi, value: value, style: { width: '90px' }, 'aria-label': `${tier.title || tier.name} score` });
+    const rng = h('input', { type: 'range', min: lo, max: hi, step: 0.5, value: value || lo, style: { flex: 1, accentColor: tier.color }, 'aria-label': `${tier.title || tier.name} score` });
     num.addEventListener('change', () => { rng.value = num.value; onChange(num.value); });
     rng.addEventListener('input', () => { num.value = rng.value; });
     rng.addEventListener('change', () => onChange(rng.value));
     return h('div.row', num, rng, h('span.muted', `${lo}–${hi}`));
   }
-  const ta = h('textarea.textarea', { rows: 3, value: valStr(value), spellcheck: true, autofocus });
+  const ta = h('textarea.textarea', { rows: 3, value: valStr(value), spellcheck: true, autofocus, 'aria-label': tier.title || tier.name });
   const commit = debounce(() => onChange(ta.value, { merge: true }), 350);
   ta.addEventListener('input', commit);
   ta.addEventListener('blur', () => { commit.cancel(); if (ta.value !== valStr(value)) onChange(ta.value, { merge: true }); });

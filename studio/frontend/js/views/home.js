@@ -39,13 +39,13 @@ export class HomeView {
     let projects = [];
     try { projects = await api.projects(); } catch (e) {
       errorToast(e);
-      this.grid.replaceChildren(h('div.empty.home-empty', ico('alert', 24), h('h3', 'Could not load projects'),
+      this.grid.replaceChildren(h('div.empty.home-empty', ico('alert', 24), h('h2', 'Could not load projects'),
         h('p', e.message || 'The server did not respond.'),
         h('button.btn', { onclick: () => this.load() }, 'Try again')));
       return;
     }
     if (!projects.length) {
-      this.grid.replaceChildren(h('div.empty.home-empty', ico('folder', 28), h('h3', 'No projects yet'),
+      this.grid.replaceChildren(h('div.empty.home-empty', ico('folder', 28), h('h2', 'No projects yet'),
         h('p', 'Create a project, add audio, video or images to it, and choose the annotation tasks to run.'),
         h('button.btn.primary', { onclick: () => newProjectDialog() }, ico('plus', 15), 'New project')));
       return;
@@ -93,7 +93,7 @@ export class HomeView {
     const by = s.by_modality || {};
     const parts = [by.audio ? `${by.audio} audio` : '', by.video ? `${by.video} video` : '', by.image ? `${by.image} image${by.image > 1 ? 's' : ''}` : ''].filter(Boolean);
     const front = h('div.pf-front',
-      h('h3', { title: p.name }, h('a', { href: links.project(p.id), onclick: (e) => e.stopPropagation() }, p.name)),
+      h('h2', { title: p.name }, h('a', { href: links.project(p.id), onclick: (e) => e.stopPropagation() }, p.name)),
       h('div.pf-meta', s.files ? [`${s.files} file${s.files > 1 ? 's' : ''}`, s.duration ? fmtDur(s.duration) : '', parts.join(' · ')].filter(Boolean).join(' · ') : 'No files yet'),
       h('div.pf-tasks', tasks.length ? `${tasks.length} task${tasks.length > 1 ? 's' : ''} · ${tasks.slice(0, 3).map(t => t.name).join(', ')}${tasks.length > 3 ? '…' : ''}` : 'No tasks selected yet'),
       h('div.pf-foot',
@@ -231,7 +231,7 @@ export function newProjectDialog() {
     body: h('div',
       h('label.field', h('span', 'Name'), name),
       h('label.field', h('span', 'Description'), desc),
-      h('h4', 'Start with tasks'), grid),
+      h('h3', 'Start with tasks'), grid),
     actions: [{ label: 'Cancel', ghost: true, onClick: (a) => a.close() }, { label: 'Create project', primary: true, onClick: create }],
   });
   name.addEventListener('keydown', (e) => { if (e.key === 'Enter') create(m); });

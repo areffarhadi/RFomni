@@ -387,10 +387,10 @@ export function openTaskDetail(task, { onChange } = {}) {
         task.modalities.map(m => h('span.badge', ico(modalityIcon(m), 11), m)),
         task.parent ? h('span.badge', `after ${state.taskById.get(task.parent)?.name || task.parent}`) : null,
         !task.builtin ? h('span.badge.warn', 'new task') : task.modified ? h('span.badge.warn', `changed: ${changedSummary(task)}`) : h('span.badge', 'default')),
-      task.labels?.length ? [h('h4', `Classes (${task.labels.length})`), h('div.label-chips', task.labels.map(l => h('span.chip', { style: { '--c': segColor(task, l) } }, h('i.dot'), l)))] : null,
+      task.labels?.length ? [h('h3', `Classes (${task.labels.length})`), h('div.label-chips', task.labels.map(l => h('span.chip', { style: { '--c': segColor(task, l) } }, h('i.dot'), l)))] : null,
       task.modified && d.labels && JSON.stringify(d.labels) !== JSON.stringify(task.labels)
         ? h('div.default-hint', h('span', 'Default classes: ', d.labels.join(', ') || '(open set)')) : null,
-      h('h4', 'Prompt sent to the model'), promptOut,
+      h('h3', 'Prompt sent to the model'), promptOut,
       task.modified && d.prompt && d.prompt !== task.prompt ? h('div.default-hint', h('span', 'Default prompt: ', d.prompt)) : null),
     actions,
   });

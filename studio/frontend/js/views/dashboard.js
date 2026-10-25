@@ -75,7 +75,7 @@ export class Dashboard {
   tasksSection(tasks) {
     const p = state.project;
     return h('div.section',
-      h('div.section-head', h('h3', 'Tasks in this project'),
+      h('div.section-head', h('h2', 'Tasks in this project'),
         h('button.btn.sm.owner-only', { onclick: () => go(links.tab(p.id, 'tasks')) }, ico('edit', 13), tasks.length ? 'Edit tasks' : 'Choose tasks')),
       h('div.section-body', tasks.length
         ? h('div.dash-tasks', tasks.map(taskChip))
@@ -109,14 +109,14 @@ export class Dashboard {
           }));
       })));
     return h('div.section',
-      h('div.section-head', h('h3', 'Coverage'),
+      h('div.section-head', h('h2', 'Coverage'),
         h('div.legend',
           h('span', h('span.lg-n', 'n'), 'segments'),
           h('span', h('span.cv-m.rev', ico('check', 12)), 'reviewed'),
           h('span', h('span.cv-m.part', { style: { '--p': '50%' } }), 'partly reviewed'),
           h('span', h('i.cv-low'), 'has low confidence'),
           h('span', h('span.cv-none', '–'), 'not run'))),
-      cols.length ? h('div.cov-wrap', table) : h('div.section-body.muted', 'Select tasks to see per-file coverage.'),
+      cols.length ? h('div.cov-wrap', { tabindex: 0, 'aria-label': 'Coverage per file' }, table) : h('div.section-body.muted', 'Select tasks to see per-file coverage.'),
       media.length > LIMIT ? h('div.section-body.muted', `Showing the first ${LIMIT} of ${media.length} files.`) : null);
   }
 

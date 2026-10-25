@@ -47,7 +47,7 @@ export class TasksView {
           h('button.btn', { dataset: { guide: 'tasks.run' }, onclick: () => openRunDialog() }, ico('sparkles', 15), 'Run tasks…'),
           h('button.btn.primary', { dataset: { guide: 'tasks.new' }, onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 15), 'New prompt task'))),
       h('div.section', { dataset: { guide: 'tasks.selected' } },
-        h('div.section-head', h('h3', 'Tiers in this project', h('span.badge', { dataset: { n: '' } })),
+        h('div.section-head', h('h2', 'Tiers in this project', h('span.badge', { dataset: { n: '' } })),
           h('span.muted', { style: { fontSize: '12px' } }, 'Drag to reorder · click × to remove')),
         h('div.section-body', this.pipe)),
       h('div.tv-split',

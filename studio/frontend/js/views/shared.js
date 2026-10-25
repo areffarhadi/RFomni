@@ -40,8 +40,8 @@ export class SharedListView {
         h('div.row', { style: { gap: '8px' } },
           h('button.btn', { dataset: { guide: 'shared.correct' }, onclick: () => correctionDialog(() => this.load()) }, ico('edit', 14), 'Share a project for correction'),
           h('button.btn.primary', { dataset: { guide: 'shared.new' }, onclick: () => this.create() }, ico('plus', 15), 'New shared task'))),
-      h('h3.st-section', 'Labelling tasks'), this.list,
-      h('h3.st-section', 'Correction links', h('span.muted', ' · people fix the model’s labels in the editor')), this.fixes = h('div.st-list')));
+      h('h2.st-section', 'Labelling tasks'), this.list,
+      h('h2.st-section', 'Correction links', h('span.muted', ' · people fix the model’s labels in the editor')), this.fixes = h('div.st-list')));
     this.load();
   }
 
@@ -51,7 +51,7 @@ export class SharedListView {
     try { tasks = await api.sharedList(this.kind); } catch (e) { errorToast(e); }
     if (!tasks.length) {
       this.list.replaceChildren(h('div.st-empty', ico('users', 28),
-        h('h3', this.kind === 'listening' ? 'No listening tests yet' : 'No shared tasks yet'),
+        h('h2', this.kind === 'listening' ? 'No listening tests yet' : 'No shared tasks yet'),
         h('p', this.kind === 'listening' ? 'Upload the clips, write the scales, and share the link with your listeners.'
           : 'Images, video, audio or text that people should label: start one and the agent will design the page with you.'),
         h('button.btn.primary', { onclick: () => this.create() }, ico('plus', 15), this.kind === 'listening' ? 'New listening test' : 'New shared task')));
@@ -127,7 +127,7 @@ export class SharedTaskView {
       onclick: (e) => { this.device = d; [...deviceCtl.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); this.frameWrap.classList.toggle('phone', d === 'phone'); },
     }, d === 'desktop' ? 'Desktop' : 'Phone')));
     this.frameWrap = h('div.st-frame-wrap', this.frame);
-    this.el = h('div.st-page',
+    this.el = h('div.st-page', h('h1.sr-only', 'Shared task'),
       h('div.st-head',
         this.backLink = h('a.btn.ghost.sm', { href: '#/shared' }, '‹ Shared tasks'),
         this.title, this.statusEl, h('div.grow'),
@@ -303,29 +303,29 @@ export class SharedTaskView {
       check(f, 'required', 'Required'))));
     paintIntro();
     this.panel.replaceChildren(h('div.st-form',
-      h('div.st-form-head', h('h4', 'Page'), note),
+      h('div.st-form-head', h('h2', 'Page'), note),
       h('label.field', h('span', 'Short description (shown on the public Task sharing page)'), text(d, 'summary', { maxLength: 300 })),
       h('label.field', h('span', 'Instructions for the people labelling'), text(d, 'instructions', { rows: 5 }),
         h('span.hint', 'When the items are in groups (e.g. languages), {group} is replaced by the group a person chose.')),
-      h('h4', 'Questions'), list,
+      h('h2', 'Questions'), list,
       h('button.btn', { onclick: () => { d.fields.push({ id: `q${d.fields.length + 1}`, type: 'choice', label: 'New question', options: ['yes', 'no'], required: true }); paint(); changed(); } },
         ico('plus', 14), 'Add a question'),
-      h('h4', 'Who labels what'),
+      h('h2', 'Who labels what'),
       h('div.st-two', h('label.field', h('span', 'People per item (0 = everyone labels every item)'), text(st, 'labels_per_item', { type: 'number', min: 0, max: 50 })),
         h('label.field', h('span', 'Items per person (0 = no limit)'), text(st, 'max_per_session', { type: 'number', min: 0 }))),
       Object.keys(this.task.data.groups || {}).length ? h('label.field', h('span', `Items are in ${Object.keys(this.task.data.groups).length} groups; people choose one first. The groups are called`),
         text(st, 'group_label', { placeholder: 'e.g. Language' })) : null,
       check(st, 'allow_skip', 'People can skip an item'), check(st, 'shuffle', 'Random order'),
       check(st, 'ask_name', 'Ask for a name or ID before starting'),
-      h('h4', 'Listener questions (asked once, before starting)'), introList,
+      h('h2', 'Listener questions (asked once, before starting)'), introList,
       h('button.btn', { onclick: () => { d.intro_fields.push({ id: `info${d.intro_fields.length + 1}`, label: '', type: 'choice', options: ['yes', 'no'], required: true }); paintIntro(); } },
         ico('plus', 14), 'Add a listener question'),
-      h('h4', 'Listening test'),
+      h('h2', 'Listening test'),
       check(st, 'must_listen', 'Answers open only after the clip has played to the end'),
       check(st, 'no_repeat', 'Never the same sentence twice in a row (items with the same stimulus)'),
       check(st, 'allow_back', 'People can go back and change an earlier answer'),
       check(st, 'final_comment', 'Ask for overall comments at the end'),
-      h('h4', 'Look'),
+      h('h2', 'Look'),
       h('div.st-two', h('label.field', h('span', 'Page language'), select(look, 'ui_lang', { en: 'English', fa: 'Persian (فارسی)' })),
         h('label.field', h('span', 'Direction'), select(look, 'dir', { ltr: 'Left to right', rtl: 'Right to left' }))),
       h('div.st-two', h('label.field', h('span', 'Mode'), select(look, 'theme', THEMES)),
@@ -363,7 +363,7 @@ export class SharedTaskView {
           try { const r = await api.sharedLink(this.id, path.value.trim()); toast(`Added ${r.added} items`); this.refresh('data'); }
           catch (e) { toast(e.message, { kind: 'warn' }); }
         } }, 'Add')))),
-      h('div.st-form-head', h('h4', 'Items'), status), grid);
+      h('div.st-form-head', h('h2', 'Items'), status), grid);
     try {
       const r = await api.sharedItems(this.id, 0, 120);
       grid.replaceChildren(...r.items.map(it => h('div.st-item', { title: it.name },
@@ -412,7 +412,7 @@ export class SharedTaskView {
       } }, h('option', { value: '' }, 'Everyone'), f.options.map(o => h('option', { value: `${f.id}:${o}`, selected: (r.where || {})[f.id] === o }, o)))));
     const keyIn = h('textarea.textarea', { rows: 3, placeholder: 'c01,system_a\nc02,native\n…  (clip, system per line)' });
     const keyBox = ratings.length ? h('div',
-      h('h4', 'Per system (MOS ± 95% interval)'),
+      h('h2', 'Per system (MOS ± 95% interval)'),
       r.systems.length ? h('table.st-table', h('thead', h('tr', h('th', 'System'), ratings.map(f => h('th', f.label)), h('th', 'Ratings'))),
         h('tbody', r.systems.map(x => h('tr', h('td', h('b', x.system)), ratings.map(f => h('td', fmt(x[f.id]))), h('td', String(x[ratings[0].id]?.n ?? 0))))))
         : h('p.muted', 'Add the blind key (which system made each clip) to see results per system. It stays private: listeners never see it.'),
@@ -434,18 +434,18 @@ export class SharedTaskView {
         h('button.btn.sm', { onclick: () => download(`/api/shared/${this.id}/export.csv`) }, ico('download', 13), 'CSV (one row per answer)'),
         h('button.btn.sm', { onclick: () => download(`/api/shared/${this.id}/export.jsonl`) }, ico('download', 13), 'JSONL (per item)'),
         h('div.grow'), h('button.icon-btn.sm', { title: 'Refresh', onclick: () => this.resultsTab() }, ico('repeat', 13))),
-      filters.length ? h('div.st-filter', h('h4', 'Whose answers'), h('div.st-two', filters)) : null,
+      filters.length ? h('div.st-filter', h('h2', 'Whose answers'), h('div.st-two', filters)) : null,
       ratings.length ? h('table.st-table', { style: { marginBottom: '8px' } }, h('thead', h('tr', h('th', 'Scale'), h('th', 'MOS ± 95%'), h('th', 'Ratings'))),
         h('tbody', ratings.map(f => h('tr', h('td', f.label), h('td', fmt(f.mos)), h('td', String(f.mos?.n ?? 0)))))) : null,
       keyBox,
       ...r.fields.map(f => {
         const max = Math.max(1, ...f.counts.map(c => c[1]));
-        return h('div.st-result', h('h4', f.label),
+        return h('div.st-result', h('h2', f.label),
           f.agreement != null ? h('p.muted', `Agreement where several people answered: ${Math.round(f.agreement * 100)}%`) : null,
           f.type === 'text' ? h('p.muted', `${f.texts || 0} written answers (in the exports)`)
             : f.counts.length ? f.counts.map(([v, n]) => bar(v, n, max)) : h('p.muted', 'No answers yet'));
       }),
-      h('h4', 'People'),
+      h('h2', 'People'),
       r.sessions.length ? h('table.st-table', h('thead', h('tr', h('th', 'Session'), h('th', 'Name'), h('th', 'About'), h('th', 'Answers'), h('th', 'Last active'))),
         h('tbody', r.sessions.map(x => h('tr', { style: { opacity: x.kept ? 1 : 0.45 }, title: x.comment || '' }, h('td', h('code', x.id)), h('td', x.name || '—'),
           h('td', Object.values(x.info || {}).join(', ') || '—'), h('td', String(x.done)), h('td', ago(x.last_at))))))

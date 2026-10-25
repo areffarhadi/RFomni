@@ -28,7 +28,7 @@ export class CollectListView {
     let ps = [];
     try { ps = await api.collectList(); } catch (e) { errorToast(e); }
     if (!ps.length) {
-      this.list.replaceChildren(h('div.st-empty', ico('mic', 28), h('h3', 'No data collections yet'),
+      this.list.replaceChildren(h('div.st-empty', ico('mic', 28), h('h2', 'No data collections yet'),
         h('p', 'Write the sentences, choose how people should read them, and share a link.'),
         h('button.btn.primary', { onclick: () => this.create() }, ico('plus', 15), 'New data collection')));
       return;
@@ -62,7 +62,7 @@ export class CollectView {
       onclick: (e) => { [...deviceCtl.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); this.frameWrap.classList.toggle('phone', d === 'phone'); } },
     d === 'desktop' ? 'Desktop' : 'Phone')));
     this.frameWrap = h('div.st-frame-wrap', this.frame);
-    this.el = h('div.st-page',
+    this.el = h('div.st-page', h('h1.sr-only', 'Data collection project'),
       h('div.st-head', h('a.btn.ghost.sm', { href: '#/collect' }, '‹ Data collection'), this.title, this.statusEl, this.saved, h('div.grow'),
         h('button.btn', { onclick: () => window.open(`${this.p.link}?preview=1`, '_blank', 'noopener') }, ico('eye', 14), 'Open preview'),
         h('button.btn', { onclick: () => this.linkDialog() }, ico('link', 14), 'Link'),
@@ -185,14 +185,14 @@ export class CollectView {
       st.info.includes(k) ? h('label.check', { style: { marginLeft: '22px', fontSize: '12px' } }, h('input', { type: 'checkbox', checked: st.info_required.includes(k),
         onchange: (e) => { st.info_required = e.target.checked ? [...st.info_required, k] : st.info_required.filter(x => x !== k); this.changed(); } }), 'required') : null)));
     this.panel.replaceChildren(h('div.st-form',
-      h('h4', 'Recording'),
+      h('h2', 'Recording'),
       h('label.field', h('span', 'Sample rate'), h('select.select', { onchange: (e) => { st.sample_rate = +e.target.value; this.changed(); } },
         [[16000, '16 kHz (speech models, smaller files)'], [48000, '48 kHz (full quality)']].map(([v, l]) => h('option', { value: v, selected: st.sample_rate === v }, l)))),
       h('div.st-two', h('label.field', h('span', 'Shortest recording (s)'), this.text(st, 'min_seconds', { type: 'number', min: 0.2, step: 0.5 })),
         h('label.field', h('span', 'Longest recording (s)'), this.text(st, 'max_seconds', { type: 'number', min: 2, step: 1 }))),
       h('label.field', h('span', 'Recordings wanted per sentence and way (0 = everyone records everything)'), this.text(st, 'per_pair', { type: 'number', min: 0 })),
       this.check(st, 'allow_skip', 'People can skip a sentence'),
-      h('h4', 'About the speaker (asked before they start)'), info));
+      h('h2', 'About the speaker (asked before they start)'), info));
   }
 
   // ---------- recordings
@@ -221,10 +221,10 @@ export class CollectView {
         h('button.btn.sm', { onclick: () => download(`/api/collect/${this.id}/export.zip`) }, ico('download', 13), 'Export all (ZIP)'),
         h('button.btn.sm', { onclick: () => download(`/api/collect/${this.id}/export.zip?accepted=true`) }, ico('download', 13), 'Accepted only'),
         h('div.grow'), h('button.icon-btn.sm', { title: 'Refresh', onclick: () => this.recordingsTab() }, ico('repeat', 13))),
-      h('h4', 'Recordings per language and way'), grid,
-      h('h4', `Latest recordings${recs.total > recs.recordings.length ? ` (${recs.recordings.length} of ${recs.total})` : ''}`),
+      h('h2', 'Recordings per language and way'), grid,
+      h('h2', `Latest recordings${recs.total > recs.recordings.length ? ` (${recs.recordings.length} of ${recs.total})` : ''}`),
       recs.recordings.length ? h('div.cl-recs', recs.recordings.map(row)) : h('p.muted', 'No recordings yet. Share the link to begin.'),
-      h('h4', 'People'),
+      h('h2', 'People'),
       ov.people.length ? h('table.st-table', h('thead', h('tr', h('th', 'Session'), h('th', 'About'), h('th', 'Recordings'), h('th', 'Last active'))),
         h('tbody', ov.people.map(x => h('tr', h('td', h('code', x.id)), h('td', Object.values(x.info).join(', ') || '—'), h('td', `${x.recordings} (${x.minutes} min)`), h('td', ago(x.last_at))))))
         : h('p.muted', 'Nobody has started yet.')));

@@ -49,6 +49,6 @@ export function showShortcuts() {
     title: 'Keyboard & mouse', width: 760, className: 'keys-modal',
     // groups whose gestures are long sentences get the full width
     body: h('div.keys', GROUPS.map(([g, rows]) => h('div.keys-group' + (rows.some(([k]) => k.length > 24) ? '.wide' : ''),
-      h('h4', g), rows.map(([k, d]) => h('div.keys-row', h('span.keys-desc', d), combo(k)))))),
+      h('h3', g), rows.map(([k, d]) => h('div.keys-row', h('span.keys-desc', d), combo(k)))))),
   });
 }

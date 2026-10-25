@@ -44,6 +44,10 @@
   const groupLabel = () => design?.settings?.group_label || 'Group';
   // "{group}" in the wording becomes the chosen group: "Is this speaker a native {group} speaker?"
   const fill = (t) => String(t || '').replaceAll('{group}', group || `the chosen ${groupLabel().toLowerCase()}`);
+  // bilingual text ("فارسی · English"): each part keeps its own direction, so an English question mark stays at the
+  // end of the English part on a right-to-left page. In questions (lines) the second language goes on its own line.
+  const bi = (t, lines = false) => String(t || '').split(' · ').flatMap((part, i) =>
+    !i ? [h('bdi', {}, part)] : lines ? [h('bdi', { class: 'alt' }, part)] : [' · ', h('bdi', {}, part)]);
 
   // ---------- small helpers
   function h(tag, attrs = {}, ...kids) {
@@ -91,7 +95,7 @@
     document.documentElement.dir = d.look?.dir === 'rtl' ? 'rtl' : 'ltr';
     document.documentElement.lang = ui();
     $('.change-group').textContent = `Change ${groupLabel().toLowerCase()}`;
-    $('.brand-title').textContent = d.title || 'Labelling task';
+    $('.brand-title').replaceChildren(...bi(d.title || 'Labelling task'));
   }
   function setProgress(p) {
     if (!p) return;
@@ -135,7 +139,8 @@
         ? h('select', { class: 'input' }, h('option', { value: '' }, '—'), f.options.map(o => h('option', { value: o }, o)))
         : h('input', { class: 'input', autocomplete: 'off', maxlength: 120 });
       info[f.id] = el;
-      return h('label', { class: 'f' }, f.label + (f.required ? ' *' : ''), el);
+      const [first, ...rest] = bi(f.label, true);  // the star stays with the first language
+      return h('label', { class: 'f' }, h('span', {}, first, f.required ? ' *' : null, rest), el);
     });
     const err = h('p', { class: 'err', role: 'alert' });
     const begin = () => {
@@ -145,7 +150,7 @@
     };
     const startBtn = h('button', { class: 'btn primary block', type: 'button', onclick: begin }, t('start'));
     screen(h('div', { class: `card center${introFields.length ? ' wide' : ''}` },
-      h('h1', {}, design.title),
+      h('h1', {}, bi(design.title)),
       design.instructions ? h('p', { class: 'lead' }, fill(design.instructions)) : null,
       name ? h('label', { class: 'f' }, 'Your name or ID (shown to the task owner)', name) : null,
       introFields.length ? h('div', { class: 'two' }, introFields) : null,
@@ -281,8 +286,9 @@
   }
 
   function question(f, idx) {
-    const head = [h('p', { class: 'q-label', id: `q-${f.id}` }, fill(f.label), f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null),
-      f.help ? h('p', { class: 'q-help' }, fill(f.help)) : null];
+    const [first, ...rest] = bi(fill(f.label), true);
+    const head = [h('p', { class: 'q-label', id: `q-${f.id}` }, first, f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null, rest),
+      f.help ? h('p', { class: 'q-help' }, bi(fill(f.help))) : null];
     if (f.type === 'choice' || f.type === 'multi') {
       const multi = f.type === 'multi';
       const box = h('div', { class: 'opts', role: multi ? 'group' : 'radiogroup', 'aria-labelledby': `q-${f.id}` });
@@ -332,6 +338,7 @@
     const backBtn = design.settings.allow_back && !preview && history.length && (pos === null || pos > 0)
       ? h('button', { class: 'btn', type: 'button', onclick: back }, t('back')) : null;
     screen(h('div', { class: `work${stacked ? ' stacked' : ''}` },
+      h('h1', { class: 'sr-only' }, bi(design.title)),
       h('section', { class: 'card media', 'aria-label': 'Item' },
         item.practice ? h('div', { class: 'practice-tag' }, t('practice')) : null,
         mediaView(item), item.kind !== 'text' && !listening ? h('span', { class: 'name' }, item.name) : null),

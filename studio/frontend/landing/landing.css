@@ -684,7 +684,9 @@ main::before { content: ""; position: absolute; inset: 0 auto 0 50%; width: min(
   .pile-hint { display: none; }
   .ag-label { background: none; color: var(--pill-fg); }
   .mq-track, .feed-row { animation: none !important; }
-  .marquee, .feed-rows { overflow-x: auto; }
+  .feed-rows { overflow-x: auto; }
+  .marquee { mask: none; -webkit-mask: none; }
+  .mq-track { flex-wrap: wrap; width: auto; justify-content: center; gap: 12px 36px; }  /* still: every format in view, nothing to scroll */
 }
 
 /* moving between the studio and the landing page (same site): the old page blurs away, the new one comes into focus.

@@ -33,7 +33,7 @@ function legend(parts) {
 }
 
 function card(title, icon, ...body) {
-  return h('div.st-card', h('div.st-card-head', h('h3', title)), ...body);
+  return h('div.st-card', h('div.st-card-head', h('h2', title)), ...body);
 }
 
 function histo(vals, color, labels) {
@@ -137,7 +137,7 @@ export class StatsView {
     const nsp = sp.n_speakers;
     const OV = overlapColor();
     return h('div.section',
-      h('div.section-head', h('h3', 'Speakers & overlap'),
+      h('div.section-head', h('h2', 'Speakers & overlap'),
         h('span.muted', { style: { fontSize: '12px' } }, `${sp.files} file${sp.files === 1 ? '' : 's'} with speaker turns` + (sp.derived ? ' · overlap computed from the speaker turns' : ''))),
       h('div.section-body',
         h('div.stat-row.compact',
@@ -161,8 +161,8 @@ export class StatsView {
               h('span.st-bn', secs(s.pure + s.overlap))))),
             h('div.st-legend', h('span', h('i', { style: { background: PURE } }), 'pure'), h('span', h('i', { style: { background: OV } }), 'overlap')))),
         h('div.st-card-head.st-table-head', h('h3', 'Files with the most overlap')),
-        h('div.cov-wrap', h('table.list.st-table',
-          h('thead', h('tr', h('th', 'File'), h('th.num', 'Speakers'), h('th.num', 'Speech'), h('th.num', 'Pure'), h('th.num', 'Overlap'), h('th', 'Overlap share'), h('th.go', ''))),
+        h('div.cov-wrap', { tabindex: 0, 'aria-label': 'Speakers per file' }, h('table.list.st-table',
+          h('thead', h('tr', h('th', 'File'), h('th.num', 'Speakers'), h('th.num', 'Speech'), h('th.num', 'Pure'), h('th.num', 'Overlap'), h('th', 'Overlap share'), h('th.go', h('span.sr-only', 'Open')))),
           h('tbody', sp.per_file.slice(0, 12).map(f => h('tr', { onclick: () => go(links.file(pid, f.media_id)) },
             h('td', h('span.file', ico(modalityIcon(f.modality), 13), f.name)),
             h('td.num', f.speakers), h('td.num', secs(f.speech)), h('td.num', secs(f.pure)), h('td.num', `${secs(f.overlap)} · ${f.overlaps}×`),
@@ -174,7 +174,7 @@ export class StatsView {
     const modeCtl = h('div.seg-ctl', [['count', 'Count'], ['duration', 'Duration']].map(([k, v]) =>
       h('button', { class: this.mode === k ? 'on' : '', onclick: () => { this.mode = k; ls.set('statsMode', k); this.render(); } }, v)));
     return h('div.section',
-      h('div.section-head', h('h3', 'Labels per task'), h('div.row', h('span.muted', { style: { fontSize: '12px' } }, 'Show labels by'), modeCtl)),
+      h('div.section-head', h('h2', 'Labels per task'), h('div.row', h('span.muted', { style: { fontSize: '12px' } }, 'Show labels by'), modeCtl)),
       h('div.st-tasks-wrap', h('div.st-tasks', tasks.map(t => this.taskCard(t)))));
   }
 

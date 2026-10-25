@@ -322,6 +322,7 @@
     ui.play = () => playBtn.click();
 
     screen(h('div', { class: 'rec' },
+      h('h1', { class: 'sr-only' }, d.title),
       h('section', { class: 'card prompt', 'aria-label': 'What to record' },
         h('div', { class: 'cond', style: col ? `--c:${col}` : '' }, h('i'), c.label),
         c.hint ? h('p', { class: 'cond-hint' }, c.hint) : null,

@@ -56,6 +56,7 @@ export class DataView {
     this.dash?.destroy();
     this.dash = null;
     this.mid = mid;
+    this.el.classList.toggle('has-file', !!mid);  // phones show the list or the open file, not both
     this.files.setSelected(mid);
     if (!mid) {
       emit('editor-file', null);

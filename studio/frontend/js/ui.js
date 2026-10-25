@@ -27,17 +27,17 @@ export function errorToast(e, prefix = '') {
 }
 
 // ---- modal ----------------------------------------------------------------
-let modalDepth = 0;
+let modalDepth = 0, modalSeq = 0;
 export function openModal({ title, subtitle, body, actions = [], width = 520, onClose, className = '' }) {
   const prevFocus = document.activeElement;
   const footer = actions.length ? h('div.modal-foot', actions.map(a => a instanceof Node ? a :
     h('button.btn' + (a.primary ? '.primary' : '') + (a.danger ? '.danger' : '') + (a.ghost ? '.ghost' : ''),
       { onclick: () => a.onClick?.(api), disabled: a.disabled, type: 'button', dataset: { act: a.id || '' } },
       a.icon && ico(a.icon, 15), a.label))) : null;
-  const box = h('div.modal' + (className ? '.' + className : ''), { style: { width: `min(${width}px, calc(100vw - 32px))` }, role: 'dialog', 'aria-modal': 'true' },
+  const box = h('div.modal' + (className ? '.' + className : ''), { style: { width: `min(${width}px, calc(100vw - 32px))` }, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `modal-t${++modalSeq}` },
     h('div.modal-head',
-      h('div', h('h2', title), subtitle && h('div.modal-sub', subtitle)),
-      h('button.icon-btn', { onclick: () => api.close(), title: 'Close (Esc)' }, ico('x', 18))),
+      h('div', h('h2', { id: `modal-t${modalSeq}` }, title), subtitle && h('div.modal-sub', subtitle)),
+      h('button.icon-btn', { onclick: () => api.close(), title: 'Close (Esc)', 'aria-label': 'Close' }, ico('x', 18))),
     h('div.modal-body', body),
     footer);
   const back = h('div.modal-back', { onmousedown: (e) => { if (e.target === back) api.close(); } }, box);

@@ -16,7 +16,7 @@ export class ReviewView {
       oninput: (e) => { this.thr = +e.target.value; this.thrLabel.textContent = this.thr.toFixed(2); this.loadSoon(); },
       onchange: () => updateProject({ settings: { low_confidence: this.thr } }).then(refreshProject).catch(errorToast),
     });
-    const taskSel = h('select.select', { style: { width: '220px' }, onchange: (e) => { this.task = e.target.value; this.load(); } },
+    const taskSel = h('select.select', { style: { width: '220px' }, 'aria-label': 'Tier to review', onchange: (e) => { this.task = e.target.value; this.load(); } },
       h('option', { value: '' }, 'All tiers'), projectTasks().map(t => h('option', { value: t.id }, t.title)));
     this.count = h('span.badge');
     this.body = h('div');
@@ -45,8 +45,8 @@ export class ReviewView {
       return;
     }
     const pid = state.project.id;
-    this.body.replaceChildren(h('div', { style: { maxHeight: 'calc(100vh - 260px)', overflow: 'auto' } }, h('table.list',
-      h('thead', h('tr', h('th', 'Confidence'), h('th', 'File'), h('th', 'Tier'), h('th.num', 'Time'), h('th', 'Value'), h('th.go', ''))),
+    this.body.replaceChildren(h('div', { style: { maxHeight: 'calc(100vh - 260px)', overflow: 'auto' }, tabindex: 0, 'aria-label': 'Segments to review' }, h('table.list',
+      h('thead', h('tr', h('th', 'Confidence'), h('th', 'File'), h('th', 'Tier'), h('th.num', 'Time'), h('th', 'Value'), h('th.go', h('span.sr-only', 'Open')))),
       h('tbody', d.items.map(r => h('tr', { onclick: () => go(links.file(pid, r.media_id, { seg: r.segment_id })) },
         h('td', confBar(r.confidence, this.thr)),
         h('td', h('span.file', ico(modalityIcon(r.modality), 13), r.media_name)),

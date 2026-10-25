@@ -171,7 +171,7 @@ export class ImageEditor extends BaseEditor {
   buildToolbar() {
     const tool = (mode, icon, label, key) => h('button', { dataset: { v: mode }, title: `${label} (${key})`, onclick: () => this.setMode(mode) }, ico(icon, 14), h('span', label));
     this.toolCtl = h('div.seg-ctl.sm', tool('select', 'target', 'Select', 'V'), tool('box', 'grid', 'Box', 'B'), tool('pose', 'user', 'Pose', 'K'));
-    this.drawSel = h('select.select.sm', { title: 'New boxes go into this task', onchange: (e) => { this.drawKey = e.target.value; this.setMode('box'); } });
+    this.drawSel = h('select.select.sm', { title: 'New boxes go into this task', 'aria-label': 'New boxes go into this task', onchange: (e) => { this.drawKey = e.target.value; this.setMode('box'); } });
     this.overlayBtn = h('button.icon-btn.active', { title: 'Show / hide all regions (H)', 'aria-label': 'Show regions', 'aria-pressed': 'true', onclick: () => this.toggleOverlay() }, ico('eye', 16));
     return h('div.img-tools', this.toolCtl, h('span.sep'), h('span.blab', 'Draw into'), this.drawSel, this.overlayBtn, h('div.grow'),
       h('button.icon-btn', { title: 'Zoom out (−)', 'aria-label': 'Zoom out', onclick: () => this.zoomBy(1 / 1.4) }, ico('zoom-out', 16)),
@@ -838,7 +838,7 @@ export class ImageEditor extends BaseEditor {
               h('span.x', { title: 'Remove connection', onclick: () => this.removeEdge(s.id, k, j) }, ico('x', 11))))
               : h('span.muted', { style: { fontSize: '12px' } }, 'nothing'),
             others.length ? h('select.select.sm', {
-              style: { width: 'auto' },
+              style: { width: 'auto' }, 'aria-label': 'Connect to another point',
               onchange: (e) => { if (e.target.value !== '') this.addEdge(s.id, k, +e.target.value); },
             }, h('option', { value: '' }, '+ connect to…'), others.map(j => h('option', { value: j }, kpName(g, j)))) : null)));
       }

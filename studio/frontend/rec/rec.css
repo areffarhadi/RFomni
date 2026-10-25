@@ -44,6 +44,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .rec-tools .grow { flex: 1; }
 .rec-tools .btn { padding: 10px 16px; }
 .dur { font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { .rec-tools .grow { display: none; } .rec-tools .dur { order: -1; width: 100%; text-align: center; } }  /* the length above the buttons, not wrapped beside them */
 .hint.center { text-align: center; }
 .skip { background: none; border: 0; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: 13px; padding: 6px; }
 .notice-box { padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, var(--bad) 12%, transparent); border: 1px solid color-mix(in srgb, var(--bad) 45%, transparent); font-size: 14px; }

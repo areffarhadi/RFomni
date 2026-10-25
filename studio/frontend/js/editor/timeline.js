@@ -62,7 +62,7 @@ export class Timeline {
     this.playBtn = h('button.icon-btn.play', { title: 'Play / pause (Space)', 'aria-label': 'Play / pause', onclick: () => this.ed.player.toggle() }, ico('play', 15));
     this.clock = h('div.clock');
     this.selInfo = h('span.selinfo');
-    const rate = h('select.select', { title: 'Playback speed', onchange: (e) => { this.ed.player.rate = +e.target.value; } },
+    const rate = h('select.select', { title: 'Playback speed', 'aria-label': 'Playback speed', onchange: (e) => { this.ed.player.rate = +e.target.value; } },
       [0.5, 0.75, 1, 1.25, 1.5, 2].map(r => h('option', { value: r, selected: r === 1 }, `${r}×`)));
     this.modeCtl = h('div.seg-ctl.sm', [['wave', 'wave', 'Waveform'], ['spec', 'spectrum', 'Spectrogram'], ['both', 'split', 'Both']].map(([k, i, t]) =>
       h('button', { dataset: { v: k }, title: t, onclick: () => this.setMode(k) }, ico(i, 13), h('span', t === 'Both' ? 'Both' : t === 'Waveform' ? 'Wave' : 'Spec'))));
@@ -71,6 +71,7 @@ export class Timeline {
     const tiersBtn = h('button.btn.sm.tiers-btn', { title: 'Show / hide tiers', 'aria-label': 'Tiers', onclick: () => this.ed.tiersPopover(tiersBtn) }, ico('layers', 14), h('span', 'Tiers'));
     this.bSel = h('select.select', {
       title: 'Draw the boundaries of this tier on the waveform / spectrogram, where you can drag them',
+      'aria-label': 'Boundaries on the waveform',
       onchange: (e) => { this.bTierId = e.target.value || null; this.bPref = e.target.value || 'none'; ls.set('btier:' + this.pid, this.bPref); this.schedule(); },
     });
     const toggle = (icon, label, title, get, set) => {

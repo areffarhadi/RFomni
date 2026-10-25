@@ -168,9 +168,9 @@ export async function openShareDialog() {
     title: `Share “${p.name}”`, width: 720, className: 'share-modal',
     subtitle: 'People open the project in their browser, nothing to install. They only see this project; view-only links cannot change anything.',
     body: h('div',
-      h('div.share-section', h('h4', 'New link'), form),
-      h('div.share-section', h('h4', 'Links'), list),
-      h('div.share-section', h('h4', 'Where links work'), reach)),
+      h('div.share-section', h('h3', 'New link'), form),
+      h('div.share-section', h('h3', 'Links'), list),
+      h('div.share-section', h('h3', 'Where links work'), reach)),
     actions: [{ label: 'Done', primary: true, onClick: (a) => a.close() }],
   });
 }

@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.5.1 "Agora" (2026-10-25)
+
+A check of the whole website (every page at desktop and phone size, in the three themes, with the axe accessibility
+checker and walks through labelling, listening, recording and the dialogs) and the fixes it led to.
+
+- **Right-to-left pages**: bilingual text ("فارسی · English") keeps each language's direction, so punctuation stays
+  where it belongs; in questions the second language goes on its own line under the first. Instructions keep each
+  paragraph's direction. The dropdown arrow on right-to-left pages is drawn correctly.
+- **Phones**: the studio's top bar shrinks to icons instead of being cut off; in a project the file list and an open
+  file each take the whole screen (a correction link opened on a phone now shows the editor). The recording page puts
+  the clip length above its buttons.
+- **Accessibility**: names for the editor's text boxes, score inputs and dropdowns, dialog titles, table columns,
+  scrollable tables and the assistant's conversation (keyboard scrolling); heading levels in order on every page and
+  a main heading on the item, editor and task-design screens; small text that was too faint (project hint, the
+  light theme's *Live* badge, grey text on selected rows in the green theme) now has enough contrast.
+- **Wording**: the public pages say "1 person" and "1,695 items".
+
 ## v0.5.0 "Agora" (2026-10-25)
 
 The platform's public side: three pages anyone can open without an account, each with a session ID to continue

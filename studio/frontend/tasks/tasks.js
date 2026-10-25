@@ -17,6 +17,9 @@
     return el;
   }
 
+  const n = (x) => Number(x || 0).toLocaleString('en');
+  const people = (x) => `${n(x)} ${x === 1 ? 'person' : 'people'}`;
+
   function card(t) {
     const kinds = Object.keys(t.by_kind || {});
     const pct = t.items ? Math.round((t.complete / t.items) * 100) : 0;
@@ -24,12 +27,13 @@
       h('div', { class: 'tags' }, kinds.map(k => h('span', { class: 'tag' }, KIND[k] || k)),
         t.groups ? h('span', { class: 'tag' }, `${t.groups} ${t.group_label.toLowerCase()}s`) : null,
         listening && t.ui_lang === 'fa' ? h('span', { class: 'tag' }, 'فارسی') : null),
-      h('h3', {}, t.title),
+      h('h2', {}, t.title),
       h('p', {}, t.summary || `${t.items} items to label.`),
       listening && t.scales?.length ? h('div', { class: 'tags' }, t.scales.map(x => h('span', { class: 'tag' }, x.split('·').pop().split(':')[0].replace(/[?]/g, '').trim()))) : null,
       t.everyone ? null : h('div', { class: 'meter', title: `${pct}% complete` }, h('i', { style: `width:${pct}%` })),
       h('div', { class: 'foot' },
-        h('span', {}, listening ? `${t.items} clips · ${t.people} listeners so far` : t.everyone ? `${t.items} items · ${t.people} people so far` : `${t.complete} of ${t.items} done · ${t.people} people`),
+        h('span', {}, listening ? `${n(t.items)} clips · ${n(t.people)} ${t.people === 1 ? 'listener' : 'listeners'} so far`
+          : t.everyone ? `${n(t.items)} items · ${people(t.people)} so far` : `${n(t.complete)} of ${n(t.items)} done · ${people(t.people)}`),
         h('span', { class: 'go' }, 'Start →')));
   }
 
@@ -39,7 +43,7 @@
       && (!query || `${t.title} ${t.summary}`.toLowerCase().includes(query)));
     if (!shown.length) {
       box.replaceChildren(h('div', { class: 'card empty' },
-        h('h3', {}, tasks.length ? 'No task matches' : 'No public tasks right now'),
+        h('h2', {}, tasks.length ? 'No task matches' : 'No public tasks right now'),
         h('p', { class: 'muted' }, tasks.length ? 'Try another search or kind of data.' : 'Come back soon, or share a task of your own.')));
       return;
     }
@@ -54,5 +58,5 @@
   $('#q')?.addEventListener('input', (e) => { query = e.target.value.trim().toLowerCase(); paint(); });
 
   fetch(`/api/public/tasks${listening ? '?kind=listening' : ''}`).then(r => r.json()).then(d => { tasks = d.tasks || []; paint(); })
-    .catch(() => { $('#cards').replaceChildren(h('div', { class: 'card empty' }, h('h3', {}, 'Could not load the tasks'), h('p', { class: 'muted' }, 'Please try again in a moment.'))); });
+    .catch(() => { $('#cards').replaceChildren(h('div', { class: 'card empty' }, h('h2', {}, 'Could not load the tasks'), h('p', { class: 'muted' }, 'Please try again in a moment.'))); });
 })();

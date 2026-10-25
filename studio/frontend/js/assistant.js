@@ -46,7 +46,7 @@ class AssistantPanel {
     this.busy = false;
     this.loaded = false;
     this.voice = null;  // set by assistant_voice.js when the voice agent is reachable
-    this.log = h('div.asst-log', { role: 'log', 'aria-live': 'polite' });
+    this.log = h('div.asst-log', { role: 'log', 'aria-live': 'polite', tabindex: 0, 'aria-label': 'Conversation' });
     this.stepEl = h('span.asst-step');
     this.stateEl = h('span.asst-state', h('i'), h('span', 'Online'));
     this.input = h('textarea.asst-input', {
@@ -61,7 +61,7 @@ class AssistantPanel {
     this.micBtn = h('button.asst-icon.asst-mic', { title: 'Talk to the assistant', 'aria-label': 'Voice', hidden: true, onclick: () => this.voice?.toggle() }, ico('mic', 16));
     this.voiceEl = h('div.asst-voice', { hidden: true });
     this.panel = h('section.asst-panel', { role: 'dialog', 'aria-label': 'Omni assistant', hidden: true },
-      h('header.asst-head',
+      h('div.asst-head',
         h('span.asst-badge', ico('logo', 20, '')),
         h('div.asst-title', h('b', 'Omni Assistant'), h('div.asst-sub', this.stateEl, this.stepEl)),
         h('div.grow'),
@@ -71,7 +71,7 @@ class AssistantPanel {
       this.log,
       this.voiceEl,
       h('div.asst-compose', h('div.asst-field', this.input, this.micBtn, this.sendBtn)),
-      h('footer.asst-foot', 'Omni Studio assistant · asks before it changes anything'));
+      h('div.asst-foot', 'Omni Studio assistant · asks before it changes anything'));
     this.fab = h('button.asst-fab', { title: 'Assistant', 'aria-label': 'Open the assistant', 'aria-expanded': 'false', onclick: () => this.toggle() }, ico('chat', 22));
     document.body.append(this.panel, this.fab);
     if (ls.get('assistant-open', false)) this.toggle(true);

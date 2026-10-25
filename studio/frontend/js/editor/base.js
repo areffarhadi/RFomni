@@ -147,7 +147,7 @@ export class BaseEditor {
     this.renderStatus();
     return h('div.ed-head',
       h('div.ed-title', ico(modalityIcon(m.modality), 18),
-        h('div', h('div.nm', { title: m.name }, m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
+        h('div', h('h1.nm', { title: m.name }, m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
           m.duration ? fmtDur(m.duration) : null, m.width ? `${m.width}×${m.height}` : null].filter(Boolean).join(' · ')))),
       this.saveEl,
       h('button.icon-btn.edit-only', { title: 'Undo (⌘Z)', 'aria-label': 'Undo', onclick: () => this.undo() }, ico('undo', 16)),
