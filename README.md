@@ -6,7 +6,7 @@ speaker check, and the scripts that start and stop it all.
 
 | Folder | What | Port |
 |---|---|---|
-| `studio/` | Omni Studio: the annotation studio, its assistant, the public pages `/tasks/`, `/listen/`, `/collect/` and the landing and sign-in pages. Version history and tags (v0.1.0 to v0.6.0) are in this folder's history. | 8710 |
+| `studio/` | Omni Studio: the annotation studio, its assistant, the public pages `/tasks/`, `/listen/`, `/collect/` and the landing and sign-in pages. Version history and tags (v0.1.0 to v0.6.1) are in this folder's history. | 8710 |
 | `voice/` | The voice agent (Pipecat, version 5.3): speaker check gate, end-of-turn, the studio's voice mode. | 7912 |
 | `chat/` | The chat page: the customisation of an upstream Open WebUI clone (`tracked.patch` for its files, `files/` for new ones) and `files/omni_chat_proxy.py`, the proxy in front of the model that adds the studio assistant and shows the model as RFomni. | 8080, 8401 |
 | `heads/serve/` | The heads service: trained heads on the model's frozen audio and vision towers (speakers, overlap, spoofing, pose, …) and Silero VAD. | 8720 |

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1 "Atelier" (2026-10-25)
+
+- **Landing page back to its v0.5.1 design**, as the owner preferred it: the "AI" orb, the numbered section labels,
+  the headings, the screenshots and the card pictures are as they were (only the version line is new). The sign-in
+  page, which reuses the landing orb, shows it the same way. Everything else from v0.6.0 stays.
+
 ## v0.6.0 "Atelier" (2026-10-25)
 
 The whole website checked against the tells of machine-made pages (Hallmark design checks, plus a fresh-context

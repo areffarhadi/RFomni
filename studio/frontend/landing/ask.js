@@ -1,8 +1,9 @@
-// Your own task: the landing page picture of writing a new task as a prompt. The prompt box writes
-// example prompts, sends them and erases them, one after another. Visitors can type into the box; the
-// examples pause while they do, and sending takes them to the studio, where tasks are written for real.
-// (The status pills below the box are drawn only if the page has an .ask-agents list; it no longer does.)
-// With "reduce motion" everything stays still.
+// Your own task: the landing page picture of writing a new task as a prompt. The prompt box, with a
+// colour running round its border, writes example prompts, sends them and erases them, one after
+// another. Below it, nine agents are at work all the time, each with its own moving orb and a
+// shimmering label: listening, reasoning, searching, fetching data, connecting, drafting a response,
+// generating output, synthesizing sources, idle. Visitors can type into the box; the examples pause
+// while they do. Canvas 2D for the orbs, no library. With "reduce motion" everything stays still.
 (() => {
   const root = document.querySelector('[data-ask]');
   if (!root) return;
@@ -117,7 +118,7 @@
 
   // the nine pills, all working all the time
   const dpr = Math.min(2, window.devicePixelRatio || 1), ORB = 24;
-  const pills = !grid ? [] : AGENTS.map(([state, label]) => {
+  const pills = AGENTS.map(([state, label]) => {
     const li = document.createElement('li');
     li.className = 'ag';
     const cv = document.createElement('canvas');
@@ -132,7 +133,7 @@
     return { state, ctx: cv.getContext('2d'), phase: Math.random() * 10 };
   });
   let ink = '255,255,255';
-  const readInk = () => { if (!grid?.firstElementChild) return; const m = getComputedStyle(grid.firstElementChild).color.match(/\d+(\.\d+)?/g); if (m) ink = m.slice(0, 3).join(','); };
+  const readInk = () => { const m = getComputedStyle(grid.firstElementChild).color.match(/\d+(\.\d+)?/g); if (m) ink = m.slice(0, 3).join(','); };
   let raf = 0, visible = false, last = 0;
   function frame(now) {
     raf = 0;
@@ -217,8 +218,13 @@
     e.preventDefault();
     if (!input.value.trim()) { input.focus(); return; }
     pulse();
-    // nothing is sent from this page: the studio is where a task is written and tested
-    location.href = '../login/?next=studio';
+    if (reduce) return;
+    // hand it to the agents: the text clears, and the examples carry on after a moment
+    typing = true;
+    while (input.value) { input.value = input.value.slice(0, -Math.max(1, Math.ceil(input.value.length / 20))); syncSend(); await sleep(16); }
+    typing = false;
+    mine = false;
+    input.blur();
   });
   syncSend();
 

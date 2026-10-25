@@ -1,5 +1,5 @@
-// The hero orb: a slowly turning sphere of light grains with a stretch of speech drawn in grains inside it
-// (a waveform: three words and the pauses between them). Grains twinkle, the waveform breathes, and near the cursor every grain is pushed aside and drifts back.
+// The hero orb: a slowly turning sphere of light grains with "AI" written in grains inside it.
+// Grains twinkle, the letters breathe, and near the cursor every grain is pushed aside and drifts back.
 // Canvas 2D, no libraries; paused off screen; one still frame when the system asks for reduced motion.
 (() => {
   const root = document.querySelector('[data-orb]');
@@ -30,24 +30,14 @@
     }
   }
 
-  // grains on the waveform: sampled from bars drawn on a small offscreen canvas. The envelope is three
-  // words with pauses between them, so the shape reads as speech rather than a row of equal marks.
+  // grains on the letters: sampled from the word drawn on a small offscreen canvas
   function makeText() {
     const size = Math.round(R * 0.82), c = document.createElement('canvas');
     c.width = Math.round(R * 1.6); c.height = Math.round(size * 1.05);
     const x = c.getContext('2d');
-    x.fillStyle = '#fff';
-    const words = [[0.04, 0.30, 0.95], [0.36, 0.62, 0.7], [0.68, 0.96, 0.85]];  // start, end, loudness
-    const bar = Math.max(3, Math.round(c.width / 70)), step = bar * 1.7;
-    for (let px0 = 0; px0 < c.width; px0 += step) {
-      const t = px0 / c.width;
-      const w = words.find(([a, b]) => t >= a && t <= b);
-      if (!w) continue;
-      const k = (t - w[0]) / (w[1] - w[0]);
-      const env = Math.sin(Math.PI * k) ** 0.6 * w[2] * (0.45 + 0.55 * Math.abs(Math.sin(px0 * 0.37) * Math.cos(px0 * 0.11)));
-      const hgt = Math.max(bar, env * c.height * 0.92);
-      x.fillRect(px0, (c.height - hgt) / 2, bar, hgt);
-    }
+    x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `700 ${size}px Satoshi, ui-sans-serif, system-ui, sans-serif`;
+    x.fillText('AI', c.width / 2, c.height / 2 + size * 0.04);
     const px = x.getImageData(0, 0, c.width, c.height).data;
     const gap = Math.max(2, Math.round(R / 95));
     text = [];
