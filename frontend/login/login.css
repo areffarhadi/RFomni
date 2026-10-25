@@ -112,6 +112,11 @@ h1 { margin: 0; text-align: center; font-size: 23px; font-weight: 700; letter-sp
 .show[aria-pressed="true"] .i-eye-off { display: block; }
 .forgot { align-self: flex-end; margin: -4px 4px 4px 0; font-size: 13px; color: var(--muted); text-decoration: none; }
 .forgot:hover { color: var(--text); }
+/* sign-in problems (wrong password, waiting for approval) show inside the card, next to the button */
+.note { margin: 0 2px 2px; padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; color: var(--text);
+  background: var(--glass-2); border: 1px solid var(--glass-line); }
+.note[hidden] { display: none; }
+.note.bad { border-color: rgba(240, 120, 110, .55); background: rgba(240, 120, 110, .1); }
 
 .submit { position: relative; margin-top: 12px; height: 50px; border: 0; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 15.5px;
   color: var(--grad-ink); background: linear-gradient(90deg, var(--grad-a), var(--grad-b)); background-size: 160% 100%; background-position: 0 0;
@@ -147,7 +152,7 @@ h1 { margin: 0; text-align: center; font-size: 23px; font-weight: 700; letter-sp
 .card.swap { animation: swap .45s var(--ease); }
 @keyframes swap { 40% { opacity: .2; filter: blur(4px); transform: scale(.985); } }
 
-.toast { position: absolute; left: 50%; bottom: -54px; transform: translate(-50%, 6px); margin: 0; padding: 8px 14px; border-radius: 999px; white-space: nowrap;
+.toast { position: absolute; left: 50%; bottom: -54px; transform: translate(-50%, 6px); margin: 0; padding: 8px 14px; border-radius: 18px; width: max-content; max-width: min(88vw, 420px); text-align: center;
   background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   font-size: 13px; color: var(--text-2); opacity: 0; transition: opacity .25s, transform .25s var(--ease); pointer-events: none; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }

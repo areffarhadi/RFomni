@@ -2,17 +2,19 @@ import os
 
 from .base import AnnotateContext, Engine  # noqa: F401
 from .mock import MockEngine
+from .omni import OmniEngine, UnsupportedTask  # noqa: F401
 
 _engine = None
 
 
 def get_engine() -> Engine:
-    """Pick the annotation engine. Only the mock engine exists for now; add a real one
-    (e.g. OMNI_ENGINE=qwen_omni) here when the model is connected."""
+    """Pick the annotation engine: OMNI_ENGINE=omni (default, the fine-tuned thinker on
+    vLLM-omni) or mock (placeholder values, no model needed)."""
     global _engine
     if _engine is None:
-        name = os.environ.get("OMNI_ENGINE", "mock")
-        if name != "mock":
-            raise RuntimeError(f"Unknown engine '{name}'. Available: mock")
-        _engine = MockEngine()
+        name = os.environ.get("OMNI_ENGINE", "omni")
+        engines = {"omni": OmniEngine, "mock": MockEngine}
+        if name not in engines:
+            raise RuntimeError(f"Unknown engine '{name}'. Available: {', '.join(engines)}")
+        _engine = engines[name]()
     return _engine

@@ -15,11 +15,17 @@ async function req(method, url, body) {
     opt.body = JSON.stringify(body);
   }
   const r = await fetch(url, opt);
+  if (r.status === 401 && !document.body.classList.contains('shared')) signedOut();
   const text = await r.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!r.ok) throw new ApiError(r.status, (data && data.detail) || text || r.statusText, data);
   return data;
+}
+
+// the session ended (signed out elsewhere, or expired): back to the sign-in page, which returns here after
+export function signedOut() {
+  location.href = '/login/?next=studio';
 }
 
 const enc = encodeURIComponent;
@@ -29,6 +35,8 @@ const qs = (o) => Object.entries(o).filter(([, v]) => v != null && v !== '').map
 
 export const api = {
   info: () => req('GET', '/api/info'),
+  me: () => req('GET', '/api/auth/me'),
+  signOut: () => req('POST', '/api/auth/signout'),
   fs: (path) => req('GET', `/api/fs?${qs({ path })}`),
 
   tasks: () => req('GET', '/api/tasks'),
@@ -38,6 +46,7 @@ export const api = {
   resetTask: (id) => req('POST', `/api/tasks/${enc(id)}/reset`),
   testTask: (pid, body) => req('POST', `${P(pid)}/test-task`, body),
   previewPrompt: (t) => req('POST', '/api/tasks/preview', t),
+  draftTask: (request, draft) => req('POST', '/api/agent/draft_task', { request, draft }),
 
   projects: () => req('GET', '/api/projects'),
   createProject: (p) => req('POST', '/api/projects', p),

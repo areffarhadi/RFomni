@@ -29,7 +29,7 @@ export class ProjectView {
     this.tabInfo = {};
     this.rail = h('nav.rail', { 'aria-label': 'Project' }, home, tabs.map(t => {
       const color = `var(--tab-${t.id})`;
-      const a = h('a', { href: t.id === 'data' ? links.project(pid) : links.tab(pid, t.id), title: t.label, style: { '--tc': color } },
+      const a = h('a', { href: t.id === 'data' ? links.project(pid) : links.tab(pid, t.id), title: t.label, dataset: { guide: `tab:${t.id}` }, style: { '--tc': color } },
         ico(t.icon, 19), h('span', t.label));
       this.links[t.id] = a;
       this.tabInfo[t.id] = { icon: t.icon, color };

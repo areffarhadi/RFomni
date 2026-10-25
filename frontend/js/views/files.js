@@ -22,7 +22,7 @@ export class FileList {
     this.closed = new Set(ls.get('closed:' + this.pid, []));
 
     this.count = h('span.badge');
-    const addBtn = h('button.icon-btn.owner-only', { title: 'Add data', onclick: () => menu(addBtn, addDataMenuItems(this.pid)) }, ico('plus', 17));
+    const addBtn = h('button.icon-btn.owner-only', { dataset: { guide: 'data.add' }, title: 'Add data', onclick: () => menu(addBtn, addDataMenuItems(this.pid)) }, ico('plus', 17));
     const head = h('div.fp-head',
       h('h2', 'Files', this.count),
       h('button.icon-btn', { title: 'Project overview', onclick: () => go(links.project(this.pid)) }, ico('grid', 16)),
@@ -40,7 +40,7 @@ export class FileList {
     this.list = h('div.fp-list', { tabindex: 0, onkeydown: (e) => this.onKey(e) });
     this.selbar = h('div.fp-selbar', { style: { display: 'none' } });
     const resize = h('div.files-resize', { onpointerdown: (e) => this.startResize(e, resize) });
-    this.el = h('aside.files', head,
+    this.el = h('aside.files', { dataset: { guide: 'data.files' } }, head,
       h('div.fp-filters', h('div.fp-search', ico('search', 14), search), this.modChips, statusSel),
       this.list, this.selbar, resize);
 

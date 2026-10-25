@@ -1,8 +1,8 @@
 // Omni Studio sign-in page: the card (sign in / create an account), the password toggle, the colour modes and
 // the drifting lights behind the glass. Plain JavaScript, no libraries.
 //
-// Accounts are not finished yet: for now every submit opens the chosen app (Studio or Chat), filled in or not. When the backend has
-// accounts, `enter()` is the one place to change: post the fields to it and only go on when it says yes.
+// Accounts are the chat page's (Open WebUI): the studio posts the fields to it and keeps its session in the `token`
+// cookie, which the chat page reads too, so one sign-in opens both apps when they share an address.
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -12,9 +12,9 @@
   let lastPlace = '';
   try { lastPlace = JSON.parse(localStorage.getItem('omni:last') || '""'); } catch { /* blocked storage */ }
   if (!/^#\/[\w\-/?=&.%]*$/.test(lastPlace)) lastPlace = '';
-  const studio = (location.protocol === 'file:' ? 'http://127.0.0.1:8710/' : '../') + lastPlace;
-  // the chat app (Open WebUI with the agent); change this when it moves
-  const CHAT_URL = 'https://192.168.8.174:8080/';
+  const studio = (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + lastPlace;
+  // the chat app (Open WebUI with the agent) on the same address; its /auth page picks up the shared cookie
+  const CHAT_URL = `https://${location.hostname || '192.168.8.174'}:8080/auth`;
   const APPS = { studio: { url: studio, name: 'Omni Studio' }, chat: { url: CHAT_URL, name: 'the chat' } };
 
   // ---------- the card
@@ -22,7 +22,7 @@
   let toastTimer = 0;
   const say = (text) => {
     toast.textContent = text; toast.classList.add('on');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('on'), 2400);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('on'), Math.max(2400, text.length * 70));
   };
 
   // ---------- where to go: Studio or Chat (?next= from the landing page, else the last choice)
@@ -72,11 +72,37 @@
   });
   $$('[data-soon]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); say('Coming soon'); }));
 
-  function enter() {
+  const note = $('#auth-note');
+  function tell(text, bad = true) {
+    note.textContent = text; note.hidden = !text; note.classList.toggle('bad', bad);
+  }
+  card.addEventListener('input', () => tell(''));
+
+  async function enter() {
+    const reg = card.dataset.mode === 'register';
+    const email = $('#email').value.trim(), password = pw.value, name = $('#name').value.trim();
+    if (!email || !password || (reg && !name)) return tell(reg ? 'Fill in your name, email and password.' : 'Fill in your email and password.');
     card.classList.add('busy');
+    let res = null, data = null;
+    try {
+      res = await fetch(`/api/auth/${reg ? 'signup' : 'signin'}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reg ? { name, email, password } : { email, password }),
+      });
+      data = await res.json().catch(() => null);
+    } catch { /* offline: handled below */ }
+    if (!res?.ok) {
+      card.classList.remove('busy');
+      return tell(data?.detail || 'Could not reach Omni Studio. Try again in a moment.');
+    }
+    if (data.user?.role === 'pending') {
+      card.classList.remove('busy');
+      return tell('Your account was created. An administrator has to approve it before you can continue.', false);
+    }
     setTimeout(() => { location.href = APPS[app].url; }, reduce ? 0 : 550);
   }
   card.addEventListener('submit', (e) => { e.preventDefault(); if (!card.classList.contains('busy')) enter(); });
+  if (new URLSearchParams(location.search).get('pending')) tell('Your account is waiting for an administrator\'s approval.', false);
 
   // ---------- colour mode: Day / Night / Green, saved for the app and the landing page as well
   const modes = $$('.modes [role=radio]');

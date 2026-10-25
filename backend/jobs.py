@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from . import media as media_mod
 from . import tasks as task_reg
-from .engine import AnnotateContext, get_engine
+from .engine import AnnotateContext, UnsupportedTask, get_engine
 from .util import new_id, now_iso
 
 MODES = {
@@ -184,10 +184,8 @@ class JobManager:
             audio_loader=lambda: media_mod.get_audio((pid, mid), path, cache_dir),
             settings=settings,
         )
-        new_tiers = {}
+        to_run = []
         for task in applicable:
-            if job["cancel"]:
-                break
             existing = [s for s in doc["segments"] if s["tier_id"] == task["id"]]
             if existing and job["mode"] == "missing":
                 job["skipped_tiers"] += 1
@@ -196,7 +194,21 @@ class JobManager:
                     s.get("reviewed") or s.get("source") == "human" for s in existing):
                 job["skipped_tiers"] += 1
                 continue
-            segs = engine.annotate(task, ctx)
+            to_run.append(task)
+        ctx.run_task_ids = {t["id"] for t in to_run}  # lets the engine answer several tasks in one call
+        ctx.should_stop = lambda: job["cancel"]       # the engine stops between model calls
+        new_tiers = {}
+        for task in to_run:
+            if job["cancel"]:
+                break
+            try:
+                segs = engine.annotate(task, ctx)
+            except UnsupportedTask as e:  # reported once per task, the other tasks still run
+                if not any(err.get("task_id") == task["id"] for err in job["errors"]):
+                    job["errors"].append({"task_id": task["id"], "error": str(e)})
+                continue
+            if job["cancel"]:  # a task cut short by Stop is not written
+                break
             ctx.results[task["id"]] = segs
             new_tiers[task["id"]] = (task, segs)
         if not new_tiers:
@@ -224,4 +236,5 @@ class JobManager:
             doc["tiers"], doc["segments"] = tiers, segments
             self.store.save_doc(pid, mid, doc)
         job["updated_media"].append(mid)
-        time.sleep(0.05)  # keeps the UI progress readable on tiny files with the mock engine
+        if engine.name == "mock":
+            time.sleep(0.05)  # keeps the UI progress readable on tiny files with the mock engine

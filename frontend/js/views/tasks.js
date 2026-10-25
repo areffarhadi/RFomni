@@ -23,28 +23,37 @@ export class TasksView {
     this.mod = 'all';
     this.pipe = h('div.pipeline');
     this.lib = h('div');
-    this.mine = h('aside.tv-mine');
+    this.mine = h('aside.tv-mine', { dataset: { guide: 'tasks.mine' } });
     const search = h('input.input', { placeholder: 'Search tasks', 'aria-label': 'Search tasks', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.renderLib(); } });
     this.kindCtl = h('div.seg-ctl', [['all', 'All'], ['annotation', 'Annotation'], ['captioning', 'Captioning']].map(([k, v]) =>
       h('button', { dataset: { v: k }, onclick: () => { this.kind = k; this.renderLib(); } }, v)));
     this.modCtl = h('div.seg-ctl', [['all', 'Any media'], ['audio', 'Audio'], ['video', 'Video'], ['image', 'Image']].map(([k, v]) =>
       h('button', { dataset: { v: k }, onclick: () => { this.mod = k; this.renderLib(); } }, k !== 'all' ? ico(modalityIcon(k), 13) : null, v)));
+    this.filters = h('div.tv-filters', { dataset: { guide: 'tasks.filters' } }, h('div.fp-search', ico('search', 14), search), this.kindCtl, this.modCtl);
+    // the assistant can set the filters for the user (js/guide.js)
+    this.filters.addEventListener('guide-filter', ({ detail: f }) => {
+      this.mod = f.media || 'all';
+      this.kind = f.kind || 'all';
+      this.q = (f.search || '').toLowerCase();
+      search.value = f.search || '';
+      this.renderLib();
+    });
     this.el = h('div.page', h('div.page-inner.wide',
       h('div.page-head',
         h('div', h('h1', 'Tasks'),
           h('p', 'Choose what should be annotated in this project. Every task becomes one tier (channel) in the editor, ' +
             'in the order below. Change the classes or the prompt of any task, write your own, and test it on a few files first.')),
         h('div.row',
-          h('button.btn', { onclick: () => openRunDialog() }, ico('sparkles', 15), 'Run tasks…'),
-          h('button.btn.primary', { onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 15), 'New prompt task'))),
-      h('div.section',
+          h('button.btn', { dataset: { guide: 'tasks.run' }, onclick: () => openRunDialog() }, ico('sparkles', 15), 'Run tasks…'),
+          h('button.btn.primary', { dataset: { guide: 'tasks.new' }, onclick: () => openTaskEditor({ onSaved: () => this.render() }) }, ico('prompt', 15), 'New prompt task'))),
+      h('div.section', { dataset: { guide: 'tasks.selected' } },
         h('div.section-head', h('h3', 'Tiers in this project', h('span.badge', { dataset: { n: '' } })),
           h('span.muted', { style: { fontSize: '12px' } }, 'Drag to reorder · click × to remove')),
         h('div.section-body', this.pipe)),
       h('div.tv-split',
-        h('div.tv-left',
+        h('div.tv-left', { dataset: { guide: 'tasks.library' } },
           h('div.tv-col-head', h('h3', 'Task library'), h('span.muted', 'defaults')),
-          h('div.tv-filters', h('div.fp-search', ico('search', 14), search), this.kindCtl, this.modCtl),
+          this.filters,
           this.lib),
         h('div.tv-divider'),
         this.mine)));
@@ -130,7 +139,7 @@ export class TasksView {
   card(t, on) {
     const sw = h('label.switch', { onclick: (e) => e.stopPropagation(), title: on ? 'In this project' : 'Add to this project' },
       h('input', { type: 'checkbox', checked: on, 'aria-label': `${t.name} in this project`, onchange: () => this.toggle(t.id) }), h('span'));
-    return h('div.task-card' + (on ? '.on' : ''), { style: { '--c': t.color }, onclick: () => openTaskDetail(t, { onChange: () => this.render() }) },
+    return h('div.task-card' + (on ? '.on' : ''), { dataset: { guide: `task:${t.id}` }, style: { '--c': t.color }, onclick: () => openTaskDetail(t, { onChange: () => this.render() }) },
       h('div.tc-top', h('div.grow', h('div.tc-name', h('i.dot'), t.name), h('div.tc-title', t.title)), sw),
       h('div.tc-desc', t.description || t.prompt),
       h('div.tc-badges',

@@ -164,6 +164,52 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
     },
   }, ico('wand', 12), ex.name)));
 
+  // ---- the model writes the task: from a description, or improves the one in the form
+  const aiInput = h('input.input', {
+    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); writeWithAI(); } },
+  });
+  const aiBtn = h('button.btn.sm.primary', { type: 'button', onclick: () => writeWithAI() }, ico('sparkles', 13), h('span'));
+  const aiNote = h('div.te-ai-note', { role: 'status', 'aria-live': 'polite' });
+  const aiBox = h('div.te-ai',
+    h('div.te-ai-head', ico('sparkles', 14), h('b', 'Write it with AI'),
+      h('span.hint', 'A short prompt and clear classes, in the style the model answers best.')),
+    h('div.row', { style: { gap: '8px' } }, aiInput, aiBtn), aiNote);
+  function aiMode() {
+    const improving = !!t.prompt.trim();
+    aiBtn.lastChild.textContent = improving ? 'Improve' : 'Write it for me';
+    aiInput.placeholder = improving
+      ? 'What should change? e.g. "add a class for bored" (empty: make it clearer and shorter)'
+      : 'What do you want to label? e.g. "does the speaker sound tired?"';
+  }
+  async function writeWithAI() {
+    const request = aiInput.value.trim();
+    const improving = !!t.prompt.trim();
+    if (!request && !improving) { aiInput.focus(); return; }
+    aiBtn.disabled = true;
+    aiBtn.lastChild.textContent = 'Writing…';
+    aiNote.textContent = '';
+    try {
+      const r = await api.draftTask(request, improving ? t : null);
+      // a built-in task keeps its output and timing: only its prompt and classes change
+      const keep = builtinEdit ? ['prompt', 'labels'] : Object.keys(r.task);
+      for (const k of keep) if (r.task[k] !== undefined) t[k] = structuredClone(r.task[k]);
+      prompt.value = t.prompt; name.value = t.name; granSel.value = t.granularity; winInput.value = t.window_sec ?? 5;
+      const [lo, hi] = scoreRow.querySelectorAll('input');
+      lo.value = t.score_min ?? 1; hi.value = t.score_max ?? 5;
+      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = t.modalities.includes(['audio', 'video', 'image'][i]); });
+      if (asText) labelsText.value = t.labels.join('\n');
+      kindCtl.update(); renderLabels(); sync();
+      aiInput.value = '';
+      aiNote.textContent = r.note || (improving ? 'Updated. Check it, then test it on a sample.' : 'Written. Check it, then test it on a sample.');
+    } catch (e) {
+      aiNote.textContent = e.message;
+    } finally {
+      aiBtn.disabled = false;
+      aiMode();
+    }
+  }
+  prompt.addEventListener('input', aiMode);
+
   /** For built-in tasks: show the default next to each changed field, with a one-click "use default". */
   function defaults() {
     if (!builtinEdit) return;
@@ -234,6 +280,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
 
   const body = h('div.te-grid',
     h('div',
+      aiBox,
       h('label.field', h('span', 'Prompt'), prompt, promptDefault,
         h('span.hint', 'Write it as an instruction to the model. The output format is added automatically. Use {labels} to insert the class list.')),
       builtinEdit ? null : h('div.field', h('span', 'Start from an example'), examples),
@@ -291,6 +338,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
   renderLabels();
   sync();
   defaults();
+  aiMode();
 }
 
 function segCtl(options, get, set) {

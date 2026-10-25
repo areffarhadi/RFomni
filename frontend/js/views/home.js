@@ -55,7 +55,7 @@ export class HomeView {
     outline.classList.add('pf-outline');
     outline.setAttribute('aria-hidden', 'true');
     outline.append(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
-    cards.push(h('button.pfold.new', { type: 'button', onclick: () => newProjectDialog() }, outline,
+    cards.push(h('button.pfold.new', { type: 'button', dataset: { guide: 'home.new' }, onclick: () => newProjectDialog() }, outline,
       h('span.pf-new', ico('folder-plus', 22), h('b', 'New project'), h('small', 'Name it, pick tasks, add data'))));
     this.ro.disconnect();
     this.grid.replaceChildren(...cards);

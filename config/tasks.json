@@ -288,6 +288,30 @@
       "prompt": "Find every region where two or more people speak at the same time. Label each region with the speakers involved, joined with ' + ' in ascending order (e.g. SPEAKER_0 + SPEAKER_1), using the same labels as the speaker diarization."
     },
     {
+      "id": "speaker_count",
+      "name": "Speakers #",
+      "title": "Number of speakers",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "color": "#e11d48",
+      "description": "How many different voices are heard in the file (speaker-embedding head, up to 6).",
+      "prompt": "How many different people speak in this recording?"
+    },
+    {
       "id": "gender",
       "name": "Gender",
       "title": "Speaker gender",
@@ -399,6 +423,26 @@
       "color": "#e879f9",
       "description": "Register and delivery of the speech.",
       "prompt": "Classify the speaking style in this segment."
+    },
+    {
+      "id": "turn_end",
+      "name": "Turn end",
+      "title": "End of turn",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "complete",
+        "incomplete"
+      ],
+      "color": "#14b8a6",
+      "description": "Whether the speaker has finished their turn at the end of each speech segment, or would go on (smart-turn head).",
+      "prompt": "At the end of this segment, has the speaker finished their turn, or are they likely to continue?"
     },
     {
       "id": "nonverbal",
@@ -712,6 +756,34 @@
       "prompt": "Find every person in the image and give a bounding box around the visible part of the body."
     },
     {
+      "id": "body_parts",
+      "name": "Body parts",
+      "title": "Body part detection",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "person",
+        "head",
+        "face",
+        "left hand",
+        "right hand",
+        "left arm",
+        "right arm",
+        "left leg",
+        "right leg",
+        "left foot",
+        "right foot"
+      ],
+      "color": "#f59e0b",
+      "description": "Boxes around people and their head, face, hands, arms, legs and feet (loc v2 head).",
+      "prompt": "Find every person and their visible body parts (head, face, hands, arms, legs, feet) and give a box around each."
+    },
+    {
       "id": "object_boxes",
       "name": "Objects",
       "title": "Object localization",
@@ -760,6 +832,22 @@
       "prompt": "Estimate the body pose of every person: give the 17 COCO keypoints with a visibility flag for each."
     },
     {
+      "id": "head_pose",
+      "name": "Head pose",
+      "title": "Head pose (yaw / pitch / roll)",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#0ea5e9",
+      "description": "Head orientation of the main face in degrees: yaw (turn), pitch (nod), roll (tilt). From the head-pose expert.",
+      "prompt": "Estimate the head orientation of the main person: yaw, pitch and roll in degrees."
+    },
+    {
       "id": "spoof_audio",
       "name": "Spoof (audio)",
       "title": "Audio spoof detection",
@@ -796,6 +884,7 @@
       "output": "label",
       "labels": [
         "real",
+        "presentation attack",
         "face swap",
         "face reenactment",
         "lip-sync",
@@ -1035,7 +1124,8 @@
         "diarization",
         "pure_speech",
         "overlap",
-        "asr"
+        "asr",
+        "speaker_count"
       ]
     },
     {

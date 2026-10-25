@@ -3,12 +3,13 @@ import { api } from './api.js';
 import { $, h, ico, isTyping, ls } from './util.js';
 import { state, on, loadInfo, loadTasks, shareInfo } from './state.js';
 import { parseHash, links } from './nav.js';
-import { errorToast, modalOpen, popover } from './ui.js';
+import { errorToast, menu, modalOpen, popover } from './ui.js';
 import { HomeView } from './views/home.js';
 import { ProjectView } from './views/project.js';
 import { showShortcuts } from './views/shortcuts.js';
 import { openShareDialog } from './views/share.js';
 import { swap, watchSegments } from './motion.js';
+import { mountAssistant } from './assistant.js';
 
 const app = $('#app');
 const crumbs = h('div.crumbs');
@@ -18,12 +19,26 @@ const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with 
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
 // to the landing page (what Omni Studio is); its "Open the studio" signs you in and brings you back here
 const aboutLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'About Omni Studio: what it does' }, ico('info', 14), 'About');
+// who is signed in (accounts are the chat page's, see backend/auth.py), and signing out
+const userBtn = h('button.icon-btn.owner-only', { title: 'Account', 'aria-label': 'Account', 'aria-haspopup': 'menu', onclick: () => openUserMenu() }, ico('user', 17));
+let me = null;
+async function loadMe() {
+  try { me = (await api.me()).user; userBtn.title = `Signed in as ${me.name || me.email}`; } catch { /* the gate sends a signed-out page to the sign-in page */ }
+}
+function openUserMenu() {
+  menu(userBtn, [
+    me && { header: me.name ? `${me.name} · ${me.email}` : me.email },
+    { label: 'Open the chat', icon: 'chat', onClick: () => window.open(`https://${location.hostname}:8080/`, '_blank', 'noopener') },
+    'sep',
+    { label: 'Sign out', icon: 'logout', onClick: async () => { await api.signOut().catch(() => {}); location.href = '/login/?next=studio'; } },
+  ], { placement: 'bottom-end' });
+}
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,
   crumbs, h('div.grow'), sharedPill, aboutLink, shareBtn, enginePill,
   h('button.icon-btn', { title: 'Keyboard shortcuts (?)', onclick: showShortcuts }, ico('keyboard', 17)),
-  themeBtn);
+  themeBtn, userBtn);
 const main = h('main.main');
 const jobEl = h('div.job');
 const saveEl = h('span.save-state');
@@ -185,6 +200,7 @@ function setupShared(sh) {
     await Promise.all([loadInfo(), loadTasks()]);
     const shared = shareInfo();
     if (shared) setupShared(shared);
+    else loadMe();
     const eng = state.info.engine;
     enginePill.classList.toggle('on', !!eng.connected);
     enginePill.lastChild.textContent = eng.connected ? eng.title : 'Mock engine · no model';
@@ -192,6 +208,7 @@ function setupShared(sh) {
     wsEl.textContent = state.info.workspace || '';
     wsEl.title = 'Workspace folder';
     verEl.textContent = `v${state.info.version} · ${state.info.codename}`;
+    mountAssistant();
   } catch (e) {
     errorToast(e, 'Could not reach the Omni Studio server');
   }

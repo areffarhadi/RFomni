@@ -1,6 +1,6 @@
 # Omni Studio
 
-**Current release: v0.3.0 "Aurora"** · see [CHANGELOG.md](CHANGELOG.md)
+**Current release: v0.4.0 "Compass"** · see [CHANGELOG.md](CHANGELOG.md)
 
 ![Tier editor with waveform, spectrogram and forced-alignment boundaries](docs/screenshots/forced_alignment.png)
 
@@ -8,9 +8,11 @@ A local, multimodal annotation studio. Put audio, video and images (or whole mix
 project, pick annotation and captioning tasks (or write your own as a prompt), apply them to every
 file, then review and correct the results in an ELAN-style tier editor.
 
-Version 0.1 is UI-first: **no model is connected yet**. A mock engine finds real speech regions
-(energy VAD) and fills every tier with clearly-marked placeholder values, so the complete workflow
-(run → review → correct → export) can be used and refined before Qwen3-Omni is plugged in.
+Labels come from **RFomni**, the fine-tuned annotation model, served by vLLM-omni, plus small trained
+heads on the same model for speakers, overlap, spoofing, pose and more (see *The model engine* below).
+An **assistant** panel works next to you: it answers from the open project, points at the parts of the page
+it talks about, writes task prompts and classes, and proposes every change on a card you approve.
+Without a model server, `OMNI_ENGINE=mock` fills every tier with clearly-marked placeholder values.
 
 ## Run
 
@@ -33,16 +35,21 @@ plus the ckpt50000 sample folder; nothing is copied):
 .venv/bin/python scripts/make_demo.py
 ```
 
-Environment variables: `OMNI_STUDIO_PORT` (8710), `OMNI_STUDIO_WORKSPACE` (./workspace),
-`OMNI_NO_BROWSER=1` (don't open a browser tab).
+Environment variables: `OMNI_STUDIO_PORT` (8710), `OMNI_STUDIO_HOST` (127.0.0.1; 0.0.0.0 to serve your network),
+`OMNI_STUDIO_SSL_CERT` / `OMNI_STUDIO_SSL_KEY` (https, needed for the microphone on other computers),
+`OMNI_STUDIO_WORKSPACE` (./workspace), `OMNI_NO_BROWSER=1` (don't open a browser tab).
+Model: `OMNI_ENGINE` (omni or mock), `OMNI_ENGINE_URL`, `OMNI_ENGINE_MODEL`, `OMNI_HEADS_URL`.
+Sign-in: `OMNI_AUTH` (on; off = one local user, no sign-in), `OMNI_CHAT_URL` (the chat that owns the accounts),
+`OMNI_FORWARD_JWT_SECRET` (shared with the chat, see *Sign-in*). Voice: `OMNI_VOICE_URL` (the voice agent).
 
 ## What you can do
 
 | Area | Features |
 | --- | --- |
+| **Assistant** | A glass chat panel in the bottom-right corner (or `Ctrl+/`), also on the chat page as the *Omni Studio Assistant* model and by voice. It answers from the open project and page (chosen tasks by audio / video / image, what could be added, file counts), opens pages and **points at** the part it talks about with a ring and a note, filters the task library, and walks you through project → data → tasks → test → run → review. Every change (create a project, link data, add or remove tasks, write a task, test, run) is shown on an **approval card**; nothing happens until you approve, and **Stop** cancels a run. Each user has one plan shared by the panel, the chat page and voice; spoken approvals need the registered voice (speaker check). |
 | **Projects** | One folder per project with its data, task list and annotations. Coverage matrix (files × tasks), progress, low-confidence counter. |
 | **Data** | Upload files or folders (drag & drop works, folder structure kept), or *link* a local folder so large datasets are not copied. Audio / video / image detected automatically. |
-| **Tasks** | 44 built-in tasks (ASR, forced alignment, phonemes, diarization, pure speech, overlap, LID, SER, NER, quality, MOS, sound events, faces, people, objects, pose, OCR, spoof / deepfake, captioning…) grouped into annotation vs captioning. **Edit any task**: change its classes (chips or a plain list, double-click to rename) and its prompt; built-in tasks keep their output type and show their defaults. Changed and new tasks sit in their own column, separated by a vertical line, with **Reset to default** / **Delete**. **Test on a sample**: try a task, even unsaved edits, on 1–10 random files of the project without saving anything (listen to each result, shuffle, then run on all files). **New prompt task**: write an instruction, choose output (text / label / tags / score / boxes / keypoints) and granularity; the exact model prompt is previewed. Drag to reorder tiers. |
+| **Tasks** | 48 built-in tasks (ASR, forced alignment, phonemes, diarization, pure speech, overlap, LID, SER, NER, quality, MOS, sound events, faces, people, objects, pose, OCR, spoof / deepfake, captioning…) grouped into annotation vs captioning. **Edit any task**: change its classes (chips or a plain list, double-click to rename) and its prompt; built-in tasks keep their output type and show their defaults. Changed and new tasks sit in their own column, separated by a vertical line, with **Reset to default** / **Delete**. **Test on a sample**: try a task, even unsaved edits, on 1–10 random files of the project without saving anything (listen to each result, shuffle, then run on all files). **New prompt task**: describe what you want and **Write it with AI** fills in a short prompt, clear classes, output and granularity (**Improve** refines it: "add a class for bored"), or write an instruction yourself, choose output (text / label / tags / score / boxes / keypoints) and granularity; the exact model prompt is previewed. Drag to reorder tiers. |
 | **Run** | Apply the selected tasks to all / selected / un-annotated files in the background. Modes: fill empty tiers, re-run unreviewed tiers, or replace everything. |
 | **Editor (audio & video)** | Waveform, spectrogram (linear/mel, colormaps) or both; video frame strip; overview + scrollbar; one lane per task with parent/child tiers (ASR → words → phones). Click to select, double-click / Enter to edit, drag on an empty lane to create, drag edges to adjust (snaps to other tiers), Alt-drag to move, split / merge, label hotkeys 1–9, undo/redo, autosave. Live transcript with word highlighting. |
 | **Forced alignment on the signal** | Word (or phone) boundaries are drawn on the waveform and spectrogram with their labels, Praat-style. Every word has its own start and end: drag a border to move only that word (the highlighted one; on a shared border, the word on the side you grab). Its phones are rescaled with it and it stops at a touching neighbour. Hold **Alt**, or switch on **Linked**, to move the shared border of two touching words together. **Auto-play** (toolbar switch or `L`) replays the word after each change. Click a word to select it, double-click (or `P`) to listen. Choose the tier in the toolbar (**Boundaries**). The original model times stay in `meta.model_start / model_end`. |
@@ -89,13 +96,19 @@ Its main font, Satoshi, is free but may not be redistributed, so `start.sh` down
 
 ## Sign-in page
 
-`http://127.0.0.1:8710/login/` is a frosted glass card over drifting lights, with the landing page's orb as the light
+`/login/` is a frosted glass card over drifting lights, with the landing page's orb as the light
 source (`frontend/login/`). It has *Sign in* and *Create an account* views, a password show/hide toggle and Google /
-GitHub buttons marked *coming soon*. Accounts are not connected yet: every submit opens the studio, even with
-empty fields. When the backend has accounts, `enter()` in `frontend/login/login.js` is the one place to change.
+GitHub buttons marked *coming soon*.
 
-The card has a *Continue to* switch for the two apps: **Studio** (this app) and **Chat** (the agent chat, Open WebUI at
-`https://192.168.8.174:8080/`; set in `CHAT_URL` at the top of `login.js`). The landing header's *Omni Studio* and *Chat*
+**Accounts belong to the chat (Open WebUI)** (`backend/auth.py`). The studio posts the fields to the chat's sign-in and
+keeps its session in the same `token` cookie, so with both apps on one address, signing in to either signs you in to both.
+The app page and the API need a signed-in user; new accounts wait for an administrator's approval, and browsing the
+server's folders, linking local data and the internet tunnel are for administrators. The chat sends its user to the
+assistant as a signed header (`FORWARD_USER_INFO_HEADER_JWT_SECRET` on the chat = `OMNI_FORWARD_JWT_SECRET` here), and a
+voice session carries a pass the studio signs, so the assistant's plan follows the person everywhere.
+
+The card has a *Continue to* switch for the two apps: **Studio** (this app) and **Chat** (the agent chat, Open WebUI on
+port 8080 of the same address; set in `CHAT_URL` at the top of `login.js`). The landing header's *Omni Studio* and *Chat*
 links open `/login/?next=studio` and `/login/?next=chat`; *Task sharing*, *Subjective test* and *Data
 collection* are shown as *Soon* until those parts exist.
 
@@ -112,7 +125,12 @@ backend/            FastAPI app (python -m backend)
   speakers.py       speaker turns -> pure speech per speaker + overlap per speaker pair
   stats.py          project statistics
   share.py          share links: records, the gate in front of the shared listener, Cloudflare tunnel
-  engine/           annotation engines: base.py (interface), mock.py (placeholder)
+  auth.py           sign-in shared with the chat (Open WebUI accounts), signed passes for voice
+  engine/           annotation engines: base.py (interface), omni.py (RFomni on vLLM-omni),
+                    heads.py (the trained heads service), mock.py (placeholder)
+  agent/            the assistant: brain.py (decide + answer), actions.py (what it can do, page parts it
+                    points at), knowledge.py (studio and project facts), drafter.py (task writer),
+                    plan.py (one plan per user), routes.py (API + OpenAI-style endpoint), voice.py (voice relay)
 config/tasks.json   built-in task library and presets (edit to add tasks)
 frontend/           vanilla JS (ES modules, no build step) + CSS
 scripts/make_demo.py
@@ -130,7 +148,7 @@ workspace/projects/<id>/
   cache/<mid>/            decoded audio, spectrogram, thumbnails (safe to delete)
 ```
 
-## Connecting Qwen3-Omni later
+## The model engine
 
 Everything model-related goes through one method:
 
@@ -143,5 +161,6 @@ class Engine:
 `ctx` provides the media item, its path, 16 kHz audio, the existing annotations and the results of
 tasks that already ran on this file (so forced alignment can use the ASR output).
 `tasks.build_prompt(task)` gives the full prompt including the JSON output instruction.
-Add the new engine in `backend/engine/`, select it in `engine/__init__.py` (e.g. `OMNI_ENGINE=qwen_omni`),
-and segments will be stored with `source: "model"` instead of `"mock"`.
+`engine/omni.py` sends trained tasks with their short trained prompt, every other task (and any edited one) as its
+prompt plus output spec, and head tasks to the heads service; tasks nothing can answer yet are reported, not faked.
+Another engine goes in `backend/engine/` and is selected in `engine/__init__.py` (`OMNI_ENGINE`).

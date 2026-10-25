@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -11,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
+from . import auth
 from . import config
 from . import formats
 from . import media as media_mod
@@ -26,7 +28,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.3.0", "Aurora"
+VERSION, CODENAME = "0.4.0", "Compass"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -56,6 +58,88 @@ async def no_cache_static(request: Request, call_next):
     if not p.startswith("/api/") or p.endswith("/annotations"):
         resp.headers.setdefault("Cache-Control", "no-cache")
     return resp
+
+
+# Sign-in (backend/auth.py): the API and the app page need a signed-in user; the sign-in and landing
+# pages, scripts and styles do not. Requests through a share link were already let in by share.py.
+ADMIN_ONLY = ("/api/fs", "/api/share-server/")   # these read the server's own disk or open it to the internet
+PUBLIC_API = ("/api/auth/", "/api/info", "/api/agent/v1/models")  # models: the chat lists the assistant before anyone signs in
+
+
+def _admin_only(path: str, method: str) -> bool:
+    return path.startswith(ADMIN_ONLY) or (method == "POST" and path.startswith("/api/projects/") and path.endswith("/media/link"))
+
+
+@app.middleware("http")
+async def require_sign_in(request: Request, call_next):
+    path = request.url.path
+    app_page = path in ("/", "/index.html")
+    if _share(request) or not (path.startswith("/api/") or app_page):
+        return await call_next(request)
+    if not auth.ENABLED:
+        request.state.user = {"id": os.environ.get("OMNI_AGENT_USER", "local"), "name": "", "email": "", "role": "admin"}
+        return await call_next(request)
+    try:
+        user = await run_in_threadpool(auth.request_user, request.headers)
+    except auth.AuthError as e:
+        return JSONResponse({"detail": e.detail}, status_code=e.status)
+    request.state.user = user
+    if path.startswith(PUBLIC_API):
+        return await call_next(request)
+    if not user:
+        if app_page:
+            return Response(status_code=303, headers={"location": "/login/?next=studio"})
+        return JSONResponse({"detail": "Please sign in"}, status_code=401)
+    if user["role"] == "pending":
+        if app_page:
+            return Response(status_code=303, headers={"location": "/login/?pending=1"})
+        return JSONResponse({"detail": "Your account is waiting for an administrator's approval"}, status_code=403)
+    if user["role"] != "admin" and _admin_only(path, request.method):
+        return JSONResponse({"detail": "Only an administrator can do this"}, status_code=403)
+    return await call_next(request)
+
+
+def _set_session(resp: Response, request: Request, out: dict) -> None:
+    # not HttpOnly: the chat page's own sign-in page reads this cookie to sign you in there too
+    resp.set_cookie(auth.COOKIE, out["token"], path="/", samesite="lax", secure=request.url.scheme == "https",
+                    max_age=max(60, int(out["expires_at"] - time.time())) if out.get("expires_at") else None)
+
+
+@app.post("/api/auth/signin")
+def sign_in(request: Request, body: dict = Body(...)):
+    try:
+        out = auth.sign_in(str(body.get("email", "")).strip(), str(body.get("password", "")))
+    except auth.AuthError as e:
+        return JSONResponse({"detail": e.detail}, status_code=e.status)
+    resp = JSONResponse({"user": {k: out.get(k) for k in ("id", "email", "name", "role")}})
+    _set_session(resp, request, out)
+    return resp
+
+
+@app.post("/api/auth/signup")
+def sign_up(request: Request, body: dict = Body(...)):
+    try:
+        out = auth.sign_up(str(body.get("name", "")).strip(), str(body.get("email", "")).strip(), str(body.get("password", "")))
+    except auth.AuthError as e:
+        return JSONResponse({"detail": e.detail}, status_code=e.status)
+    resp = JSONResponse({"user": {k: out.get(k) for k in ("id", "email", "name", "role")}})
+    _set_session(resp, request, out)
+    return resp
+
+
+@app.post("/api/auth/signout")
+def sign_out():
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(auth.COOKIE, path="/")
+    return resp
+
+
+@app.get("/api/auth/me")
+def me(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"detail": "Please sign in"}, status_code=401)
+    return {"user": user, "auth": auth.ENABLED}
 
 
 def _share(request: Request):
@@ -693,6 +777,15 @@ def cancel_job(jid: str):
 
 
 # -----------------------------------------------------------------------------
+# assistant
+# -----------------------------------------------------------------------------
+from .agent import router as agent_router, voice_router  # noqa: E402  (its actions use store/jobs above)
+
+app.include_router(agent_router)
+app.include_router(voice_router)
+
+
+# -----------------------------------------------------------------------------
 # frontend
 # -----------------------------------------------------------------------------
 app.mount("/", StaticFiles(directory=config.FRONTEND_DIR, html=True), name="frontend")
@@ -702,8 +795,11 @@ def main():
     import uvicorn
     host = os.environ.get("OMNI_STUDIO_HOST", "127.0.0.1")
     port = int(os.environ.get("OMNI_STUDIO_PORT", "8710"))
-    print(f"\n  Omni Studio {VERSION} ({CODENAME})  ->  http://{host}:{port}\n  workspace: {config.WORKSPACE}\n")
+    print(f"\n  Omni Studio {VERSION} ({CODENAME})  ->  {'https' if os.environ.get('OMNI_STUDIO_SSL_CERT') else 'http'}://{host}:{port}\n  workspace: {config.WORKSPACE}\n")
     share_mod.server.sync()  # shared links stay reachable after a restart
     if share_mod.server.running():
         print(f"  shared links on port {share_mod.server.port}\n")
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    # https (OMNI_STUDIO_SSL_CERT/KEY) lets a browser on another machine use the microphone
+    cert, key = os.environ.get("OMNI_STUDIO_SSL_CERT"), os.environ.get("OMNI_STUDIO_SSL_KEY")
+    tls = {"ssl_certfile": cert, "ssl_keyfile": key} if cert and key else {}
+    uvicorn.run(app, host=host, port=port, log_level="warning", **tls)

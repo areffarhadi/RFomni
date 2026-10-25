@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.4.0 "Compass" (2026-10-25)
+
+- **The model is connected.** Labels come from **RFomni**, the fine-tuned annotation model served by vLLM-omni
+  (`backend/engine/omni.py`, now the default engine; `OMNI_ENGINE=mock` keeps the placeholder engine). Trained tasks use
+  their short trained prompt and are grouped per speech region; every other task, and any task whose prompt you
+  edited, is sent as its prompt plus output spec, so edits on the Tasks page are what the model sees. Tasks the trained
+  **heads** answer (speakers and overlap, speaker count, voice gender, audio spoof, phonemes, end of turn, body parts,
+  pose, face spoof and deepfake, head pose, video deepfake) go to the heads service (`engine/heads.py`), with Silero
+  VAD for speech regions. Tasks nothing can answer yet are reported once per run instead of filled with made-up values,
+  and Stop takes effect between model calls.
+- **New tasks:** Number of speakers, End of turn, Body part detection and Head pose (48 built-in tasks).
+- **Assistant.** A glass chat panel in the bottom-right corner (`Ctrl+/`), in the style of the sign-in card.
+  - It answers from the open project and the page you are on: the tasks chosen, grouped by audio, video and image,
+    the ones that could be added, file counts and run status. Every reply is written by the model.
+  - It walks you through project, data, tasks, test, run and review. Every change (create or open a project, link
+    data, add or remove tasks, write or edit a task, test, run) appears on an **approval card**: Approve, Reject, or
+    ask for something different first. **Stop** cancels a run.
+  - It opens the right page and **points at** the part it talks about (a ring and a note, clear of the panel), and
+    filters the task library ("show me only the audio tasks"). Parts are named with `data-guide` attributes.
+  - **Voice**: the microphone button talks to the same assistant through the voice agent; spoken approvals need the
+    registered voice.
+  - The **chat page** lists it as the *Omni Studio Assistant* model, with the same plan as the panel.
+  - When the studio is updated while a tab is open, the panel offers to reload.
+- **Write it with AI.** The New prompt task form has a box at the top: describe what you want ("does the speaker
+  sound tired?") and the model writes a short prompt, clear non-overlapping classes, output and granularity in the
+  style of the built-in tasks; **Improve** changes it as you ask ("add a class for energetic") or tidies it. The
+  assistant uses the same writer, and you can revise a drafted task in the chat before approving it. Existing
+  prompts change only when you ask about the prompt.
+- **Sign-in is real.** Accounts are the chat's (Open WebUI): the sign-in page signs in there and keeps the session in
+  the shared cookie, so one sign-in covers the studio and the chat on the same address. The studio needs a signed-in
+  user, new accounts wait for approval, and server folders and the internet tunnel are for administrators.
+  An account menu in the top bar shows who is signed in, opens the chat and signs out. `OMNI_AUTH=off` restores the
+  single local user.
+- The studio can serve **https** on the network (`OMNI_STUDIO_HOST`, `OMNI_STUDIO_SSL_CERT` / `_KEY`), so the
+  microphone works from other computers.
+- The model is shown by name, **RFomni**, in the top bar and in the assistant's answers.
+
 ## v0.3.0 "Aurora" (2026-10-24)
 
 - **Landing page, new look** (inspired by the Aigent Framer template): a floating header bar with corner marks;
