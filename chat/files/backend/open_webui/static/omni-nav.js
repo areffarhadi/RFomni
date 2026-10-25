@@ -1,6 +1,7 @@
 (function () {
   var CHAT = "/";
-  var STUDIO = "/studio";
+  // the studio runs on its own port (8710) with its own sign-in, on the same host as the chat
+  var STUDIO = location.protocol + "//" + location.hostname + ":8710/";
   var HOME = "/hub";
 
   function token() {
@@ -82,7 +83,6 @@
       "</div>";
 
     bar.querySelector('[data-nav="chat"]').addEventListener("click", goProtected(CHAT));
-    bar.querySelector('[data-nav="studio"]').addEventListener("click", goProtected(STUDIO));
     var signOut = document.getElementById("omni-signout");
     if (signOut) {
       signOut.addEventListener("click", function () {
@@ -94,7 +94,7 @@
       });
     }
 
-    ["go-chat", "go-studio"].forEach(function (id) {
+    ["go-chat"].forEach(function (id) {
       var link = document.getElementById(id);
       if (!link) return;
       link.addEventListener("click", goProtected(link.getAttribute("href")));
@@ -102,13 +102,8 @@
 
     var gate = document.getElementById("studio-gate");
     if (gate) {
-      if (!user) {
-        location.replace("/auth?redirect=" + encodeURIComponent(STUDIO));
-        return;
-      }
-      gate.hidden = false;
-      var who = document.getElementById("studio-user");
-      if (who) who.textContent = name;
+      location.replace(STUDIO);  // the old /studio page: go to the real studio
+      return;
     }
   }
 
