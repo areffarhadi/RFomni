@@ -32,7 +32,8 @@ Addresses on the network: studio and public pages `https://<host>:8710/` (the la
 ## Outside the repository
 
 - **Model weights**: the fine-tuned model served by vLLM-omni (`mix87`, shown as RFomni) and the heads bundle
-  (`RFOMNI_HEADS_BUNDLE`, default `~/omni-annotate/omni-mix87-heads-bundle/encoder`); the speaker check models
+  (`RFOMNI_HEADS_BUNDLE`, default `~/omni-annotate/omni-mix87-heads-bundle/encoder`); the trained heads, 771 MB
+  (`heads/checkpoints`, a local link to `~/omni-mix87-sidecar-heads/checkpoints`); the speaker check models
   (`RFOMNI_ASV_MODELS`).
 - **Upstream clones and environments** in `~/.rfomni/`: `open-webui/` (apply `chat/tracked.patch` and copy `chat/files/`
   in, then build the frontend), `pipecat/` (editable install in its `.venv`), `venvs/` (speaker check, Open WebUI);
