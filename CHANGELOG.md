@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.5.0 "Agora" (2026-10-25)
+
+The platform's public side: three pages anyone can open without an account, each with a session ID to continue
+later, and the owner's side for each in the studio.
+
+- **Task sharing** (`/tasks/`, landing *Task sharing*): shared labelling tasks. The owner uploads images, video, audio
+  or text (.txt, .csv / .tsv, .jsonl), or adds a server folder, and describes the task to the **design agent**, which
+  writes the page (instructions, questions: one answer, several answers, a rating, free text; look; how many people per
+  item) with a live preview; everything can be edited by hand. *Go live* gives a link; *List it on the public page*
+  shows it on `/tasks/`. People label one item at a time (keys 1–9 and Enter, phones too). Items can be in **groups**
+  (e.g. languages) that people choose first, with `{group}` in the wording; *0 people per item* means everyone labels
+  every item. Items can be listed before their media arrives. Results: progress, answer counts, agreement, people;
+  CSV and JSONL exports. `scripts/import_native_speaker.py` brings in the native-speaker labelling site (39 languages,
+  1,695 speakers; earlier labels kept; running it again keeps answers).
+- **Correction links**: share a project the model already labelled, from the Shared tasks page, so people fix the labels
+  in the editor. Each person gets a session ID and every change is signed with it (`meta.edited_by`,
+  `meta.edited_session`); the page lists who changed how much. With downloads off there is no download button or
+  save-as menu on the media, and the server refuses clips opened on their own and every export.
+- **Subjective tests** (`/listen/`, landing *Subjective test*): listening tests (shared tasks of kind *listening*).
+  Listener questions before starting (e.g. native speaker? device?; nothing identifying is required), practice clips
+  not scored, rating only after a clip has played to the end, never the same sentence twice in a row, back to change an
+  answer, a closing comment, Persian right-to-left pages. The owner adds the blind clip-to-system key privately and gets
+  the MOS ± 95% interval per scale and per system, filtered by listener answers. `scripts/import_listening_test.py`
+  brings in the Persian TTS test of QwenOmni-Talker (60 clips + 2 practice; naturalness, pronunciation, accent).
+- **Data collection** (`/collect/`, landing *Data collection*): projects that ask people to record. Sentences per
+  language, ways to read them (e.g. emotions, each with an acting hint), consent, optional speaker questions, 16 or
+  48 kHz. The recording page (`/c/<code>`, https for the microphone) records the raw microphone (no noise suppression,
+  echo cancellation or gain), shows the waveform to listen to and trim (or *Trim silence*), record again and submit;
+  right-to-left sentences are shown as such. The owner plays, accepts or rejects recordings and exports a ZIP (audio by
+  language and way, plus metadata.csv). `scripts/make_emotion_collection.py` creates *Multilingual emotional speech*
+  (en, de, fr, es, fa, zh; neutral, happy, sad, angry, surprised).
+- The landing page's platform menu now opens all four parts; the studio's top bar has *Shared tasks*, *Subjective
+  tests* and *Data collection*.
+- During development the studio runs without sign-in (`OMNI_AUTH=off`); the sign-in page then steps aside.
+- The platform is called **RFomni** throughout (voice messages `rfomni-*`, no other name in the interface).
+
 ## v0.4.0 "Compass" (2026-10-25)
 
 - **The model is connected.** Labels come from **RFomni**, the fine-tuned annotation model served by vLLM-omni

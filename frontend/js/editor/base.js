@@ -193,7 +193,7 @@ export class BaseEditor {
       dl && av && ex('srt', 'SRT subtitles'), dl && av && ex('vtt', 'WebVTT'), dl && av && ex('rttm', 'RTTM (diarization)'), dl && ex('csv', 'CSV'),
       dl && !av && ex('coco', 'COCO JSON (boxes & keypoints)'),
       'sep',
-      { label: 'Open original file', icon: 'link', onClick: () => window.open(urls.file(this.pid, m.id), '_blank') },
+      canDownload() && { label: 'Open original file', icon: 'link', onClick: () => window.open(urls.file(this.pid, m.id), '_blank') },
       owner && { label: m.source === 'linked' ? 'Remove from project (file stays on disk)' : 'Delete from project', icon: 'trash', danger: true, onClick: () => this.removeFile() },
     ].filter(Boolean), { placement: 'bottom-end' });
   }

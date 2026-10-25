@@ -7,8 +7,12 @@ export class ApiError extends Error {
   }
 }
 
+// someone on a shared edit link works under a session ID; their saves carry it (backend/share.py signs the edits)
+let shareSession = null;
+export function setShareSession(sid) { shareSession = sid; }
+
 async function req(method, url, body) {
-  const opt = { method, headers: {} };
+  const opt = { method, headers: shareSession ? { 'X-Omni-Session': shareSession } : {} };
   if (body instanceof FormData) opt.body = body;
   else if (body !== undefined) {
     opt.headers['Content-Type'] = 'application/json';
@@ -75,10 +79,42 @@ export const api = {
   stats: (pid) => req('GET', `${P(pid)}/stats`),
 
   shares: (pid) => req('GET', `${P(pid)}/shares`),
+  allShares: () => req('GET', '/api/shares'),
+  shareSession: (body) => req('POST', '/api/share/session', body),
   createShare: (pid, body) => req('POST', `${P(pid)}/shares`, body),
   updateShare: (sid, patch) => req('PATCH', `/api/shares/${enc(sid)}`, patch),
   deleteShare: (sid) => req('DELETE', `/api/shares/${enc(sid)}`),
   startTunnel: () => req('POST', '/api/share-server/tunnel'),
+
+  // data collection (backend/collect_routes.py)
+  collectList: () => req('GET', '/api/collect'),
+  collectCreate: (title) => req('POST', '/api/collect', { title }),
+  collect: (id) => req('GET', `/api/collect/${enc(id)}`),
+  collectPatch: (id, patch) => req('PATCH', `/api/collect/${enc(id)}`, patch),
+  collectDelete: (id) => req('DELETE', `/api/collect/${enc(id)}`),
+  collectOverview: (id) => req('GET', `/api/collect/${enc(id)}/overview`),
+  collectRecordings: (id, o = {}) => req('GET', `/api/collect/${enc(id)}/recordings?${qs(o)}`),
+  collectReview: (id, rid, status) => req('PATCH', `/api/collect/${enc(id)}/recordings/${enc(rid)}`, { status }),
+
+  // shared tasks (backend/shared_routes.py)
+  sharedList: (kind = '') => req('GET', `/api/shared?${qs({ kind })}`),
+  sharedCreate: (title, kind = 'labelling') => req('POST', '/api/shared', { title, kind }),
+  sharedKey: (id, csv) => req('POST', `/api/shared/${enc(id)}/key`, { csv }),
+  shared: (id) => req('GET', `/api/shared/${enc(id)}`),
+  sharedPatch: (id, patch) => req('PATCH', `/api/shared/${enc(id)}`, patch),
+  sharedDelete: (id) => req('DELETE', `/api/shared/${enc(id)}`),
+  sharedLink: (id, path) => req('POST', `/api/shared/${enc(id)}/link`, { path }),
+  sharedItems: (id, offset = 0, limit = 60) => req('GET', `/api/shared/${enc(id)}/items?${qs({ offset, limit })}`),
+  sharedClear: (id) => req('DELETE', `/api/shared/${enc(id)}/items`),
+  sharedRemoveItem: (id, iid) => req('DELETE', `/api/shared/${enc(id)}/items/${enc(iid)}`),
+  sharedChat: (id, message) => req('POST', `/api/shared/${enc(id)}/design/chat`, { message }),
+  sharedResults: (id, where = '') => req('GET', `/api/shared/${enc(id)}/results?${qs({ where })}`),
+  sharedUpload: (id, file, relPath) => {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    if (relPath) fd.append('rel_path', relPath);
+    return req('POST', `/api/shared/${enc(id)}/upload`, fd);
+  },
   stopTunnel: () => req('DELETE', '/api/share-server/tunnel'),
 };
 

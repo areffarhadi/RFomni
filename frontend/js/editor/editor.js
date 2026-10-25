@@ -1,5 +1,6 @@
 // Audio / video editor: media + inspector on top, multi-tier timeline below.
 import { urls } from '../api.js';
+import { canDownload } from '../state.js';
 import { h, ico, clamp, ls, isTyping, valStr } from '../util.js';
 import { state } from '../state.js';
 import { menu, popover, modalOpen, toast, confirmDialog, promptDialog } from '../ui.js';
@@ -29,7 +30,9 @@ export class Editor extends BaseEditor {
     const m = this.media;
     const isVideo = m.modality === 'video';
     this.mediaEl = isVideo
-      ? h('video', { src: urls.file(this.pid, m.id), preload: 'auto', playsInline: true, controls: true })
+      ? h('video', { src: urls.file(this.pid, m.id), preload: 'auto', playsInline: true, controls: true,
+        // a shared link without downloads: no download button or picture-in-picture in the player
+        ...(canDownload() ? {} : { controlsList: 'nodownload', disablePictureInPicture: true }) })
       : h('audio', { src: urls.file(this.pid, m.id), preload: 'auto' });
     this.mediaEl.addEventListener('error', () => this.onMediaError(), { once: true });
     this.player = new Player(this.mediaEl, m.duration);

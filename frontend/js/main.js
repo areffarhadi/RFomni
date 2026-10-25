@@ -1,15 +1,17 @@
 // App shell: top bar, router, status bar.
-import { api } from './api.js';
+import { api, setShareSession } from './api.js';
 import { $, h, ico, isTyping, ls } from './util.js';
 import { state, on, loadInfo, loadTasks, shareInfo } from './state.js';
 import { parseHash, links } from './nav.js';
-import { errorToast, menu, modalOpen, popover } from './ui.js';
+import { errorToast, menu, modalOpen, openModal, popover, toast } from './ui.js';
 import { HomeView } from './views/home.js';
 import { ProjectView } from './views/project.js';
 import { showShortcuts } from './views/shortcuts.js';
 import { openShareDialog } from './views/share.js';
 import { swap, watchSegments } from './motion.js';
 import { mountAssistant } from './assistant.js';
+import { SharedListView, SharedTaskView } from './views/shared.js';
+import { CollectListView, CollectView } from './views/collect.js';
 
 const app = $('#app');
 const crumbs = h('div.crumbs');
@@ -33,10 +35,14 @@ function openUserMenu() {
     { label: 'Sign out', icon: 'logout', onClick: async () => { await api.signOut().catch(() => {}); location.href = '/login/?next=studio'; } },
   ], { placement: 'bottom-end' });
 }
+// shared tasks: data that needs human labels, shared as a link (views/shared.js)
+const sharedTasksLink = h('a.btn.sm.ghost.owner-only', { href: '#/shared', title: 'Shared labelling tasks: design a page, share a link' }, ico('users', 14), 'Shared tasks');
+const listenLink = h('a.btn.sm.ghost.owner-only', { href: '#/listen', title: 'Subjective tests: listening tests that people rate' }, ico('audio', 14), 'Subjective tests');
+const collectLink = h('a.btn.sm.ghost.owner-only', { href: '#/collect', title: 'Data collection: projects that ask people to record' }, ico('mic', 14), 'Data collection');
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,
-  crumbs, h('div.grow'), sharedPill, aboutLink, shareBtn, enginePill,
+  crumbs, h('div.grow'), sharedPill, sharedTasksLink, listenLink, collectLink, aboutLink, shareBtn, enginePill,
   h('button.icon-btn', { title: 'Keyboard shortcuts (?)', onclick: showShortcuts }, ico('keyboard', 17)),
   themeBtn, userBtn);
 const main = h('main.main');
@@ -95,8 +101,11 @@ watchSegments();  // every segmented control gets the sliding highlight
 let crumbFile = null;
 function renderCrumbs() {
   const shared = shareInfo();
-  const items = shared ? [] : [h('span', '/'), h('a', { href: '#/' }, 'Projects')];
   const { parts } = parseHash();
+  const items = shared ? [] : parts[0] === 'shared' ? [h('span', '/'), h('a', { href: '#/shared' }, 'Shared tasks')]
+    : parts[0] === 'collect' ? [h('span', '/'), h('a', { href: '#/collect' }, 'Data collection')]
+    : parts[0] === 'listen' ? [h('span', '/'), h('a', { href: '#/listen' }, 'Subjective tests')]
+    : [h('span', '/'), h('a', { href: '#/' }, 'Projects')];
   shareBtn.style.display = !shared && parts[0] === 'p' && state.project ? '' : 'none';
   if (parts[0] === 'p' && state.project) {
     items.push(h('span', '/'));
@@ -158,6 +167,30 @@ async function route() {
       if (tab === 'f') { tab = 'data'; mid = parts[3] || null; }
       if (!mid) crumbFile = null;
       await view.update({ tab, mid, params });
+    } else if (parts[0] === 'listen') {
+      const old = view;
+      if (old) { await old.beforeLeave?.(); old.destroy?.(); }
+      state.project = null;
+      crumbFile = null;
+      view = new SharedListView('listening');
+      swap(main, old?.el, view.el, -1, !!old);
+      renderCrumbs();
+    } else if (parts[0] === 'collect') {
+      const old = view;
+      if (old) { await old.beforeLeave?.(); old.destroy?.(); }
+      state.project = null;
+      crumbFile = null;
+      view = parts[1] ? new CollectView(parts[1]) : new CollectListView();
+      swap(main, old?.el, view.el, parts[1] ? 1 : -1, !!old);
+      renderCrumbs();
+    } else if (parts[0] === 'shared') {
+      const old = view;
+      if (old) { await old.beforeLeave?.(); old.destroy?.(); }
+      state.project = null;
+      crumbFile = null;
+      view = parts[1] ? new SharedTaskView(parts[1]) : new SharedListView();
+      swap(main, old?.el, view.el, parts[1] ? 1 : -1, !!old);
+      renderCrumbs();
     } else {
       const old = view;
       if (old) { await old.beforeLeave?.(); old.destroy?.(); }
@@ -193,6 +226,50 @@ function setupShared(sh) {
     h('span', sh.access === 'edit' ? 'Shared · you can review and edit labels' : 'Shared · view only'),
     sh.label ? h('b', sh.label) : null);
   document.title = `${sh.project_name} · Omni Studio`;
+  if (!sh.allow_download) {
+    // the data can be played and labelled here, not saved: no "save as" menu on the media (the server also
+    // refuses clips opened as a page). Anything a browser plays can still be recorded; this keeps it from being one click.
+    document.body.classList.add('no-download');
+    document.addEventListener('contextmenu', (e) => { if (e.target.closest?.('video, audio, img, canvas')) e.preventDefault(); }, true);
+    document.addEventListener('dragstart', (e) => { if (e.target.closest?.('video, img')) e.preventDefault(); }, true);
+  }
+  if (sh.access === 'edit') shareSessionFor(sh);
+}
+
+// People on an edit link get a session ID (no account): their changes are signed with it, and they can continue later
+// with it on any device. It is remembered in this browser.
+async function shareSessionFor(sh) {
+  const key = `omni:share-session:${sh.id}`;
+  let saved = null;
+  try { saved = localStorage.getItem(key); } catch { /* not remembered */ }
+  const use = (s) => {
+    setShareSession(s.id);
+    try { localStorage.setItem(key, s.id); } catch { /* not remembered */ }
+    sharedPill.append(h('button.sid-chip', { title: 'Your session ID: your changes are saved under it. Click to copy.',
+      onclick: () => navigator.clipboard?.writeText(s.id).then(() => toast('Session ID copied')) }, s.id));
+  };
+  if (saved) {
+    try { return use((await api.shareSession({ resume: saved })).session); } catch { /* gone: start again */ }
+  }
+  const name = h('input.input', { placeholder: sh.ask_name ? 'Your name or ID' : 'Your name (optional)', maxLength: 60 });
+  const resume = h('input.input', { placeholder: 'e.g. K7Q2-M9XD', spellcheck: false });
+  const msg = h('p.hint');
+  openModal({
+    title: `Welcome to ${sh.project_name}`, width: 480,
+    subtitle: 'You can check and correct the labels here. No account is needed: your changes are saved under a session ID, which you can use to continue later.',
+    body: h('div', sh.note ? h('div.notice.info', { style: { marginBottom: '14px' } }, ico('info', 16), h('div', sh.note)) : null,
+      h('label.field', h('span', sh.ask_name ? 'Your name or ID' : 'Your name (optional)'), name),
+      h('label.field', h('span', 'Or continue an earlier session'), resume), msg),
+    actions: [h('div.grow'), { label: 'Start', primary: true, onClick: async (m) => {
+      if (sh.ask_name && !name.value.trim() && !resume.value.trim()) { msg.textContent = 'Please enter your name or ID.'; name.focus(); return; }
+      try {
+        const r = await api.shareSession(resume.value.trim() ? { resume: resume.value.trim() } : { name: name.value.trim() });
+        use(r.session);
+        m.close();
+        toast(resume.value.trim() ? `Welcome back. Session ${r.session.id}.` : `Your session ID is ${r.session.id}. Keep it to continue later.`, { timeout: 7000 });
+      } catch (e) { msg.textContent = e.message; }
+    } }],
+  });
 }
 
 (async function boot() {

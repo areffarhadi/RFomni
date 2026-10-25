@@ -15,7 +15,11 @@
   const studio = (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + lastPlace;
   // the chat app (Open WebUI with the agent) on the same address; its /auth page picks up the shared cookie
   const CHAT_URL = `https://${location.hostname || '192.168.8.174'}:8080/auth`;
-  const APPS = { studio: { url: studio, name: 'Omni Studio' }, chat: { url: CHAT_URL, name: 'the chat' } };
+  // Task sharing lives in the studio (#/shared); it has no switch of its own on the card, only ?next=share
+  const APPS = { studio: { url: studio, name: 'Omni Studio' }, chat: { url: CHAT_URL, name: 'the chat' },
+    share: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/shared', name: 'Task sharing' },
+    listen: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/listen', name: 'Subjective tests' },
+    collect: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/collect', name: 'Data collection' } };
 
   // ---------- the card
   const card = $('#auth'), toast = $('.toast');
@@ -61,6 +65,10 @@
     if (!reduce) { card.classList.remove('swap'); void card.offsetWidth; card.classList.add('swap'); }
   }
   pickApp(app);
+  // while the studio runs without sign-in (OMNI_AUTH=off, during development) the card steps aside
+  if (location.protocol !== 'file:' && app !== 'chat') {
+    fetch('/api/auth/me').then(r => r.json()).then(d => { if (d && d.auth === false) location.replace(APPS[app].url); }).catch(() => {});
+  }
   $('#switch').addEventListener('click', () => setMode(card.dataset.mode === 'signin' ? 'register' : 'signin'));
 
   const show = $('.show'), pw = $('#password');

@@ -30,7 +30,7 @@ export class AssistantVoice {
     this.dc = null;
     this.stream = null;
     this.audio = null;
-    this.gate = null;  // last agigo-gate status
+    this.gate = null;  // last rfomni-gate status
     this.statusEl = h('span.asst-voice-status', 'Off');
     this.level = h('i');
     this.speakerEl = h('span.asst-voice-speaker');
@@ -155,15 +155,15 @@ export class AssistantVoice {
   }
 
   onServer(d) {
-    if (d.type === 'agigo-studio') {
+    if (d.type === 'rfomni-studio') {
       this.panel.thinking(false);
       this.panel.apply(d.reply);
     } else if (d.event === 'lang-skipped') {
       this.panel.thinking(false);
-    } else if (d.type === 'agigo-gate' || 'enrolled' in d) {
+    } else if (d.type === 'rfomni-gate' || 'enrolled' in d) {
       this.gate = d;
       this.showGate(d);
-    } else if (d.type === 'agigo-error') {
+    } else if (d.type === 'rfomni-error') {
       this.panel.add('error', d.error);
     }
   }

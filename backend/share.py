@@ -71,6 +71,8 @@ def _clean(body: dict, project: dict, cur: dict | None = None) -> dict:
         out["tasks"] = tasks  # empty = every tier of the project
     if "allow_download" in body or cur is None:
         out["allow_download"] = bool(body.get("allow_download", False))
+    if "ask_name" in body or cur is None:
+        out["ask_name"] = bool(body.get("ask_name", False))
     if "expires_days" in body:
         d = body.get("expires_days")
         out["expires_at"] = None if not d else (datetime.now(timezone.utc) + timedelta(days=max(1, min(365, int(d))))).isoformat(timespec="seconds")
@@ -143,9 +145,56 @@ def touch(share: dict) -> None:
     _bump(share["id"], views=1, last_seen=now_iso())
 
 
-def count_edits(share: dict, n: int) -> None:
-    if n:
-        _bump(share["id"], edits=n, last_seen=now_iso())
+def count_edits(share: dict, n: int, session: dict | None = None) -> None:
+    if not n:
+        return
+    with _lock:
+        items = _load()
+        for s in items:
+            if s["id"] == share["id"]:
+                s["edits"] = s.get("edits", 0) + n
+                s["last_seen"] = now_iso()
+                if session and session["id"] in (s.get("sessions") or {}):
+                    ss = s["sessions"][session["id"]]
+                    ss["edits"] = ss.get("edits", 0) + n
+                    ss["last_at"] = s["last_seen"]
+                _save(items)
+                return
+
+
+# -----------------------------------------------------------------------------
+# sessions: people who open an edit link get a session ID (no account), so every change shows who made it
+# -----------------------------------------------------------------------------
+def start_session(share: dict, name: str = "") -> dict:
+    from .shared_tasks import new_session_id
+    with _lock:
+        items = _load()
+        for s in items:
+            if s["id"] == share["id"]:
+                ss = s.setdefault("sessions", {})
+                sid = new_session_id()
+                while sid in ss:
+                    sid = new_session_id()
+                ss[sid] = {"id": sid, "name": name.strip()[:60], "started_at": now_iso(), "last_at": now_iso(), "edits": 0}
+                _save(items)
+                return ss[sid]
+    raise KeyError(share["id"])
+
+
+def get_session(share: dict, sid: str | None) -> dict | None:
+    sid = (sid or "").strip().upper()
+    for s in _load():
+        if s["id"] == share["id"]:
+            return (s.get("sessions") or {}).get(sid)
+    return None
+
+
+def who(share: dict, session: dict | None) -> str:
+    """How an edit is signed: the link's name, and the person's name or session ID."""
+    label = share.get("label") or "shared link"
+    if not session:
+        return label
+    return f"{label} · {session.get('name') or session['id']}"
 
 
 # -----------------------------------------------------------------------------
@@ -167,6 +216,8 @@ _RULES = [  # (methods, path after /api/projects/<pid>, needs)
 def allowed(share: dict, method: str, path: str) -> bool:
     if path in ("/api/info", "/api/tasks"):
         return method in ("GET", "HEAD")
+    if path == "/api/share/session":
+        return method == "POST" and share.get("access") == "edit"
     m = _PROJECT.match(path)
     if not m or m.group(1) != share["project_id"]:
         return False
@@ -191,17 +242,19 @@ def filter_doc(doc: dict, share: dict | None) -> dict:
     return {**doc, "tiers": tiers, "segments": [s for s in doc["segments"] if s["tier_id"] in ids]}
 
 
-def merge_shared_save(stored: dict, incoming: dict, share: dict) -> tuple[dict, int]:
+def merge_shared_save(stored: dict, incoming: dict, share: dict, session: dict | None = None) -> tuple[dict, int]:
     """A save through an edit link: tiers outside the share are kept as stored, and every segment
-    the reviewer added or changed is stamped with the link's name (meta.edited_by)."""
-    who = share.get("label") or "shared link"
+    the reviewer added or changed is stamped with who changed it (meta.edited_by: the link's name and the
+    person's name or session ID; meta.edited_session: the session ID)."""
+    by = who(share, session)
     old = {s["id"]: s for s in stored["segments"]}
     keys = ("start", "end", "value", "reviewed", "geom")
     segs, n = [], 0
     for s in incoming.get("segments", []):
         prev = old.get(s.get("id"))
         if prev is None or any(prev.get(k) != s.get(k) for k in keys):
-            s = {**s, "meta": {**(s.get("meta") or {}), "edited_by": who}}
+            s = {**s, "meta": {**(s.get("meta") or {}), "edited_by": by,
+                               **({"edited_session": session["id"]} if session else {})}}
             n += 1
         segs.append(s)
     if share.get("tasks"):
@@ -236,6 +289,18 @@ async def _send(send, status: int, body: bytes, ctype: str, headers=()):
     await send({"type": "http.response.body", "body": body})
 
 
+_MEDIA = re.compile(r"/media/[^/]+/(file|audio\.wav)$")
+
+
+def _dest(scope) -> str:
+    """What the browser will do with the response (Sec-Fetch-Dest): a media element sends audio, video or image;
+    opening the address in a tab or saving it sends document."""
+    for k, v in scope.get("headers", []):
+        if k == b"sec-fetch-dest":
+            return v.decode("latin-1")
+    return ""
+
+
 def _cookie(scope) -> str | None:
     for k, v in scope.get("headers", []):
         if k == b"cookie":
@@ -256,6 +321,8 @@ class ShareGate:
         if scope["type"] != "http":
             return
         path, method = scope["path"], scope["method"]
+        if path.startswith(("/t/", "/api/t/", "/task/", "/tasks/", "/c/", "/api/c/", "/rec/", "/collect/", "/listen/", "/api/public/", "/landing/fonts/")):  # shared tasks: their routes check the link token
+            return await self.app(scope, receive, send)
         if path.startswith("/s/"):
             share = find_valid(path[3:].strip("/"))
             if not share:
@@ -270,6 +337,8 @@ class ShareGate:
                 return await _send(send, 401, json.dumps({"detail": "This shared link is no longer valid"}).encode(), "application/json")
             if not allowed(share, method, path):
                 return await _send(send, 403, json.dumps({"detail": "Not available through a shared link"}).encode(), "application/json")
+            if not share.get("allow_download") and _MEDIA.search(path) and _dest(scope) in ("document", "iframe", "frame", "embed", "object"):
+                return await _send(send, 403, _page("Downloads are turned off", "This shared link lets you play and label the data in the page, not download it."), "text/html; charset=utf-8")
             scope.setdefault("state", {})["share"] = share
             return await self.app(scope, receive, send)
         if method in ("GET", "HEAD") and (path.startswith(("/css/", "/js/"))):
@@ -398,8 +467,9 @@ class ShareServer:
             self.server = self.thread = None
 
     def sync(self) -> None:
-        """Run the shared listener while at least one link is active."""
-        if any(is_active(s) for s in _load()):
+        """Run the shared listener while at least one link is active or a shared task is live."""
+        from . import shared_tasks
+        if any(is_active(s) for s in _load()) or shared_tasks.any_live():
             try:
                 self.start()
             except RuntimeError:

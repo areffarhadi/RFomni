@@ -28,7 +28,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.4.0", "Compass"
+VERSION, CODENAME = "0.5.0", "Agora"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -63,7 +63,7 @@ async def no_cache_static(request: Request, call_next):
 # Sign-in (backend/auth.py): the API and the app page need a signed-in user; the sign-in and landing
 # pages, scripts and styles do not. Requests through a share link were already let in by share.py.
 ADMIN_ONLY = ("/api/fs", "/api/share-server/")   # these read the server's own disk or open it to the internet
-PUBLIC_API = ("/api/auth/", "/api/info", "/api/agent/v1/models")  # models: the chat lists the assistant before anyone signs in
+PUBLIC_API = ("/api/auth/", "/api/info", "/api/agent/v1/models", "/api/t/", "/api/c/", "/api/public/")  # models: the chat lists the assistant before anyone signs in
 
 
 def _admin_only(path: str, method: str) -> bool:
@@ -162,7 +162,8 @@ def info(request: Request):
     if sh:
         proj = store.get_project(sh["project_id"])
         out["workspace"] = None
-        out["share"] = {"label": sh["label"], "access": sh["access"], "allow_download": sh["allow_download"],
+        out["share"] = {"id": sh["id"], "label": sh["label"], "access": sh["access"], "allow_download": sh["allow_download"],
+                        "ask_name": sh.get("ask_name", False),
                         "project_id": sh["project_id"], "project_name": proj["name"], "tasks": sh["tasks"],
                         "note": sh.get("note", ""), "expires_at": sh.get("expires_at")}
     return out
@@ -477,10 +478,11 @@ def get_annotations(pid: str, mid: str, request: Request):
 def put_annotations(pid: str, mid: str, request: Request, body: dict = Body(...), force: bool = False):
     sh = _share(request)
     if sh:  # keep tiers the link does not show, and record who changed what
+        person = share_mod.get_session(sh, request.headers.get("x-omni-session"))
         with store.lock(("m", pid, mid)):
-            body, n = share_mod.merge_shared_save(store.load_doc(pid, mid), body, sh)
+            body, n = share_mod.merge_shared_save(store.load_doc(pid, mid), body, sh, person)
             doc = store.save_doc(pid, mid, body, expected_rev=None if force else body.get("rev"))
-        share_mod.count_edits(sh, n)
+        share_mod.count_edits(sh, n, person)
     else:
         doc = store.save_doc(pid, mid, body, expected_rev=None if force else body.get("rev"))
     return {"rev": doc["rev"], "updated_at": doc["updated_at"], "media": store.get_media(pid, mid)}
@@ -685,6 +687,34 @@ def delete_share(sid: str):
     return {"ok": True, "server": share_mod.server.status()}
 
 
+@app.post("/api/share/session")
+def share_session(request: Request, body: dict = Body(default={})):
+    """Someone on an edit link starts a session (or resumes one by its ID); their edits are signed with it."""
+    sh = _share(request)
+    if not sh:
+        raise HTTPException(404, "Only through a shared link")
+    if body.get("resume"):
+        person = share_mod.get_session(sh, str(body["resume"]))
+        if not person:
+            raise HTTPException(404, "No session with this ID. Check it, or start a new one.")
+    else:
+        person = share_mod.start_session(sh, str(body.get("name") or ""))
+    return {"session": person}
+
+
+@app.get("/api/shares")
+def all_shares():
+    """Every project's links, for the Shared tasks page: correction links with who took part."""
+    names = {p["id"]: p["name"] for p in store.list_projects()}
+    out = []
+    for sh in share_mod.list_shares():
+        if sh["project_id"] in names:
+            people = sorted((sh.get("sessions") or {}).values(), key=lambda x: x["last_at"], reverse=True)
+            out.append({**{k: v for k, v in sh.items() if k != "sessions"}, "project_name": names[sh["project_id"]],
+                        "people": people})
+    return {"shares": out, "server": share_mod.server.status()}
+
+
 @app.post("/api/share-server/tunnel")
 def start_tunnel():
     if not share_mod.server.running():
@@ -780,9 +810,13 @@ def cancel_job(jid: str):
 # assistant
 # -----------------------------------------------------------------------------
 from .agent import router as agent_router, voice_router  # noqa: E402  (its actions use store/jobs above)
+from .shared_routes import router as shared_router  # noqa: E402
+from .collect_routes import router as collect_router  # noqa: E402
 
 app.include_router(agent_router)
 app.include_router(voice_router)
+app.include_router(shared_router)
+app.include_router(collect_router)
 
 
 # -----------------------------------------------------------------------------
