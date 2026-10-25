@@ -1,0 +1,1142 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "speech",
+      "name": "Speech & language"
+    },
+    {
+      "id": "speaker",
+      "name": "Speaker"
+    },
+    {
+      "id": "paralinguistic",
+      "name": "Paralinguistics & quality"
+    },
+    {
+      "id": "audio",
+      "name": "Audio scene"
+    },
+    {
+      "id": "vision",
+      "name": "Vision"
+    },
+    {
+      "id": "spoof",
+      "name": "Spoof & deepfake"
+    },
+    {
+      "id": "captioning",
+      "name": "Captioning"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "vad",
+      "name": "VAD",
+      "title": "Speech activity (VAD)",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "speech"
+      ],
+      "color": "#94a3b8",
+      "description": "Speech regions. Other segment-level tasks are computed on these regions.",
+      "prompt": "Mark every region of this recording that contains human speech."
+    },
+    {
+      "id": "asr",
+      "name": "ASR",
+      "title": "Speech recognition",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "text",
+      "labels": [],
+      "color": "#38bdf8",
+      "description": "Verbatim transcript per speech segment.",
+      "prompt": "Transcribe the speech in this segment verbatim, in the language it is spoken. Keep disfluencies and repetitions. Do not translate or summarize."
+    },
+    {
+      "id": "forced_alignment",
+      "name": "FA words",
+      "title": "Forced alignment (words)",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "word",
+      "output": "text",
+      "labels": [],
+      "color": "#22d3ee",
+      "parent": "asr",
+      "description": "Word-level timestamps aligned to the ASR transcript.",
+      "prompt": "Align each word of the given transcript to the audio and return its start and end time in seconds."
+    },
+    {
+      "id": "phoneme",
+      "name": "Phones",
+      "title": "Phoneme recognition",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "phone",
+      "output": "text",
+      "labels": [],
+      "color": "#2dd4bf",
+      "parent": "forced_alignment",
+      "description": "Phone sequence in IPA with timestamps.",
+      "prompt": "Recognize the phones spoken in this segment. Use IPA symbols and give each phone a start and end time in seconds."
+    },
+    {
+      "id": "lid",
+      "name": "LID",
+      "title": "Language identification",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "en",
+        "de",
+        "fr",
+        "it",
+        "es",
+        "pt",
+        "nl",
+        "sv",
+        "pl",
+        "ru",
+        "tr",
+        "ar",
+        "fa",
+        "ur",
+        "hi",
+        "zh",
+        "ja",
+        "ko",
+        "other"
+      ],
+      "color": "#818cf8",
+      "description": "Spoken language as an ISO 639-1 code.",
+      "prompt": "Identify the language spoken in this segment. Answer with its ISO 639-1 code."
+    },
+    {
+      "id": "translation",
+      "name": "S2TT",
+      "title": "Speech translation (to English)",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "text",
+      "labels": [],
+      "color": "#60a5fa",
+      "description": "English translation of each speech segment.",
+      "prompt": "Translate the speech in this segment into fluent English."
+    },
+    {
+      "id": "ner",
+      "name": "NER",
+      "title": "Named entities",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "tags",
+      "labels": [
+        "PERSON",
+        "ORG",
+        "LOC",
+        "GPE",
+        "DATE",
+        "EVENT",
+        "MISC"
+      ],
+      "color": "#c084fc",
+      "description": "Named entities mentioned in each segment, written as 'entity [TYPE]'.",
+      "prompt": "List the named entities mentioned in this segment. Write each as 'entity text [TYPE]' using the given entity types."
+    },
+    {
+      "id": "sentiment",
+      "name": "Sentiment",
+      "title": "Sentiment",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "color": "#a3e635",
+      "description": "Polarity of what is said.",
+      "prompt": "Classify the sentiment of what the speaker says in this segment."
+    },
+    {
+      "id": "topic",
+      "name": "Topic",
+      "title": "Topic classification",
+      "kind": "annotation",
+      "category": "speech",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "politics",
+        "business",
+        "science",
+        "technology",
+        "health",
+        "education",
+        "sports",
+        "entertainment",
+        "daily life",
+        "other"
+      ],
+      "color": "#facc15",
+      "description": "Main topic of the whole recording.",
+      "prompt": "What is the main topic of this recording?"
+    },
+    {
+      "id": "diarization",
+      "name": "Speaker",
+      "title": "Speaker diarization",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "output": "label",
+      "labels": [],
+      "color": "#fb923c",
+      "description": "Who spoke when: one segment per speaker turn. Turns of different speakers may overlap. Open label set: SPEAKER_0, SPEAKER_1, ...",
+      "prompt": "List every speaker turn in this recording with its start and end time and a consistent speaker label (SPEAKER_0, SPEAKER_1, ...), so the same voice always gets the same label. When two people talk at the same time, give both turns with their own times, so the turns overlap.",
+      "unit": "speaker turn"
+    },
+    {
+      "id": "pure_speech",
+      "name": "Pure speech",
+      "title": "Single-speaker speech",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "unit": "region",
+      "output": "label",
+      "labels": [],
+      "parent": "diarization",
+      "color": "#fdba74",
+      "description": "Regions where exactly one speaker talks and nobody else, labelled with that speaker. Clean material per speaker, e.g. for speaker verification or voice cloning.",
+      "prompt": "Find every region where exactly one person is speaking and nobody else talks at the same time. Label each region with that speaker, using the same labels as the speaker diarization (SPEAKER_0, SPEAKER_1, ...)."
+    },
+    {
+      "id": "overlap",
+      "name": "Overlap",
+      "title": "Overlapped speech (per speaker pair)",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "unit": "overlap region",
+      "output": "label",
+      "labels": [],
+      "parent": "diarization",
+      "color": "#f43f5e",
+      "description": "Regions where two or more speakers talk at the same time, labelled with the speakers involved, e.g. SPEAKER_0 + SPEAKER_1.",
+      "prompt": "Find every region where two or more people speak at the same time. Label each region with the speakers involved, joined with ' + ' in ascending order (e.g. SPEAKER_0 + SPEAKER_1), using the same labels as the speaker diarization."
+    },
+    {
+      "id": "speaker_count",
+      "name": "Speakers #",
+      "title": "Number of speakers",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "color": "#e11d48",
+      "description": "How many different voices are heard in the file (speaker-embedding head, up to 6).",
+      "prompt": "How many different people speak in this recording?"
+    },
+    {
+      "id": "gender",
+      "name": "Gender",
+      "title": "Speaker gender",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "female",
+        "male",
+        "unknown"
+      ],
+      "color": "#fdba74",
+      "description": "Perceived gender of the speaker.",
+      "prompt": "What is the perceived gender of the speaker in this segment?"
+    },
+    {
+      "id": "age",
+      "name": "Age",
+      "title": "Speaker age group",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "child",
+        "teen",
+        "young adult",
+        "adult",
+        "senior"
+      ],
+      "color": "#fcd34d",
+      "description": "Perceived age group of the speaker.",
+      "prompt": "Estimate the age group of the speaker in this segment."
+    },
+    {
+      "id": "accent",
+      "name": "Accent",
+      "title": "Accent / dialect",
+      "kind": "annotation",
+      "category": "speaker",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "text",
+      "labels": [],
+      "color": "#f59e0b",
+      "description": "Short description of the accent or dialect.",
+      "prompt": "Describe the accent or dialect of the speaker in a few words (for example 'Scottish English' or 'Swiss German')."
+    },
+    {
+      "id": "ser",
+      "name": "SER",
+      "title": "Speech emotion recognition",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "neutral",
+        "happy",
+        "sad",
+        "angry",
+        "fearful",
+        "disgusted",
+        "surprised",
+        "frustrated",
+        "other"
+      ],
+      "color": "#f472b6",
+      "description": "Emotion conveyed by the voice.",
+      "prompt": "Which emotion does the speaker's voice convey in this segment? Consider tone, pitch and intensity, not only the words."
+    },
+    {
+      "id": "speaking_style",
+      "name": "Style",
+      "title": "Speaking style",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "read",
+        "spontaneous",
+        "conversational",
+        "presentation",
+        "shouting",
+        "whisper",
+        "singing"
+      ],
+      "color": "#e879f9",
+      "description": "Register and delivery of the speech.",
+      "prompt": "Classify the speaking style in this segment."
+    },
+    {
+      "id": "turn_end",
+      "name": "Turn end",
+      "title": "End of turn",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "complete",
+        "incomplete"
+      ],
+      "color": "#14b8a6",
+      "description": "Whether the speaker has finished their turn at the end of each speech segment, or would go on (smart-turn head).",
+      "prompt": "At the end of this segment, has the speaker finished their turn, or are they likely to continue?"
+    },
+    {
+      "id": "nonverbal",
+      "name": "Non-verbal",
+      "title": "Non-verbal vocalizations",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "output": "label",
+      "labels": [
+        "laughter",
+        "cough",
+        "breath",
+        "sigh",
+        "cry",
+        "throat clear",
+        "filler"
+      ],
+      "color": "#fb7185",
+      "description": "Laughter, coughs, breaths and other vocal events with timestamps.",
+      "prompt": "Find every non-verbal vocalization (laughter, cough, breath, sigh, crying, throat clearing, fillers) and give its start and end time in seconds."
+    },
+    {
+      "id": "sound_quality",
+      "name": "Quality",
+      "title": "Audio quality",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "good",
+        "fair",
+        "poor"
+      ],
+      "color": "#94a3b8",
+      "description": "Recording quality: noise, reverberation, clipping.",
+      "prompt": "Rate the recording quality of this segment, considering background noise, reverberation and distortion."
+    },
+    {
+      "id": "mos",
+      "name": "MOS",
+      "title": "Naturalness (MOS 1-5)",
+      "kind": "annotation",
+      "category": "paralinguistic",
+      "modalities": [
+        "audio"
+      ],
+      "granularity": "file",
+      "output": "score",
+      "labels": [],
+      "color": "#4ade80",
+      "description": "Mean opinion score for naturalness, e.g. for TTS evaluation.",
+      "prompt": "Rate how natural this speech sounds on a scale from 1 (very unnatural) to 5 (completely natural)."
+    },
+    {
+      "id": "sed",
+      "name": "Events",
+      "title": "Sound event detection",
+      "kind": "annotation",
+      "category": "audio",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "event",
+      "output": "tags",
+      "labels": [
+        "speech",
+        "music",
+        "applause",
+        "laughter",
+        "crowd",
+        "noise",
+        "vehicle",
+        "animal",
+        "alarm",
+        "silence"
+      ],
+      "color": "#34d399",
+      "description": "Sound events with timestamps.",
+      "prompt": "Detect the sound events in this recording and give each event's start and end time in seconds."
+    },
+    {
+      "id": "acoustic_scene",
+      "name": "Scene",
+      "title": "Acoustic scene",
+      "kind": "annotation",
+      "category": "audio",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "studio",
+        "indoor",
+        "office",
+        "home",
+        "outdoor",
+        "street",
+        "vehicle",
+        "nature",
+        "public space"
+      ],
+      "color": "#10b981",
+      "description": "Where the recording was made.",
+      "prompt": "Classify the acoustic environment of this recording."
+    },
+    {
+      "id": "fer",
+      "name": "FER",
+      "title": "Facial expression",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video",
+        "image"
+      ],
+      "granularity": "window",
+      "window_sec": 2,
+      "output": "label",
+      "labels": [
+        "neutral",
+        "happy",
+        "sad",
+        "angry",
+        "fearful",
+        "disgusted",
+        "surprised",
+        "no face"
+      ],
+      "color": "#f9a8d4",
+      "description": "Facial expression of the main visible person.",
+      "prompt": "What facial expression does the main visible person show?"
+    },
+    {
+      "id": "av_emotion",
+      "name": "AV-Emo",
+      "title": "Audio-visual emotion",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "neutral",
+        "happy",
+        "sad",
+        "angry",
+        "fearful",
+        "disgusted",
+        "surprised",
+        "frustrated"
+      ],
+      "color": "#ec4899",
+      "description": "Emotion from voice and face together.",
+      "prompt": "Using both the voice and the face of the speaker, which emotion is expressed in this segment?"
+    },
+    {
+      "id": "active_speaker",
+      "name": "On-screen",
+      "title": "Active speaker (visual)",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "on-screen",
+        "off-screen",
+        "multiple"
+      ],
+      "color": "#fda4af",
+      "description": "Is the person speaking visible on screen?",
+      "prompt": "Is the person who is speaking in this segment visible on screen?"
+    },
+    {
+      "id": "action",
+      "name": "Action",
+      "title": "Action recognition",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "window",
+      "window_sec": 4,
+      "output": "text",
+      "labels": [],
+      "color": "#a78bfa",
+      "description": "Short verb phrase describing what people are doing.",
+      "prompt": "In a short verb phrase, what is the main person doing in this clip?"
+    },
+    {
+      "id": "shots",
+      "name": "Shots",
+      "title": "Shot boundaries",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "event",
+      "output": "label",
+      "labels": [
+        "shot"
+      ],
+      "color": "#cbd5e1",
+      "description": "Camera shots / cuts.",
+      "prompt": "Split this video into camera shots and give the start and end time of each shot in seconds."
+    },
+    {
+      "id": "ocr",
+      "name": "OCR",
+      "title": "On-screen text (OCR)",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "video",
+        "image"
+      ],
+      "granularity": "window",
+      "window_sec": 5,
+      "output": "text",
+      "labels": [],
+      "color": "#7dd3fc",
+      "description": "Text visible in the frame.",
+      "prompt": "Transcribe all text that is visible in the frame. Return an empty string if there is none."
+    },
+    {
+      "id": "image_tags",
+      "name": "Tags",
+      "title": "Object & scene tags",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "tags",
+      "labels": [
+        "person",
+        "face",
+        "group",
+        "indoor",
+        "outdoor",
+        "text",
+        "animal",
+        "vehicle",
+        "food",
+        "screen"
+      ],
+      "color": "#6ee7b7",
+      "description": "Visible objects and scene attributes.",
+      "prompt": "Which of the given tags apply to this image?"
+    },
+    {
+      "id": "face_boxes",
+      "name": "Faces",
+      "title": "Face detection + expression",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "neutral",
+        "happy",
+        "sad",
+        "angry",
+        "fearful",
+        "disgusted",
+        "surprised"
+      ],
+      "color": "#f472b6",
+      "description": "A rectangle around every face, labelled with its facial expression.",
+      "prompt": "Find every human face in the image. For each face give its bounding box and its facial expression."
+    },
+    {
+      "id": "person_boxes",
+      "name": "People",
+      "title": "Person / body detection",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "person"
+      ],
+      "color": "#fb923c",
+      "description": "A rectangle around the visible body of every person.",
+      "prompt": "Find every person in the image and give a bounding box around the visible part of the body."
+    },
+    {
+      "id": "body_parts",
+      "name": "Body parts",
+      "title": "Body part detection",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "person",
+        "head",
+        "face",
+        "left hand",
+        "right hand",
+        "left arm",
+        "right arm",
+        "left leg",
+        "right leg",
+        "left foot",
+        "right foot"
+      ],
+      "color": "#f59e0b",
+      "description": "Boxes around people and their head, face, hands, arms, legs and feet (loc v2 head).",
+      "prompt": "Find every person and their visible body parts (head, face, hands, arms, legs, feet) and give a box around each."
+    },
+    {
+      "id": "object_boxes",
+      "name": "Objects",
+      "title": "Object localization",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "person",
+        "car",
+        "bicycle",
+        "dog",
+        "cat",
+        "tree",
+        "bench",
+        "sign",
+        "chair",
+        "table",
+        "screen",
+        "bag",
+        "ball"
+      ],
+      "color": "#34d399",
+      "description": "Labelled rectangles around the main objects (grounding).",
+      "prompt": "Locate the main objects in the image and give a labelled bounding box for each."
+    },
+    {
+      "id": "pose",
+      "name": "Pose",
+      "title": "Pose estimation (17 keypoints)",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "keypoints",
+      "labels": [
+        "person"
+      ],
+      "color": "#22d3ee",
+      "description": "COCO-17 keypoints per person: nose, eyes, ears, shoulders, elbows, wrists, hips, knees, ankles.",
+      "prompt": "Estimate the body pose of every person: give the 17 COCO keypoints with a visibility flag for each."
+    },
+    {
+      "id": "head_pose",
+      "name": "Head pose",
+      "title": "Head pose (yaw / pitch / roll)",
+      "kind": "annotation",
+      "category": "vision",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#0ea5e9",
+      "description": "Head orientation of the main face in degrees: yaw (turn), pitch (nod), roll (tilt). From the head-pose expert.",
+      "prompt": "Estimate the head orientation of the main person: yaw, pitch and roll in degrees."
+    },
+    {
+      "id": "spoof_audio",
+      "name": "Spoof (audio)",
+      "title": "Audio spoof detection",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "label",
+      "labels": [
+        "bonafide",
+        "TTS",
+        "voice conversion",
+        "replay",
+        "spliced"
+      ],
+      "color": "#e11d48",
+      "description": "Is the speech genuine (bonafide) or spoofed, and how? Judged per speech segment, so partly spoofed recordings are localized. For videos the audio track is checked.",
+      "prompt": "Is the speech in this segment genuine human speech recorded live (bonafide), or is it spoofed? If it is spoofed, say how: synthesized by text-to-speech (TTS), voice conversion, replayed through a loudspeaker (replay), or cut together from different recordings (spliced)."
+    },
+    {
+      "id": "spoof_video",
+      "name": "Deepfake (video)",
+      "title": "Video deepfake detection",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "window",
+      "window_sec": 4,
+      "output": "label",
+      "labels": [
+        "real",
+        "presentation attack",
+        "face swap",
+        "face reenactment",
+        "lip-sync",
+        "fully generated"
+      ],
+      "color": "#be123c",
+      "description": "Is the picture real camera footage or manipulated? Judged per 4-second window, so manipulated parts of a video are localized.",
+      "prompt": "Is the video in this part real camera footage, or is it manipulated? If it is manipulated, which kind: face swap, face reenactment (expressions or head movement driven by someone else), lip-sync (the mouth was changed to match other audio), or fully generated video."
+    },
+    {
+      "id": "spoof_image",
+      "name": "Spoof (image)",
+      "title": "Image spoof / AI-generated",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "label",
+      "labels": [
+        "real",
+        "AI-generated",
+        "face swap",
+        "edited",
+        "recaptured"
+      ],
+      "color": "#f43f5e",
+      "description": "Is the photo real, generated or manipulated? 'recaptured' is a photo of a screen or of a print (presentation attack).",
+      "prompt": "Is this a real, unedited photograph? If not, choose what it is: fully AI-generated, face swap, edited (objects added, removed or spliced in), or recaptured (a photo of a screen or of a printed picture)."
+    },
+    {
+      "id": "spoof_regions",
+      "name": "Fake regions",
+      "title": "Manipulated regions (image)",
+      "kind": "annotation",
+      "category": "spoof",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "boxes",
+      "labels": [
+        "face swap",
+        "inpainted",
+        "spliced",
+        "generated"
+      ],
+      "color": "#fb7185",
+      "description": "A box around every manipulated part of an image, labelled with the kind of manipulation.",
+      "prompt": "Find every manipulated region in this image (a swapped face, an inpainted or removed area, a spliced-in object, generated content) and give a box around each one with the kind of manipulation."
+    },
+    {
+      "id": "audio_caption",
+      "name": "AudioCap",
+      "title": "Audio captioning",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#5eead4",
+      "description": "One-sentence description of what can be heard.",
+      "prompt": "Describe in one or two sentences what can be heard in this recording, including sounds, voices and music."
+    },
+    {
+      "id": "speech_caption",
+      "name": "VoiceCap",
+      "title": "Speaking-style captioning",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "audio",
+        "video"
+      ],
+      "granularity": "segment",
+      "output": "text",
+      "labels": [],
+      "color": "#f0abfc",
+      "description": "Free-text description of voice, emotion, pace and delivery.",
+      "prompt": "Describe how the speaker sounds in this segment: voice quality, pitch, pace, emotion and delivery. Do not repeat the words that are said."
+    },
+    {
+      "id": "video_caption",
+      "name": "VidCap",
+      "title": "Video captioning",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#c4b5fd",
+      "description": "Summary of the whole video.",
+      "prompt": "Describe this video in two or three sentences: who is in it, where it takes place and what happens."
+    },
+    {
+      "id": "dense_caption",
+      "name": "Dense",
+      "title": "Dense video captioning",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "video"
+      ],
+      "granularity": "window",
+      "window_sec": 8,
+      "output": "text",
+      "labels": [],
+      "color": "#a5b4fc",
+      "description": "A caption for every few seconds of video.",
+      "prompt": "Describe what happens in this part of the video in one sentence."
+    },
+    {
+      "id": "image_caption",
+      "name": "ImgCap",
+      "title": "Image captioning",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#93c5fd",
+      "description": "One-sentence caption.",
+      "prompt": "Write a one-sentence caption for this image."
+    },
+    {
+      "id": "detailed_caption",
+      "name": "Detail",
+      "title": "Detailed image description",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "image"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#bae6fd",
+      "description": "Paragraph-length description of everything visible.",
+      "prompt": "Describe this image in detail: the people, objects, setting, colors, actions and any visible text."
+    },
+    {
+      "id": "face_caption",
+      "name": "FaceCap",
+      "title": "Face & person description",
+      "kind": "captioning",
+      "category": "captioning",
+      "modalities": [
+        "image",
+        "video"
+      ],
+      "granularity": "file",
+      "output": "text",
+      "labels": [],
+      "color": "#fbcfe8",
+      "description": "Appearance, expression and pose of the main person.",
+      "prompt": "Describe the main person's face and appearance: expression, gaze, head pose, approximate age, and visible attributes."
+    }
+  ],
+  "presets": [
+    {
+      "id": "speech",
+      "name": "Speech essentials",
+      "tasks": [
+        "vad",
+        "asr",
+        "forced_alignment",
+        "diarization",
+        "lid",
+        "ser"
+      ]
+    },
+    {
+      "id": "elan",
+      "name": "Full speech tiers",
+      "tasks": [
+        "asr",
+        "forced_alignment",
+        "phoneme",
+        "diarization",
+        "lid",
+        "ser",
+        "ner",
+        "sound_quality"
+      ]
+    },
+    {
+      "id": "captioning",
+      "name": "Captioning",
+      "tasks": [
+        "audio_caption",
+        "speech_caption",
+        "video_caption",
+        "dense_caption",
+        "image_caption"
+      ]
+    },
+    {
+      "id": "multimodal",
+      "name": "Multimodal emotion",
+      "tasks": [
+        "asr",
+        "diarization",
+        "ser",
+        "fer",
+        "av_emotion",
+        "image_caption"
+      ]
+    },
+    {
+      "id": "image",
+      "name": "Image understanding",
+      "tasks": [
+        "image_caption",
+        "image_tags",
+        "face_boxes",
+        "person_boxes",
+        "object_boxes",
+        "pose",
+        "ocr"
+      ]
+    },
+    {
+      "id": "speakers",
+      "name": "Speakers & overlap",
+      "tasks": [
+        "diarization",
+        "pure_speech",
+        "overlap",
+        "asr",
+        "speaker_count"
+      ]
+    },
+    {
+      "id": "spoof",
+      "name": "Spoof & deepfake",
+      "tasks": [
+        "spoof_audio",
+        "spoof_video",
+        "spoof_image",
+        "spoof_regions"
+      ]
+    }
+  ]
+}

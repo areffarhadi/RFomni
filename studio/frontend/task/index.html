@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" data-theme="forest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Labelling task</title>
+  <meta name="description" content="Help label data: one item at a time, no account needed.">
+  <meta name="theme-color" content="#051f20">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/task/task.css">
+</head>
+<body>
+  <!-- A shared labelling task (frontend/task/task.js): people open the link, get a session ID and label one item at a time. -->
+  <div class="glow" aria-hidden="true"></div>
+  <div class="preview-bar" hidden>Preview: this is how people will see the page. Answers given here are not saved.</div>
+
+  <header class="top">
+    <a class="brand" href="/tasks/" title="All shared tasks"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>
+      <span class="brand-title">Labelling task</span></a>
+    <div class="top-right">
+      <div class="progress" hidden><div class="progress-text"></div><div class="progress-bar"><i></i></div></div>
+      <button class="change-group btn" type="button" hidden></button>
+      <button class="sid" type="button" hidden title="Your session ID: keep it to continue later. Click to copy."></button>
+    </div>
+  </header>
+
+  <main id="app" aria-live="polite"><div class="card center"><div class="spin" aria-label="Loading"></div></div></main>
+  <p class="toast" role="status" aria-live="polite"></p>
+
+  <script src="/task/task.js"></script>
+</body>
+</html>

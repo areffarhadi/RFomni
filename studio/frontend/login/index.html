@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Omni Studio</title>
+  <meta name="description" content="Sign in to Omni Studio to open your annotation projects.">
+  <meta name="theme-color" content="#051f20">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="login.css">
+  <script>
+    // mode before the first paint (the same saved setting as the app and the landing page)
+    try { const t = JSON.parse(localStorage.getItem('omni:theme'));
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; }
+    catch (e) { document.documentElement.dataset.theme = 'forest'; }
+  </script>
+</head>
+<body>
+  <!-- background: soft out-of-focus lights drifting (login.js), and the landing page's orb as the light source (orb.js) -->
+  <canvas class="bokeh" aria-hidden="true"></canvas>
+  <div class="orb" data-orb aria-hidden="true"><canvas></canvas></div>
+
+  <header class="top">
+    <a class="brand" href="../landing/" aria-label="Omni Studio, about the studio">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>
+      <span><b>Omni</b> Studio</span>
+    </a>
+    <div class="modes" role="radiogroup" aria-label="Colour mode">
+      <button type="button" role="radio" data-mode="light" aria-checked="false" aria-label="Day" title="Day">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+      <button type="button" role="radio" data-mode="dark" aria-checked="false" aria-label="Night" title="Night">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+      <button type="button" role="radio" data-mode="forest" aria-checked="false" aria-label="Green" title="Green">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <!-- the glass card: sign in, or create an account (the same card, switched by the link at the bottom) -->
+    <form class="card" id="auth" data-mode="signin" novalidate>
+      <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1Z"/></svg></div>
+      <h1 id="auth-title">Welcome back</h1>
+      <p class="lead" id="auth-lead">Sign in to Omni Studio to continue.</p>
+
+      <!-- which app opens after signing in (set from ?next=studio|chat, remembered for next time) -->
+      <div class="dest" role="radiogroup" aria-label="Continue to">
+        <button type="button" role="radio" data-app="studio" aria-checked="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>Studio</button>
+        <button type="button" role="radio" data-app="chat" aria-checked="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>Chat</button>
+      </div>
+
+      <div class="field only-register">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" autocomplete="name" placeholder="Sara Ahmadi">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.org">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••••">
+          <button class="show" type="button" aria-pressed="false" aria-controls="password">
+            <span>Show</span>
+            <svg class="i-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="i-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+          </button>
+        </div>
+      </div>
+      <a class="forgot only-signin" href="#" data-soon>Forgot your password?</a>
+
+      <p class="note" id="auth-note" role="alert" hidden></p>
+      <button class="submit" type="submit"><span id="submit-label">Sign in</span><i class="spin" aria-hidden="true"></i></button>
+
+      <div class="or"><span>Or continue with</span></div>
+      <div class="social">
+        <button type="button" disabled aria-describedby="soon-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.8Z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8l4-3.1Z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9Z"/></svg>
+          Google<em>Soon</em></button>
+        <button type="button" disabled aria-describedby="soon-note">
+          <svg class="gh" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+          GitHub<em>Soon</em></button>
+      </div>
+      <p class="soon" id="soon-note">Google and GitHub sign-in are coming soon.</p>
+
+      <p class="switch-q only-signin">Don't have an account?</p>
+      <p class="switch-q only-register">Already have an account?</p>
+      <button class="switch" type="button" id="switch"><span class="only-signin">Create an account</span><span class="only-register">Sign in instead</span></button>
+
+      <p class="toast" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+
+  <script src="login.js"></script>
+  <script src="../landing/orb.js"></script>
+</body>
+</html>

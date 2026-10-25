@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="forest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subjective tests · RFomni</title>
+  <meta name="description" content="Listening tests: hear short clips and rate them. No account needed.">
+  <meta name="theme-color" content="#051f20">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/task/task.css">
+  <link rel="stylesheet" href="/tasks/tasks.css">
+  <script>
+    try { const t = JSON.parse(localStorage.getItem('omni:theme'));
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; } catch (e) { /* default mode */ }
+  </script>
+</head>
+<body>
+  <!-- The public Subjective tests page (tasks.js with data-kind=listening): every live listening test its owner listed here. -->
+  <div class="glow" aria-hidden="true"></div>
+  <header class="top">
+    <a class="brand" href="/landing/"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>
+      <span>Subjective tests</span></a>
+    <div class="top-right">
+      <a class="btn" href="/login/?next=listen">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>My listening tests</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Lend your ears</h1>
+      <p class="lead">Researchers need human listeners to judge speech: hear short clips with headphones and rate them,
+        e.g. how natural they sound. No account is needed. You get a session ID and can stop and continue whenever you like.</p>
+      <div class="tools">
+        <input class="input" id="q" type="search" placeholder="Search tasks" aria-label="Search tasks">
+      </div>
+    </section>
+    <section class="cards" id="cards" aria-live="polite"><div class="spin" aria-label="Loading"></div></section>
+
+    <section class="card own">
+      <div>
+        <h2>Need listeners for your system?</h2>
+        <p class="muted">Upload the clips, write the scales and the listener questions, and share the link, or list it here.</p>
+      </div>
+      <a class="btn primary" href="/login/?next=listen">Design a listening test</a>
+    </section>
+  </main>
+
+  <script src="/tasks/tasks.js" data-kind="listening"></script>
+</body>
+</html>

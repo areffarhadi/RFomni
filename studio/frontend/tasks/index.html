@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" data-theme="forest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task sharing · RFomni</title>
+  <meta name="description" content="Labelling tasks people have shared. Pick one and help: no account needed.">
+  <meta name="theme-color" content="#051f20">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/task/task.css">
+  <link rel="stylesheet" href="/tasks/tasks.css">
+  <script>
+    try { const t = JSON.parse(localStorage.getItem('omni:theme'));
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; } catch (e) { /* default mode */ }
+  </script>
+</head>
+<body>
+  <!-- The public Task sharing page (tasks.js): every live task its owner listed here; anyone can open one and help. -->
+  <div class="glow" aria-hidden="true"></div>
+  <header class="top">
+    <a class="brand" href="/landing/"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>
+      <span>Task sharing</span></a>
+    <div class="top-right">
+      <a class="btn" href="/login/?next=share">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>My shared tasks</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Help label data</h1>
+      <p class="lead">People share data that needs human judgement: listen, look or read, and answer a question or two.
+        No account is needed. You get a session ID and can stop and continue whenever you like.</p>
+      <div class="tools">
+        <input class="input" id="q" type="search" placeholder="Search tasks" aria-label="Search tasks">
+        <div class="kinds" role="group" aria-label="Kind of data">
+          <button type="button" class="kind on" data-kind="">All</button>
+          <button type="button" class="kind" data-kind="audio">Audio</button>
+          <button type="button" class="kind" data-kind="video">Video</button>
+          <button type="button" class="kind" data-kind="image">Images</button>
+          <button type="button" class="kind" data-kind="text">Text</button>
+        </div>
+      </div>
+    </section>
+    <section class="cards" id="cards" aria-live="polite"><div class="spin" aria-label="Loading"></div></section>
+
+    <section class="card own">
+      <div>
+        <h2>Have data that needs labels?</h2>
+        <p class="muted">Upload it, describe the task to the design agent, and it builds the page people see. Share the link, or list it here.</p>
+      </div>
+      <a class="btn primary" href="/login/?next=share">Design a shared task</a>
+    </section>
+  </main>
+
+  <script src="/tasks/tasks.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+/* Recording page; the base look (modes, glass cards, buttons, groups) comes from /task/task.css. */
+.card.center.wide { width: min(860px, 100%); }
+select.input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 52%, calc(100% - 15px) 52%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.consent { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0 18px; padding: 12px 14px; border-radius: 16px;
+  border: 1px solid var(--field-line); background: var(--field); font-size: 14px; color: var(--text-2); cursor: pointer; }
+.consent input { margin-top: 3px; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; margin: 4px 0 0; }
+
+/* the recording screen */
+.rec { width: min(820px, 100%); margin: 0 auto; display: grid; gap: 16px; }
+.prompt { padding: 28px 30px 26px; text-align: center; }
+.cond { display: inline-flex; align-items: center; gap: 10px; padding: 8px 18px; border-radius: 999px; margin-bottom: 8px;
+  background: color-mix(in srgb, var(--c, var(--accent)) 22%, transparent); border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 60%, transparent);
+  font-weight: 700; font-size: 18px; letter-spacing: .01em; }
+.cond i { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--accent)); }
+.cond-hint { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+.sentence { margin: 0; font-size: clamp(22px, 3.4vw, 32px); line-height: 1.45; font-weight: 500; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.sent-meta { margin-top: 14px; font-size: 12px; color: var(--muted); }
+
+.recorder { padding: 22px 24px; display: grid; gap: 14px; justify-items: center; }
+.mic { width: 96px; height: 96px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: var(--grad-ink);
+  background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); box-shadow: 0 18px 40px -16px color-mix(in srgb, var(--grad-b) 80%, transparent);
+  transition: transform .2s var(--ease); }
+.mic:hover { transform: scale(1.04); }
+.mic svg { width: 36px; height: 36px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mic.live { background: #e5534b; color: #fff; animation: pulse 1.4s ease-in-out infinite; }
+.mic.live svg { fill: currentColor; stroke: none; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 83, 75, .45); } 50% { box-shadow: 0 0 0 16px rgba(229, 83, 75, 0); } }
+.timer { font: 600 15px/1 ui-monospace, Menlo, monospace; color: var(--text-2); }
+.level { width: min(360px, 90%); height: 6px; border-radius: 6px; background: var(--glass); overflow: hidden; }
+.level i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--grad-a), var(--grad-b)); transition: width .06s linear; }
+.level.hot i { background: #e5534b; }
+
+.wave-wrap { position: relative; width: 100%; height: 120px; border-radius: 14px; background: var(--field); border: 1px solid var(--field-line);
+  touch-action: none; user-select: none; overflow: hidden; }
+.wave-wrap canvas { width: 100%; height: 100%; display: block; }
+.handle { position: absolute; top: 0; bottom: 0; width: 14px; margin-left: -7px; cursor: ew-resize; display: grid; place-items: center; }
+.handle::before { content: ""; width: 3px; height: 100%; background: var(--accent); }
+.handle::after { content: ""; position: absolute; top: 50%; width: 12px; height: 26px; margin-top: -13px; border-radius: 4px; background: var(--accent); }
+.playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: .8; pointer-events: none; display: none; }
+.rec-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
+.rec-tools .grow { flex: 1; }
+.rec-tools .btn { padding: 10px 16px; }
+.dur { font-size: 13px; color: var(--muted); }
+.hint.center { text-align: center; }
+.skip { background: none; border: 0; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: 13px; padding: 6px; }
+.notice-box { padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, var(--bad) 12%, transparent); border: 1px solid color-mix(in srgb, var(--bad) 45%, transparent); font-size: 14px; }
+
+@media (max-width: 860px) { .two { grid-template-columns: 1fr; } .prompt { padding: 22px 18px; } }

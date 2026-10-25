@@ -1,0 +1,32 @@
+/* The public Task sharing page; the base look (modes, glass cards, buttons) comes from /task/task.css. */
+main { width: min(1180px, 100%); }
+.top .btn { padding: 9px 16px; font-size: 14px; color: inherit; text-decoration: none; }
+.top .i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.hero { padding: 4vh 0 22px; max-width: 760px; }
+.hero h1 { font-size: clamp(30px, 5vw, 46px); margin-bottom: 12px; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tools .input { width: min(320px, 100%); }
+.kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.kind { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--field-line); background: var(--field); cursor: pointer; font-size: 14px; }
+.kind:hover { border-color: var(--accent); }
+.kind.on { border-color: var(--accent); background: var(--on); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 26px; }
+.cards > .spin { margin: 40px auto; grid-column: 1 / -1; }
+.tcard { display: flex; flex-direction: column; gap: 10px; padding: 22px; color: inherit; text-decoration: none;
+  transition: transform .2s var(--ease), border-color .2s; }
+.tcard:hover { transform: translateY(-2px); border-color: var(--accent); }
+.tcard h3 { margin: 0; font-size: 19px; line-height: 1.25; letter-spacing: -.01em; }
+.tcard p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; color: var(--text-2); background: var(--glass-2); border: 1px solid var(--glass-line); }
+.meter { height: 5px; border-radius: 5px; background: var(--glass); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--grad-a), var(--grad-b)); }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.go { font-weight: 600; color: var(--accent); }
+.empty { grid-column: 1 / -1; text-align: center; padding: 50px 20px; }
+.own { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 30px; }
+.own h2 { margin: 0 0 4px; font-size: 20px; }
+.own p { margin: 0; }
+.own .btn { text-decoration: none; }
+.hero .lead { white-space: normal; }
