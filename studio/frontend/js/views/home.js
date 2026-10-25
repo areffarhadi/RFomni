@@ -91,7 +91,8 @@ export class HomeView {
     fan(shown);
     const files = h('div.pf-files', { 'aria-hidden': 'true' }, shown);
     const by = s.by_modality || {};
-    const parts = [by.audio ? `${by.audio} audio` : '', by.video ? `${by.video} video` : '', by.image ? `${by.image} image${by.image > 1 ? 's' : ''}` : ''].filter(Boolean);
+    const parts = [by.audio ? `${by.audio} audio` : '', by.video ? `${by.video} video` : '', by.image ? `${by.image} image${by.image > 1 ? 's' : ''}` : '',
+      by.text ? `${by.text} text${by.text > 1 ? 's' : ''}` : ''].filter(Boolean);
     const front = h('div.pf-front',
       h('h2', { title: p.name }, h('a', { href: links.project(p.id), onclick: (e) => e.stopPropagation() }, p.name)),
       h('div.pf-meta', s.files ? [`${s.files} file${s.files > 1 ? 's' : ''}`, s.duration ? fmtDur(s.duration) : '', parts.join(', ')].filter(Boolean).join(', ') : 'No files yet'),

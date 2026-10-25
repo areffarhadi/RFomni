@@ -491,7 +491,7 @@ ACTIONS = {
     "plan_tasks": ("ui", '{"tasks": ["<task id>", ...]}', "remember the agreed tasks (changes nothing yet)"),
     "note": ("ui", '{"text": "<decision>"}', "remember a decision"),
     "open_upload": ("ui", "{}", "open the upload area so the user can drop files"),
-    "filter_tasks": ("ui", '{"media": "audio|video|image|all", "kind": "annotation|captioning|all", "search": "<optional word>"}',
+    "filter_tasks": ("ui", '{"media": "audio|video|image|text|all", "kind": "annotation|captioning|all", "search": "<optional word>"}',
                      "show only some tasks in the task library (only audio tasks, only captioning, tasks about a word)"),
     "select_project": ("act", '{"project": "<name or id>"}', "work on an existing project"),
     "create_project": ("act", '{"name": "<name>"}', "create a new project"),

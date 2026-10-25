@@ -20,8 +20,10 @@ Return JSON only, with these keys:
           boxes (rectangles around things in still images only)
   granularity: segment (one answer per speech region: what someone says or how they say it) | file (one answer per file) |
                window (one answer per fixed piece of time, for states that change, e.g. what is on screen) |
-               event (find every timed occurrence, e.g. a laugh or a door slam; use output label, one class per occurrence)
-  modalities: list of audio, video, image (video files have sound; images have no time, so image tasks use file)
+               event (find every timed occurrence, e.g. a laugh or a door slam; use output label, one class per occurrence) |
+               span (text only: mark every stretch of words that is an instance, e.g. names, personal data; output label)
+  modalities: list of audio, video, image, text (video files have sound; images have no time, so image tasks use file;
+              text documents use file for one answer per document, or span to mark words)
   labels: the classes (for label, tags, boxes; empty for score and text)
   kind: annotation, or captioning for free descriptions
   score_min, score_max: only for score
@@ -78,6 +80,12 @@ def _fix(task: dict) -> dict:
         task["output"] = "label"
     if task.get("granularity") == "event" and task.get("output") not in ("label", "tags", "text"):
         task["output"] = "label"
+    if task.get("granularity") == "span":  # marked words: text only, one class per mark
+        task["modalities"] = ["text"]
+        if task.get("output") not in ("label", "tags"):
+            task["output"] = "label"
+    elif mods == ["text"] and task.get("granularity") not in ("file", None):
+        task["granularity"] = "file"
     if task.get("output") not in ("label", "tags", "boxes"):
         task["labels"] = []
     task["labels"] = list(dict.fromkeys(str(x).strip() for x in task.get("labels") or [] if str(x).strip()))

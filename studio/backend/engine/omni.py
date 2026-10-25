@@ -16,7 +16,9 @@ How a task reaches the model:
     while the heads service is down, raise UnsupportedTask instead of producing values.
 
 Audio is cut on speech regions (energy VAD), images go as JPEG, video tasks get frames or,
-at file level, the video itself. Settings: OMNI_ENGINE_URL, OMNI_ENGINE_MODEL,
+at file level, the video itself. Text documents go as text: whole-document tasks read the start of the
+document; span tasks (entities, personal data) quote the words, which are then found in the document and
+stored as character offsets. Entities use the trained short prompt ("JSON only. text annotation Tasks: NER."). Settings: OMNI_ENGINE_URL, OMNI_ENGINE_MODEL,
 OMNI_ENGINE_CONCURRENCY (requests in flight, kept low so live voice stays responsive),
 OMNI_ENGINE_TIMEOUT.
 """
@@ -47,6 +49,9 @@ CONCURRENCY = max(1, int(os.environ.get("OMNI_ENGINE_CONCURRENCY", "2")))
 TIMEOUT = float(os.environ.get("OMNI_ENGINE_TIMEOUT", "120"))
 MAX_VIDEO_BYTES = 25 * 1024 * 1024  # larger videos are sent as frames
 EVENT_CHUNK = 30.0                  # event tasks: the model lists events per 30 s of audio
+TEXT_CHUNK = 2500                   # text spans and long translations: characters per request
+TEXT_FILE_MAX = 12000               # a whole-document text task reads at most this many characters
+TEXT_PER_CHUNK = {"text_translation", "text_correction"}  # output as long as the input: done chunk by chunk
 
 # Trained short-prompt keys per task. LID rides along with ASR when both run. GEN alone
 # comes back as a voice description; asked together with ASR and EMO it is a label.
@@ -114,15 +119,44 @@ def parse_json(txt: str):
     start = txt.find("{")
     if start >= 0:
         try:
-            return json.JSONDecoder().raw_decode(txt[start:])[0]
+            dec, objs, i = json.JSONDecoder(), [], start
+            while i < len(txt):
+                obj, end = dec.raw_decode(txt, i)
+                objs.append(obj)
+                i = end
+                while i < len(txt) and txt[i] in " \t\r\n,":
+                    i += 1
+                if i < len(txt) and txt[i] != "{":
+                    break
+            # one object per paragraph ({"text": ...}{"text": ...}): a long text answer, joined
+            if len(objs) > 1 and all(isinstance(o, dict) and list(o) == ["text"] for o in objs):
+                return {"text": "\n\n".join(str(o["text"]) for o in objs)}
+            return objs[0]
         except json.JSONDecodeError:
-            pass
+            if 'objs' in locals() and objs:
+                return objs[0]
         try:
             obj = ast.literal_eval(txt[start: txt.rfind("}") + 1])
             return obj if isinstance(obj, dict) else None
         except (ValueError, SyntaxError):
             pass
-    return None
+    return _salvage(txt)
+
+
+def _salvage(txt: str):
+    """Near-JSON the thinker sometimes writes (a stray quote after a number, a missing brace): pull out the
+    one key a task asked for."""
+    out = {}
+    m = re.search(r'"label"\s*:\s*"([^"]+)"', txt)
+    if m:
+        out["label"] = m.group(1)
+    m = re.search(r'"(?:score|confidence)"\s*:\s*"?(-?[0-9.]+)', txt)
+    if m and "label" not in out:
+        out["score"] = m.group(1)
+    m = re.search(r'"text"\s*:\s*"((?:[^"\\]|\\.)*)"', txt)
+    if m and not out:
+        out["text"] = m.group(1)
+    return out or None
 
 
 def parse_keyed(txt: str, keys: tuple) -> dict:
@@ -186,22 +220,69 @@ def _confidence(obj) -> float | None:
     return round(c, 3) if 0.0 <= c <= 1.0 else None
 
 
-def _ner_items(v) -> list:
-    """NER in any of the shapes the thinker emits -> ["Karen [PERSON]", ...]."""
+NER_TYPES = {"person": "PERSON", "per": "PERSON", "people": "PERSON", "org": "ORG", "organization": "ORG",
+             "organisation": "ORG", "company": "ORG", "loc": "LOC", "location": "LOC", "place": "LOC", "facility": "LOC",
+             "fac": "LOC", "gpe": "GPE", "country": "GPE", "city": "GPE", "state": "GPE", "date": "DATE", "time": "DATE",
+             "event": "EVENT", "misc": "MISC", "norp": "MISC", "nationality": "MISC", "product": "MISC",
+             "language": "MISC", "work_of_art": "MISC", "law": "MISC", "money": "MISC", "percent": "MISC",
+             "quantity": "MISC", "cardinal": "MISC", "ordinal": "MISC"}
+
+
+def ner_pairs(v) -> list:
+    """(entity, type) from every shape the thinker emits: {type: [entities]}, {entity: type},
+    {entity: [type]}, [{text, type}], ["entity [TYPE]"]."""
     out = []
     if isinstance(v, dict):
-        for typ, texts in v.items():
-            for t in texts if isinstance(texts, list) else [texts]:
-                out.append(f"{t} [{typ}]")
+        for k, val in v.items():
+            vals = val if isinstance(val, list) else [val]
+            if str(k).lower() in NER_TYPES:
+                out += [(str(e), str(k)) for e in vals if isinstance(e, str)]
+            elif vals and all(isinstance(x, str) and x.lower() in NER_TYPES for x in vals):
+                out.append((str(k), str(vals[0])))
     elif isinstance(v, list):
         for e in v:
             if isinstance(e, dict) and "text" in e:
-                out.append(f"{e['text']} [{e.get('type') or e.get('label') or '?'}]")
+                out.append((str(e["text"]), str(e.get("type") or e.get("label") or "MISC")))
             elif isinstance(e, dict):
-                out.extend(f"{t} [{typ}]" for t, typ in e.items())
+                out += [(str(t), str(typ)) for t, typ in e.items() if isinstance(typ, str)]
             elif isinstance(e, str):
-                out.append(e)
+                m = re.match(r"^(.*?)\s*\[([\w ]+)\]\s*$", e)
+                out.append((m.group(1), m.group(2)) if m else (e, "MISC"))
+    return [(e.strip(), t.strip()) for e, t in out if e.strip()]
+
+
+def _ner_items(v) -> list:
+    """NER in any of the shapes the thinker emits -> ["Karen [PERSON]", ...]."""
+    return [f"{e} [{t}]" for e, t in ner_pairs(v)]
+
+
+def _chunks(doc: str, size: int) -> list:
+    """(offset, piece) pieces of at most `size` characters, cut after a paragraph, a sentence or a space."""
+    out, i = [], 0
+    while i < len(doc):
+        j = min(len(doc), i + size)
+        if j < len(doc):
+            cut = max(doc.rfind("\n", i + size // 2, j), doc.rfind(". ", i + size // 2, j))
+            if cut <= i:
+                cut = doc.rfind(" ", i + size // 2, j)
+            j = cut + 1 if cut > i else j
+        out.append((i, doc[i:j]))
+        i = j
     return out
+
+
+def _find_all(doc: str, phrase: str) -> list:
+    """Every (start, end) where the quoted phrase occurs: exact first, then ignoring case and runs of spaces."""
+    phrase = phrase.strip().strip('"').strip()
+    if not phrase:
+        return []
+    pat = r"\s+".join(re.escape(w) for w in phrase.split())
+    if re.match(r"\w", phrase[0]):
+        pat = r"(?<!\w)" + pat
+    if re.match(r"\w", phrase[-1]):
+        pat += r"(?!\w)"
+    hits = [m.span() for m in re.finditer(pat, doc)]
+    return hits or [m.span() for m in re.finditer(pat, doc, re.IGNORECASE)]
 
 
 def _first_value(obj, *keys):
@@ -641,11 +722,87 @@ class OmniEngine(Engine):
             return self._from_video_heads(task, ctx)
         return None
 
+    # ---------------- text ----------------
+    def _doc_text(self, ctx) -> str:
+        if "text" not in ctx.cache:
+            ctx.cache["text"] = media_mod.read_text(ctx.path)
+        return ctx.cache["text"]
+
+    def _text(self, task, ctx) -> list:
+        doc = self._doc_text(ctx)
+        if not doc.strip():
+            return []
+        if task.get("granularity") == "span":
+            return self._text_spans(task, ctx, doc)
+        prompt = task_reg.build_prompt(task)
+        long_out = task.get("output") == "text" and task["id"] in TEXT_PER_CHUNK
+        if long_out and len(doc) > TEXT_CHUNK:  # a translation or correction as long as the document
+            parts = []
+            for _, piece in _chunks(doc, TEXT_CHUNK):
+                if getattr(ctx, "should_stop", lambda: False)():
+                    return []
+                v = value_from_generic(task, parse_json(chat([text_part(f"Text:\n{piece}"), text_part(prompt)], 2000)))
+                parts.append((v or {}).get("value") or "")
+            return [{"start": None, "end": None, "value": "\n\n".join(p for p in parts if p), "confidence": None}]
+        body = doc[:TEXT_FILE_MAX]
+        tokens = 2000 if long_out else 600 if task.get("output") == "text" else 200
+        v = value_from_generic(task, parse_json(chat([text_part(f"Text:\n{body}"), text_part(prompt)], tokens)))
+        if not v or v.get("value") in ("", [], None):
+            return []
+        meta = dict(v.get("meta") or {})
+        if len(doc) > TEXT_FILE_MAX:
+            meta["read_chars"] = TEXT_FILE_MAX  # the model saw the start of a long document
+        seg = {"start": None, "end": None, "value": v["value"], "confidence": v.get("confidence")}
+        if meta:
+            seg["meta"] = meta
+        return [seg]
+
+    def _text_spans(self, task, ctx, doc) -> list:
+        """Quoted words found in the document, as character offsets (start inclusive, end exclusive)."""
+        labels = task.get("labels") or []
+        edited = task.get("modified") and "prompt" in (task.get("modified_fields") or [])
+        trained = task["id"] == "text_ner" and not edited
+        prompt = task_reg.build_prompt(task)
+
+        def one(piece):
+            off, txt = piece
+            if getattr(ctx, "should_stop", lambda: False)():
+                return off, txt, []
+            if trained:
+                obj = parse_json(chat([text_part(f"JSON only. text annotation Tasks: NER. Keys: NER.\n{txt}")], 800)) or {}
+                pairs = [(e, NER_TYPES.get(t.lower(), t.upper())) for e, t in ner_pairs(obj.get("NER", obj))]
+            else:
+                obj = parse_json(chat([text_part(f"Text:\n{txt}"), text_part(prompt)], 1000)) or {}
+                pairs = [(str(it.get("text") or ""), it.get("value")) for it in obj.get("items") or [] if isinstance(it, dict)]
+            return off, txt, pairs
+
+        with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
+            results = list(pool.map(one, _chunks(doc, TEXT_CHUNK)))
+        out, taken = [], []
+        for off, piece, pairs in results:
+            for phrase, raw in pairs:
+                v = value_from_generic(task, {"label": raw, "tags": raw, "text": raw, "score": raw})
+                if not v or v.get("value") in ("", [], None):
+                    continue
+                if labels and task.get("output") == "label" and (v.get("meta") or {}).get("off_list"):
+                    v = {**v, "value": "MISC" if "MISC" in labels else v["value"]}
+                for a, b in _find_all(piece, phrase):
+                    a, b = a + off, b + off
+                    if any(a < y and x < b for x, y in taken):  # one mark per stretch of text
+                        continue
+                    taken.append((a, b))
+                    seg = {"start": a, "end": b, "value": v["value"], "confidence": v.get("confidence"),
+                           "meta": {"text": doc[a:b], **(v.get("meta") or {})}}
+                    out.append(seg)
+        return sorted(out, key=lambda x: x["start"])
+
     # ---------------- main ----------------
     def annotate(self, task: dict, ctx: AnnotateContext) -> list:
         tid, mod, out = task["id"], ctx.media["modality"], task.get("output")
         if tid in HEAD_ONLY:
             raise UnsupportedTask(f"{task['name']} needs the {HEAD_ONLY[tid]}, which is not available here")
+        if mod == "text":
+            return self._text(task, ctx)
         segs = self._from_heads(task, ctx)
         if segs is not None:
             return segs

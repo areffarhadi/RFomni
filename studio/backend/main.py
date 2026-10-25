@@ -17,6 +17,7 @@ from . import config
 from . import formats
 from . import media as media_mod
 from . import tasks as task_reg
+from . import textdata
 from .engine import get_engine
 from . import jobs as jobs_mod
 from . import share as share_mod
@@ -28,7 +29,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.6.1", "Atelier"
+VERSION, CODENAME = "0.6.2", "Atelier"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -182,7 +183,7 @@ def browse(path: str = "~"):
                 continue
             if c.is_dir():
                 dirs.append({"name": c.name, "path": str(c)})
-            elif c.suffix.lower() in config.MEDIA_EXT:
+            elif c.suffix.lower() in config.UPLOAD_EXT:
                 n_media += 1
     except PermissionError:
         pass
@@ -325,12 +326,39 @@ def _new_item(path: Path, rel_path: str, source: str) -> dict:
     return item
 
 
+def _table_items(table: Path, pdir: Path, name: str | None = None) -> list:
+    """A .csv / .tsv / .jsonl of texts: one text document per row, written under media/<table name>/."""
+    folder = unique_path(pdir / "media" / Path(name or table.name).stem)
+    items = []
+    for f, info in textdata.write_documents(table, folder):
+        item = _new_item(f, str(f.relative_to(pdir / "media")), "upload")
+        if info:
+            item["info"] = info
+        items.append(item)
+    return items
+
+
 @app.post("/api/projects/{pid}/media/upload")
 async def upload_media(pid: str, file: UploadFile = File(...), rel_path: str = Form(None)):
     pdir = store.pdir(pid)
     rel = safe_rel_path(rel_path or file.filename or "file")
-    if Path(rel.name).suffix.lower() not in config.MEDIA_EXT:
+    suffix = Path(rel.name).suffix.lower()
+    if suffix not in config.UPLOAD_EXT:
         raise HTTPException(415, f"Unsupported file type: {rel.name}")
+    if suffix in config.TABLE_EXT:  # a table of texts: one document per row
+        tmp = store.pdir(pid) / "cache" / f"upload-{new_id('t', 6)}{suffix}"
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        with open(tmp, "wb") as f:
+            while chunk := await file.read(4 << 20):
+                f.write(chunk)
+        try:
+            items = await run_in_threadpool(_table_items, tmp, pdir, rel.name)
+        except Exception as e:
+            raise HTTPException(415, f"Could not read {rel.name}: {e}")
+        finally:
+            tmp.unlink(missing_ok=True)
+        store.add_media(pid, items)
+        return {"items": items}
     dest = unique_path(pdir / "media" / Path(*rel.parts))
     dest.parent.mkdir(parents=True, exist_ok=True)
     with open(dest, "wb") as f:
@@ -357,9 +385,18 @@ def link_media(pid: str, body: dict = Body(...)):
         files, base = [root], root.parent
     else:
         it = root.rglob("*") if recursive else root.iterdir()
-        files = sorted(p for p in it if p.is_file() and p.suffix.lower() in config.MEDIA_EXT
+        files = sorted(p for p in it if p.is_file() and p.suffix.lower() in config.UPLOAD_EXT
                        and not any(part.startswith(".") for part in p.relative_to(root).parts))
         base = root.parent
+    # tables of texts are split into documents inside the project (rows are not files to link to)
+    tables = [p for p in files if p.suffix.lower() in config.TABLE_EXT]
+    files = [p for p in files if p.suffix.lower() not in config.TABLE_EXT]
+    table_items, errors0 = [], []
+    for t in tables:
+        try:
+            table_items += _table_items(t, store.pdir(pid))
+        except Exception as e:
+            errors0.append({"file": str(t), "error": str(e)})
     have = {m.get("abs_path") for m in store.list_media(pid)}
     todo = [p for p in files if str(p) not in have]
     if len(todo) > 20000:
@@ -373,8 +410,8 @@ def link_media(pid: str, body: dict = Body(...)):
 
     with ThreadPoolExecutor(8) as ex:
         res = list(ex.map(mk, todo))
-    items = [r for r, _ in res if r]
-    errors = [e for _, e in res if e]
+    items = [r for r, _ in res if r] + table_items
+    errors = errors0 + [e for _, e in res if e]
     store.add_media(pid, items)
     return {"added": len(items), "skipped": len(files) - len(todo), "errors": errors[:50]}
 
@@ -458,8 +495,8 @@ def media_frame(pid: str, mid: str, t: float = 0, h: int = Query(72, ge=16, le=7
 @app.get("/api/projects/{pid}/media/{mid}/thumb")
 def media_thumb(pid: str, mid: str):
     item, path = _media(pid, mid)
-    if item["modality"] == "audio":
-        raise HTTPException(404, "No thumbnail for audio")
+    if item["modality"] in ("audio", "text"):
+        raise HTTPException(404, f"No thumbnail for {item['modality']}")
     f = store.cache_dir(pid, mid) / "thumb.jpg"
     if not f.exists():
         f.write_bytes(media_mod.thumbnail(path, item["modality"], item.get("duration")))
@@ -525,6 +562,8 @@ def _export_one(fmt, doc, item, path, proj=None):
         doc = _project_order(doc, proj)
     if fmt == "json":
         return formats.export_json(doc, item)
+    if item["modality"] == "text" and fmt in ("eaf", "textgrid", "srt", "vtt", "rttm"):
+        return None  # timing formats: a text document has no clock
     if fmt == "eaf":
         return formats.export_eaf(doc, item, path) if item["modality"] != "image" else None
     if fmt == "textgrid":

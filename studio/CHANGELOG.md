@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.6.2 "Atelier" (2026-10-25)
+
+Text, a fourth kind of data next to audio, video and images.
+
+- **Text documents**: a .txt or .md file is one document; a .csv, .tsv or .jsonl table becomes one document per row
+  (uploaded or linked), keeping the other columns (an id, a gold label) with the document.
+- **14 text tasks** in a new *Text* category (and a *Text essentials* preset), run by RFomni: sentiment, emotion,
+  topic, language, offensive language, intent, keywords, summary, English translation, writing quality and
+  correction for the whole document; named entities, personal information and opinions about aspects as marked words
+  (character offsets). Entities use the model's trained short prompt. The task editor and *Write it with AI* offer
+  text and the new "each marked stretch of text" granularity.
+- **Text editor**: the document with its marks and labels, select words to mark them, a card per task on the right,
+  keys as in the other editors (Tab, A, R, 1 to 9, Delete), right-to-left text shown correctly.
+- File list (Text filter, word counts), statistics (words), the assistant and export (JSON, CSV and a manifest with one
+  line per document; timing formats off for text-only projects) know about text. Long documents are read in pieces.
+- Model replies: entities in every JSON shape the model writes (also for the audio NER task), long text answers
+  written as one JSON object per paragraph, and near-JSON with a stray quote are all read correctly now.
+- Measured on samples of public test sets (60 each): language 97%, sentiment (SST-2) 95%, intent (Banking77) 82%,
+  topic (AG News) 77%, offensive 68%, emotion 62%, entities (CoNLL-2003) 57% F1.
+
 ## v0.6.1 "Atelier" (2026-10-25)
 
 - **Landing page back to its v0.5.1 design**, as the owner preferred it: the "AI" orb, the numbered section labels,

@@ -23,9 +23,17 @@ export class ExportView {
     this.sel = new Set(ls.get('exportFormats', ['json', 'eaf', 'csv', 'manifest']));
     this.scope = 'annotated';
     this.anchor = 'asr';
+    // formats that need time (or images) are off in a project that has only text documents
+    const by = state.project.stats?.by_modality || {};
+    const textOnly = !!by.text && !by.audio && !by.video && !by.image;
+    const TIMED = new Set(['eaf', 'textgrid', 'srt', 'vtt', 'rttm', 'speaker_clips', 'coco']);
+    if (textOnly) for (const id of TIMED) this.sel.delete(id);
     const grid = h('div.fmt-grid', FORMATS.map(f => {
-      const cb = h('input', { type: 'checkbox', checked: this.sel.has(f.id) });
-      const card = h('label.fmt-card' + (this.sel.has(f.id) ? '.on' : ''), cb, h('div', h('b', f.name), h('span', f.desc)));
+      const off = textOnly && TIMED.has(f.id);
+      const desc = textOnly && f.id === 'manifest' ? 'One line per document: its text, its values and its marked words with their character offsets.' : f.desc;
+      const cb = h('input', { type: 'checkbox', checked: this.sel.has(f.id), disabled: off });
+      const card = h('label.fmt-card' + (this.sel.has(f.id) ? '.on' : '') + (off ? '.off' : ''), { title: off ? 'Text documents have no timing or images' : null },
+        cb, h('div', h('b', f.name), h('span', desc)));
       cb.addEventListener('change', () => {
         cb.checked ? this.sel.add(f.id) : this.sel.delete(f.id);
         card.classList.toggle('on', cb.checked);
@@ -52,7 +60,7 @@ export class ExportView {
       h('div.section', h('div.section-head', h('h2', 'Options')),
         h('div.section-body', h('div.exp-fields',
           h('label.field', h('span', 'Files'), scopeSel),
-          h('label.field', h('span', 'Manifest: one line per segment of'), anchorSel, h('span.hint', 'Other tiers are attached by time overlap.')))),
+          textOnly ? null : h('label.field', h('span', 'Manifest: one line per segment of'), anchorSel, h('span.hint', 'Other tiers are attached by time overlap.')))),
         h('div.exp-foot', this.btn, this.summary))));
     this.update();
   }

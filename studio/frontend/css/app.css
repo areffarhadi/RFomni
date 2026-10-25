@@ -816,6 +816,7 @@ table.list .file .ico { color: var(--muted); }
 }
 .fmt-card:hover { background: var(--bg-2); }
 .fmt-card.on { border-color: var(--accent-line); background: var(--accent-soft); }
+.fmt-card.off { opacity: .5; cursor: not-allowed; }
 .fmt-card b { display: block; font-size: var(--fs-base); font-weight: 600; margin-bottom: 2px; }
 .fmt-card span { display: block; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
 .fmt-card input { width: 15px; height: 15px; margin: 2px 0 0; flex: none; accent-color: var(--accent-fill); cursor: pointer; }
@@ -1117,7 +1118,7 @@ table.list .file .ico { color: var(--muted); }
 .img-fields > .menu-head { margin-top: 14px; padding: 0 0 4px; }
 .img-fields > .btn { justify-content: flex-start; }
 .img-fields > .empty { padding: 24px 20px; border-bottom: 1px solid var(--line); margin: 0; }
-.editor.image { grid-template-rows: auto minmax(0, 1fr); }
+.editor.image, .editor.text { grid-template-rows: auto minmax(0, 1fr); }
 
 /* ---------- shortcuts ---------- */
 /* groups in two columns; a group with long mouse gestures spans both. Each row: action left, keys right. */
@@ -1821,3 +1822,32 @@ body:has(.asst-fab) #toasts { right: 82px; }
   .ed-head { overflow-x: auto; scrollbar-width: none; }
   .ed-head .ed-title { flex: 0 0 150px; }
 }
+
+/* ---------- text editor (editor/text.js): the document with its marks, the fields on the right ---------- */
+.txt-left { background: var(--bg); }
+.txt-tools { gap: 8px; }
+.txt-tools > .muted { font-size: var(--fs-sm); white-space: nowrap; }
+.txt-hint { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txt-legend { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.txt-key { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border-radius: var(--r); border: 1px solid var(--line);
+  background: var(--bg-2); color: var(--text); font-size: var(--fs-sm); cursor: pointer; white-space: nowrap; }
+.txt-key i { width: 3px; height: 12px; border-radius: 2px; background: var(--c); }
+.txt-key.off { color: var(--muted); }
+.txt-key.off i { background: var(--faint); }
+.txt-key .badge { height: 16px; padding: 0 5px; }
+.txt-scroll { flex: 1; min-height: 0; overflow: auto; padding: 28px 32px 48px; }
+.txt-info { display: flex; flex-wrap: wrap; gap: 6px 16px; max-width: 72ch; margin: 0 auto 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm); color: var(--muted); }
+.txt-info b { font-weight: 600; color: var(--text-2); margin-right: 6px; }
+.txt-doc { max-width: 72ch; margin: 0 auto; font: 400 16px/1.75 var(--font-sans); color: var(--text); white-space: pre-wrap;
+  overflow-wrap: break-word; unicode-bidi: plaintext; }
+.txt-mark { color: inherit; background: color-mix(in srgb, var(--c) calc(14% + var(--n, 1) * 8%), transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--c) 80%, transparent); border-radius: 2px; cursor: pointer; padding: 1px 0; }
+.txt-mark.rev { box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--c) 45%, transparent); }
+.txt-mark.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.txt-tag { display: inline-block; margin: 0 4px 0 2px; padding: 0 5px; border-radius: 3px; vertical-align: 1px; user-select: none;
+  font: 600 var(--fs-xs)/16px var(--font-sans); color: var(--text); background: color-mix(in srgb, var(--c) 30%, var(--bg-2)); white-space: nowrap; cursor: pointer; }
+.region-row .rl q { quotes: "“" "”"; }
+.fp-thumb.text { color: var(--muted); }
+@media (max-width: 760px) { .txt-scroll { padding: 18px 16px 32px; } }
+

@@ -11,7 +11,7 @@ const COLORS = ['#38bdf8', '#22d3ee', '#2dd4bf', '#34d399', '#a3e635', '#facc15'
 export const OUTPUTS = { text: 'Free text', label: 'One label', tags: 'Tags', score: 'Score', boxes: 'Boxes', keypoints: 'Keypoints' };
 export const GRANS = {
   file: 'Whole file', segment: 'Each speech segment', window: 'Fixed windows', event: 'Timed events',
-  word: 'Each word', phone: 'Each phone',
+  word: 'Each word', phone: 'Each phone', span: 'Each marked stretch of text',
 };
 export const FIELD_NAMES = { labels: 'classes', prompt: 'prompt', name: 'name', title: 'title', description: 'description',
   color: 'color', window_sec: 'window', score_min: 'score range', score_max: 'score range' };
@@ -141,10 +141,11 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
       h('span.hint', openVocab ? '(open set: other labels are allowed)' : '(the model must choose from these)'), countEl, h('div.grow'), textToggle),
     labelsBox, labelsText, labelsDefault);
 
-  const modBox = h('div.row', { style: { gap: '14px' } }, ['audio', 'video', 'image'].map(m =>
+  const MODS = ['audio', 'video', 'image', 'text'];
+  const modBox = h('div.row', { style: { gap: '14px' } }, MODS.map(m =>
     h('label.check', h('input', {
       type: 'checkbox', checked: t.modalities.includes(m),
-      onchange: (e) => { e.target.checked ? t.modalities.push(m) : (t.modalities = t.modalities.filter(x => x !== m)); },
+      onchange: (e) => { e.target.checked ? t.modalities.push(m) : (t.modalities = t.modalities.filter(x => x !== m)); sync(); },
     }), ico(modalityIcon(m), 14), m)));
 
   const swatches = h('div.swatches', COLORS.map(c => h('button' + (c === t.color ? '.on' : ''), {
@@ -159,7 +160,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
     onclick: () => {
       Object.assign(t, { kind: 'annotation', labels: [], window_sec: 5, ...structuredClone(ex) });
       prompt.value = t.prompt; name.value = t.name; granSel.value = t.granularity; winInput.value = t.window_sec;
-      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = t.modalities.includes(['audio', 'video', 'image'][i]); });
+      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = t.modalities.includes(MODS[i]); });
       kindCtl.update(); renderLabels(); sync();
     },
   }, ico('wand', 12), ex.name)));
@@ -196,7 +197,7 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
       prompt.value = t.prompt; name.value = t.name; granSel.value = t.granularity; winInput.value = t.window_sec ?? 5;
       const [lo, hi] = scoreRow.querySelectorAll('input');
       lo.value = t.score_min ?? 1; hi.value = t.score_max ?? 5;
-      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = t.modalities.includes(['audio', 'video', 'image'][i]); });
+      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = t.modalities.includes(MODS[i]); });
       if (asText) labelsText.value = t.labels.join('\n');
       kindCtl.update(); renderLabels(); sync();
       aiInput.value = '';
@@ -261,6 +262,14 @@ export function openTaskEditor({ base = null, edit = false, onSaved } = {}) {
       granSel.value = 'file';
       modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = i === 2; });
     }
+    if (t.granularity === 'span' && !builtinEdit) {  // marked stretches of words only exist in text
+      t.modalities = ['text'];
+      modBox.querySelectorAll('input').forEach((cb, i) => { cb.checked = MODS[i] === 'text'; });
+    }
+    // "one answer per" offers what the chosen media can have: text has the whole file or marked stretches
+    const textOnly = t.modalities.length === 1 && t.modalities[0] === 'text';
+    for (const o of granSel.options) o.hidden = textOnly ? !['file', 'span'].includes(o.value) : o.value === 'span' && !t.modalities.includes('text');
+    if (textOnly && !['file', 'span'].includes(t.granularity)) { t.granularity = 'file'; granSel.value = 'file'; }
     granField.style.display = spatial || builtinEdit ? 'none' : '';
     modField.style.display = spatial || builtinEdit ? 'none' : '';
     labelsField.style.display = t.output === 'label' || t.output === 'tags' || t.output === 'boxes' ? '' : 'none';

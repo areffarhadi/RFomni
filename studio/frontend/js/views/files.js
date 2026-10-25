@@ -30,7 +30,7 @@ export class FileList {
       addBtn);
     const search = this.search = h('input.input', { placeholder: 'Search files', 'aria-label': 'Search files', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.render(); } });
     // media type is a single choice: segmented control (same pattern as the task library filters)
-    this.modChips = h('div.seg-ctl.sm.fp-mods', { role: 'group', 'aria-label': 'Media type' }, ['all', 'audio', 'video', 'image'].map(m =>
+    this.modChips = h('div.seg-ctl.sm.fp-mods', { role: 'group', 'aria-label': 'Media type' }, ['all', 'audio', 'video', 'image', 'text'].map(m =>
       h('button' + (m === 'all' ? '.on' : ''), { type: 'button', dataset: { m }, onclick: () => { this.mod = m; this.render(); } },
         m === 'all' ? 'All' : [ico(modalityIcon(m), 12), m[0].toUpperCase() + m.slice(1)])));
     const statusSel = this.statusSel = h('select.select.sm', { 'aria-label': 'Status', onchange: (e) => { this.status = e.target.value; this.render(); } },
@@ -120,8 +120,9 @@ export class FileList {
   }
 
   row(m) {
-    const thumb = h('div.fp-thumb.' + m.modality, m.modality === 'audio' ? ico('audio', 16) : null);
-    if (m.modality !== 'audio') {
+    const glyph = m.modality === 'audio' || m.modality === 'text';  // no picture to show: an icon
+    const thumb = h('div.fp-thumb.' + m.modality, glyph ? ico(modalityIcon(m.modality), 16) : null);
+    if (!glyph) {
       thumb.dataset.thumb = urls.thumb(this.pid, m.id);
       this.io.observe(thumb);
     }
@@ -146,7 +147,8 @@ export class FileList {
     h('div.fp-meta',
       h('div.fp-name', m.name),
       h('div.fp-sub', h('i.st.' + st), STATUS[st],
-        m.duration ? h('span.fp-dim', fmtDur(m.duration)) : (m.width ? h('span.fp-dim', `${m.width}×${m.height}`) : null),
+        m.duration ? h('span.fp-dim', fmtDur(m.duration)) : m.width ? h('span.fp-dim', `${m.width}×${m.height}`)
+          : m.words != null ? h('span.fp-dim', `${m.words.toLocaleString('en')} words`) : null,
         low ? h('span.fp-low', { title: 'Low-confidence segments' }, ico('flag', 10), low) : null)));
   }
 

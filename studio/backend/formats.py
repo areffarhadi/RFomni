@@ -289,6 +289,19 @@ def manifest_records(doc, media, path: str, anchor: str = "asr") -> list:
             if items:
                 file_level[t["name"]] = items
     base = {"media": path, "media_id": media["id"], "modality": media["modality"]}
+    if media["modality"] == "text":  # one record per document: its text, its values and its marked spans
+        try:
+            base["text"] = Path(path).read_text(encoding="utf-8-sig", errors="replace")
+        except OSError:
+            pass
+        rec = {**base, **file_level}
+        for t in tiers:
+            if t.get("granularity") == "span":
+                spans = [{"text": (s.get("meta") or {}).get("text", ""), "start": int(s["start"]), "end": int(s["end"]),
+                          "value": val_str(s["value"])} for s in tier_segments(doc, t["id"])]
+                if spans:
+                    rec[t["name"]] = spans
+        return [rec]
     if media["modality"] == "image" or not tiers:
         return [{**base, **file_level}] if file_level else []
     at = find_tier(doc, anchor, "asr", "vad") or next(

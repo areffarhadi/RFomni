@@ -71,8 +71,10 @@ export class StatsView {
     const by = d.by_modality || {};
     const human = (rv.sources.human || 0);
     const overview = h('div.stat-row',
-      ov('database', 'Files', d.files, null, h('div.sub', ['audio', 'video', 'image'].map(m => h('span', ico(modalityIcon(m), 12), ' ', by[m] || 0)))),
-      ov('audio', 'Audio & video', d.duration ? fmtDur(d.duration) : '–', null, h('div.sub', fmtBytes(d.size || 0) + ' on disk')),
+      ov('database', 'Files', d.files, null, h('div.sub', ['audio', 'video', 'image', 'text'].filter(m => m !== 'text' || by.text).map(m => h('span', ico(modalityIcon(m), 12), ' ', by[m] || 0)))),
+      !d.duration && d.words  // a text project: its length in words instead of time
+        ? ov('text', 'Text', d.words.toLocaleString('en'), 'words', h('div.sub', fmtBytes(d.size || 0) + ' on disk'))
+        : ov('audio', 'Audio & video', d.duration ? fmtDur(d.duration) : '–', null, h('div.sub', fmtBytes(d.size || 0) + ' on disk')),
       ov('layers', 'Segments', rv.segments.toLocaleString(), null, h('div.sub', `${st.tasks.filter(t => t.segments).length} tasks with output`)),
       ov('check', 'Reviewed', `${pct(rv.reviewed, rv.segments)}%`, null, h('div.progress', h('i', { style: { width: pct(rv.reviewed, rv.segments) + '%', background: 'var(--ok)' } }))),
       ov('user', 'Made or fixed by people', human.toLocaleString(), 'segments', h('div.sub', `${pct(human, rv.segments)}% of all segments`)));

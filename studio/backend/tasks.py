@@ -11,8 +11,8 @@ SPATIAL = {"boxes", "keypoints"}
 COCO_KEYPOINTS = ["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder",
                   "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_hip", "right_hip",
                   "left_knee", "right_knee", "left_ankle", "right_ankle"]
-GRANULARITIES = {"file", "segment", "window", "event", "word", "phone"}
-MODALITIES = {"audio", "video", "image"}
+GRANULARITIES = {"file", "segment", "window", "event", "word", "phone", "span"}  # span: a stretch of a text document
+MODALITIES = {"audio", "video", "image", "text"}
 
 _lock = threading.Lock()
 _builtin_cache = {"mtime": None, "data": None}
@@ -129,6 +129,8 @@ def validate_task(raw: dict) -> dict:
         gran = "file"
         raw = {**raw, "modalities": ["image"]}
     mods = [m for m in raw.get("modalities", []) if m in MODALITIES]
+    if gran == "span":  # stretches of a text document only exist in text
+        mods = ["text"]
     if not mods:
         raise ValueError("Select at least one modality")
     labels = [str(l).strip() for l in raw.get("labels", []) if str(l).strip()]
@@ -213,6 +215,11 @@ def output_spec(task: dict) -> str:
         return ('Return only JSON: {"people": [{"box_2d": [x1, y1, x2, y2], "keypoints": [[x, y, v], ...]}, ...]} '
                 f"with the 17 COCO keypoints in this order: {', '.join(COCO_KEYPOINTS)}; coordinates scaled to 0-1000; "
                 "v = 2 visible, 1 occluded, 0 not in the image.")
+    if gran == "span":  # text: the model quotes the words; the engine finds them in the document
+        val = {"text": '"<text>"', "label": '"<one label>"', "tags": '["<tag>", ...]', "score": "<number>"}.get(out, '"<label>"')
+        extra = f" Labels: [{lab}]." if labels and out in ("label", "tags") else ""
+        return ('Return only JSON: {"items": [{"text": "<the exact words as they appear in the text>", '
+                f'"value": {val}}}, ...]}} with one item per mention.{extra}')
     if gran in ("word", "phone", "event"):
         unit = task.get("unit") or gran  # e.g. "speaker turn" for diarization
         val = {"text": '"<text>"', "label": '"<one label>"', "tags": '["<tag>", ...]', "score": "<number>"}[out]

@@ -5,7 +5,7 @@ import { state, projectTasks, trackJob, activeJob } from '../state.js';
 import { go, links } from '../nav.js';
 import { openModal, toast, errorToast } from '../ui.js';
 
-const GRAN = { file: 'whole file', segment: 'per segment', window: 'windows', event: 'events', word: 'words', phone: 'phones' };
+const GRAN = { file: 'whole file', segment: 'per segment', window: 'windows', event: 'events', word: 'words', phone: 'phones', span: 'marked words' };
 
 export function openRunDialog({ mediaIds = null, taskIds = null } = {}) {
   const pid = state.project.id;

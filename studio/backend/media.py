@@ -13,7 +13,7 @@ import av
 import numpy as np
 from PIL import Image, ImageOps
 
-from .config import AUDIO_EXT, HOP, IMAGE_EXT, N_FFT, SR, VIDEO_EXT
+from .config import AUDIO_EXT, HOP, IMAGE_EXT, N_FFT, SR, TEXT_EXT, TEXT_MAX_BYTES, VIDEO_EXT
 
 BROWSER_AUDIO = {".wav", ".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac"}
 BROWSER_VIDEO_CODECS = {"h264", "vp8", "vp9", "av1", "hevc"}
@@ -27,7 +27,17 @@ def modality_of(path: Path):
         return "audio"
     if ext in VIDEO_EXT:
         return "video"
+    if ext in TEXT_EXT:
+        return "text"
     return None
+
+
+def read_text(path: Path) -> str:
+    """A text document as str: UTF-8 (a BOM is dropped), undecodable bytes replaced, line ends normalised."""
+    raw = Path(path).read_bytes()
+    if len(raw) > TEXT_MAX_BYTES:
+        raise ValueError(f"text file larger than {TEXT_MAX_BYTES // 1_000_000} MB")
+    return raw.decode("utf-8-sig", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
 
 
 def probe(path: Path) -> dict:
@@ -37,6 +47,12 @@ def probe(path: Path) -> dict:
     if mod is None:
         raise ValueError(f"unsupported file type: {path.suffix}")
     info = {"modality": mod, "size": path.stat().st_size, "duration": None}
+    if mod == "text":
+        txt = read_text(path)
+        if not txt.strip():
+            raise ValueError("empty text file")
+        info.update(chars=len(txt), words=len(txt.split()), lines=txt.count("\n") + 1, has_audio=False, playable=True)
+        return info
     if mod == "image":
         with Image.open(path) as im:
             im = ImageOps.exif_transpose(im)

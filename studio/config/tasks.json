@@ -26,6 +26,10 @@
       "name": "Spoof & deepfake"
     },
     {
+      "id": "text",
+      "name": "Text"
+    },
+    {
       "id": "captioning",
       "name": "Captioning"
     }
@@ -1052,6 +1056,299 @@
       "color": "#fbcfe8",
       "description": "Appearance, expression and pose of the main person.",
       "prompt": "Describe the main person's face and appearance: expression, gaze, head pose, approximate age, and visible attributes."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_sentiment",
+      "name": "Sentiment (text)",
+      "title": "Text sentiment",
+      "output": "label",
+      "labels": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "color": "#a3e635",
+      "description": "The writer's overall sentiment.",
+      "prompt": "What is the sentiment of this text?"
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_emotion",
+      "name": "Emotion (text)",
+      "title": "Text emotion",
+      "output": "label",
+      "labels": [
+        "joy",
+        "sadness",
+        "anger",
+        "fear",
+        "surprise",
+        "love",
+        "neutral"
+      ],
+      "color": "#f472b6",
+      "description": "The emotion the writer expresses.",
+      "prompt": "Which emotion does the writer express in this text? joy: happy, glad, satisfied; sadness: sad, hurt, lonely, hopeless; anger: angry, annoyed, irritated; fear: afraid, anxious, nervous; surprise: amazed, astonished, shocked; love: affection, tenderness, longing for someone; neutral: no clear emotion."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_topic",
+      "name": "Topic",
+      "title": "Topic",
+      "output": "label",
+      "labels": [
+        "politics",
+        "business",
+        "technology",
+        "science",
+        "health",
+        "sports",
+        "entertainment",
+        "other"
+      ],
+      "color": "#38bdf8",
+      "description": "What the text is about. Change the classes to your own.",
+      "prompt": "What is the main topic of this text?"
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_lid",
+      "name": "Language",
+      "title": "Language of the text",
+      "output": "label",
+      "labels": [
+        "English",
+        "German",
+        "French",
+        "Spanish",
+        "Italian",
+        "Portuguese",
+        "Dutch",
+        "Persian",
+        "Arabic",
+        "Turkish",
+        "Russian",
+        "Chinese",
+        "Japanese",
+        "Hindi",
+        "other"
+      ],
+      "color": "#818cf8",
+      "description": "The language the text is written in.",
+      "prompt": "Which language is this text written in?"
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_toxicity",
+      "name": "Offensive",
+      "title": "Offensive language",
+      "output": "label",
+      "labels": [
+        "non-offensive",
+        "offensive"
+      ],
+      "color": "#f43f5e",
+      "description": "Insults, threats, profanity or hate aimed at someone.",
+      "prompt": "Is this text offensive? offensive means it contains insults, threats, profanity or hateful language aimed at someone. Strong opinions, criticism, politics or mild slang are non-offensive."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_intent",
+      "name": "Intent",
+      "title": "Message intent",
+      "output": "label",
+      "labels": [
+        "question",
+        "request",
+        "complaint",
+        "praise",
+        "information",
+        "other"
+      ],
+      "color": "#fb923c",
+      "description": "What the writer wants. Replace the classes with your domain's intents.",
+      "prompt": "What does the writer of this message want? Choose the intent."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "span",
+      "id": "text_ner",
+      "name": "Entities",
+      "title": "Named entities (text)",
+      "output": "label",
+      "labels": [
+        "PERSON",
+        "ORG",
+        "LOC",
+        "GPE",
+        "DATE",
+        "EVENT",
+        "MISC"
+      ],
+      "color": "#c084fc",
+      "description": "Names of people, organisations, places, dates and events, marked where they appear.",
+      "prompt": "Mark every named entity in this text with its type."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "span",
+      "id": "text_pii",
+      "name": "Personal data",
+      "title": "Personal information",
+      "output": "label",
+      "labels": [
+        "NAME",
+        "ADDRESS",
+        "PHONE",
+        "EMAIL",
+        "ID_NUMBER",
+        "DATE_OF_BIRTH",
+        "OTHER"
+      ],
+      "color": "#ef4444",
+      "description": "Personal information to find or remove: names, addresses, phone numbers, emails, ID numbers.",
+      "prompt": "Mark every piece of personal information in this text."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "span",
+      "id": "text_aspects",
+      "name": "Aspects",
+      "title": "Opinions about aspects",
+      "output": "label",
+      "labels": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "color": "#34d399",
+      "description": "Each opinion about a product or service aspect, with its sentiment.",
+      "prompt": "Mark each opinion about an aspect of a product or service, with its sentiment."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_keywords",
+      "name": "Keywords",
+      "title": "Keywords",
+      "output": "tags",
+      "labels": [],
+      "color": "#facc15",
+      "description": "Up to five keywords or key phrases.",
+      "prompt": "List up to five keywords or key phrases of this text."
+    },
+    {
+      "kind": "captioning",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_summary",
+      "name": "Summary",
+      "title": "One-sentence summary",
+      "output": "text",
+      "labels": [],
+      "color": "#22d3ee",
+      "description": "The text in one sentence.",
+      "prompt": "Summarise this text in one sentence."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_translation",
+      "name": "Translation",
+      "title": "English translation",
+      "output": "text",
+      "labels": [],
+      "color": "#60a5fa",
+      "description": "The text in English. Change the prompt for another language.",
+      "prompt": "Translate this text into English."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_quality",
+      "name": "Writing quality",
+      "title": "Grammar and writing quality",
+      "output": "score",
+      "labels": [],
+      "color": "#94a3b8",
+      "score_min": 1,
+      "score_max": 5,
+      "description": "1 = many errors, 5 = no errors.",
+      "prompt": "How grammatical and well written is this text? 1 = many errors, 5 = no errors."
+    },
+    {
+      "kind": "annotation",
+      "category": "text",
+      "modalities": [
+        "text"
+      ],
+      "granularity": "file",
+      "id": "text_correction",
+      "name": "Correction",
+      "title": "Corrected text",
+      "output": "text",
+      "labels": [],
+      "color": "#2dd4bf",
+      "description": "The text with grammar and spelling corrected.",
+      "prompt": "Rewrite this text with the grammar and spelling corrected. Change nothing else."
     }
   ],
   "presets": [
@@ -1136,6 +1433,18 @@
         "spoof_video",
         "spoof_image",
         "spoof_regions"
+      ]
+    },
+    {
+      "id": "text",
+      "name": "Text essentials",
+      "tasks": [
+        "text_sentiment",
+        "text_topic",
+        "text_lid",
+        "text_ner",
+        "text_keywords",
+        "text_summary"
       ]
     }
   ]

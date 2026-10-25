@@ -123,17 +123,18 @@ def project_tasks(proj: dict, files_by_media: dict, ids: bool = True) -> list:
     added, grouped by the kind of file they work on, with names and ids."""
     by_id = task_reg.tasks_by_id()
     chosen = [by_id[i] for i in proj.get("tasks") or [] if i in by_id]
-    has = [m for m in ("audio", "video", "image") if files_by_media.get(m)]
+    MEDIA = ("audio", "video", "image", "text")
+    has = [m for m in MEDIA if files_by_media.get(m)]
     out = [f"Tasks chosen for this project ({len(chosen)}):" if chosen else "Tasks chosen for this project: none yet."]
-    for m in ("audio", "video", "image"):
+    for m in MEDIA:
         group = [_name(t, ids) for t in chosen if m in t.get("modalities", [])]
         if group:
             out.append(f"  {m} tasks chosen ({len(group)}): {', '.join(group)}")
     chosen_ids = {t["id"] for t in chosen}
-    for m in has or ("audio", "video", "image"):
+    for m in has or MEDIA:
         free = [_name(t, ids) for t in task_reg.all_tasks() if m in t.get("modalities", []) and t["id"] not in chosen_ids]
         out.append(f"  {m} tasks NOT chosen yet, could be added ({len(free)}): {', '.join(free) or 'none'}")
-    missing = [m for m in ("audio", "video", "image") if m not in has]
+    missing = [m for m in MEDIA if m not in has]
     if has and missing:
         out.append(f"  The project has no {' or '.join(missing)} files, so {'/'.join(missing)} tasks would find nothing to label.")
     return out

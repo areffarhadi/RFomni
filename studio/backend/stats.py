@@ -283,6 +283,7 @@ def project_stats(store, pid: str, only_tasks=None) -> dict:
     out = {
         "generated_at": now_iso(), "project": {"id": proj["id"], "name": proj["name"]}, "low_confidence": low,
         "dataset": {"files": len(items), "by_modality": dict(by_mod), "duration": round(sum(dur_mod.values()), 2),
+                    "words": sum(m.get("words") or 0 for m in items if m.get("modality") == "text"),
                     "duration_by_modality": {k: round(v, 2) for k, v in dur_mod.items()}, "size": size,
                     "status": dict(status),
                     "length_hist": [{"label": lab, "files": n} for (_, _, lab), n in zip(LEN_BUCKETS, length)]},

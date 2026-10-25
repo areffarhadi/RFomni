@@ -10,7 +10,7 @@ import { mergeOrder } from '../editor/order.js';
 
 const changed = (t) => [...new Set((t.modified_fields || []).map(k => FIELD_NAMES[k] || k))].join(', ');
 const classCount = (n) => `${n} class${n === 1 ? '' : 'es'}`;
-const MODS = ['audio', 'video', 'image'];
+const MODS = ['audio', 'video', 'image', 'text'];
 /** The three media types as small icons; the ones the task does not apply to are dimmed. */
 const mods = (t) => h('span.tc-mods', { title: `Applies to ${t.modalities.join(', ')}` },
   MODS.map(m => ico(modalityIcon(m), 13, t.modalities.includes(m) ? '' : 'dim')));
@@ -27,7 +27,7 @@ export class TasksView {
     const search = h('input.input', { placeholder: 'Search tasks', 'aria-label': 'Search tasks', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.renderLib(); } });
     this.kindCtl = h('div.seg-ctl', [['all', 'All'], ['annotation', 'Annotation'], ['captioning', 'Captioning']].map(([k, v]) =>
       h('button', { dataset: { v: k }, onclick: () => { this.kind = k; this.renderLib(); } }, v)));
-    this.modCtl = h('div.seg-ctl', [['all', 'Any media'], ['audio', 'Audio'], ['video', 'Video'], ['image', 'Image']].map(([k, v]) =>
+    this.modCtl = h('div.seg-ctl', [['all', 'Any media'], ['audio', 'Audio'], ['video', 'Video'], ['image', 'Image'], ['text', 'Text']].map(([k, v]) =>
       h('button', { dataset: { v: k }, onclick: () => { this.mod = k; this.renderLib(); } }, k !== 'all' ? ico(modalityIcon(k), 13) : null, v)));
     this.filters = h('div.tv-filters', { dataset: { guide: 'tasks.filters' } }, h('div.fp-search', ico('search', 14), search), this.kindCtl, this.modCtl);
     // the assistant can set the filters for the user (js/guide.js)

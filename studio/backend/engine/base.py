@@ -32,9 +32,9 @@ class AnnotateContext:
 
     @property
     def audio(self) -> np.ndarray:
-        """16 kHz mono float32 (empty for images / silent video)."""
+        """16 kHz mono float32 (empty for images, text and silent video)."""
         if self._audio is None:
-            if self.media.get("modality") == "image" or not self.media.get("has_audio", True):
+            if self.media.get("modality") in ("image", "text") or not self.media.get("has_audio", True):
                 self._audio = np.zeros(0, np.float32)
             else:
                 self._audio = self._audio_loader()

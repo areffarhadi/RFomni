@@ -242,6 +242,8 @@ class MockEngine(Engine):
         dur = ctx.duration
         if task.get("output") in ("boxes", "keypoints"):
             return self._spatial(task, rng) if mod == "image" else []
+        if mod == "text":
+            return self._text(task, ctx, rng)
         gran = "file" if mod == "image" else task.get("granularity", "segment")
 
         if gran == "file":
@@ -265,6 +267,18 @@ class MockEngine(Engine):
 
         return [{"start": a, "end": b, "value": self._value(task, rng, a, b, i), "confidence": _conf(rng)}
                 for i, (a, b) in enumerate(spans)]
+
+    def _text(self, task, ctx, rng) -> list:
+        """Text documents: a file value, or a few spans on capitalised words (character offsets)."""
+        if task.get("granularity") != "span":
+            return [{"start": None, "end": None, "value": self._value(task, rng, None, None), "confidence": _conf(rng)}]
+        import re
+        from ..media import read_text
+        doc = read_text(ctx.path)
+        labels = task.get("labels") or ["item"]
+        words = [m for m in re.finditer(r"\b[A-Z][\w'-]+", doc)][:12]
+        return [{"start": m.start(), "end": m.end(), "value": str(rng.choice(labels)), "confidence": _conf(rng),
+                 "meta": {"text": m.group(0)}} for m in words if rng.random() < 0.5]
 
     def _sub_units(self, task, ctx, rng, gran) -> list:
         """Words: split the parent transcript proportionally. Phones: split each word into letters."""

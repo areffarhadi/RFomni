@@ -62,7 +62,7 @@ export class Dashboard {
     const pctR = s.files ? Math.round((s.reviewed / s.files) * 100) : 0;
     const stats = h('div.stat-row',
       stat('database', 'Files', s.files, null, h('div.sub',
-        h('span', ico('audio', 12), ' ', by.audio || 0), h('span', ico('film', 12), ' ', by.video || 0), h('span', ico('image', 12), ' ', by.image || 0))),
+        h('span', ico('audio', 12), ' ', by.audio || 0), h('span', ico('film', 12), ' ', by.video || 0), h('span', ico('image', 12), ' ', by.image || 0), by.text ? h('span', ico('text', 12), ' ', by.text) : null)),
       stat('audio', 'Total duration', fmtDur(s.duration) || '–', null, h('div.sub', `${s.segments || 0} segments`)),
       stat('sparkles', 'Annotated', s.annotated, `/ ${s.files}`, h('div.progress', h('i', { style: { width: pctA + '%' } }))),
       stat('check', 'Reviewed', s.reviewed, `/ ${s.files}`, h('div.progress', h('i', { style: { width: pctR + '%', background: 'var(--ok)' } }))),

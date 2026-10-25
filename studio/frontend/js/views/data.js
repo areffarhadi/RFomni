@@ -8,6 +8,7 @@ import { Dashboard } from './dashboard.js';
 import { filesFromDrop, uploadMany } from './upload.js';
 import { Editor } from '../editor/editor.js';
 import { ImageEditor } from '../editor/image.js';
+import { TextEditor } from '../editor/text.js';
 import { swap } from '../motion.js';
 
 export class DataView {
@@ -72,7 +73,7 @@ export class DataView {
       return;
     }
     emit('editor-file', item.name);
-    const E = item.modality === 'image' ? ImageEditor : Editor;
+    const E = item.modality === 'image' ? ImageEditor : item.modality === 'text' ? TextEditor : Editor;
     this.editor = new E(this, item, params);
     swap(this.detail, oldEl, this.editor.el, dir, animate);
     await this.editor.init();

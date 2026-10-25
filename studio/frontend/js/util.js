@@ -155,7 +155,7 @@ export function segColor(tier, value) {
 }
 
 export function modalityIcon(mod) {
-  return { audio: 'audio', video: 'film', image: 'image' }[mod] || 'file';
+  return { audio: 'audio', video: 'film', image: 'image', text: 'text' }[mod] || 'file';
 }
 
 export function download(url) {

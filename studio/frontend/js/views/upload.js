@@ -6,7 +6,8 @@ import { openModal, toast, errorToast } from '../ui.js';
 
 export const MEDIA_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tif', 'tiff',
   'wav', 'mp3', 'flac', 'ogg', 'opus', 'm4a', 'aac', 'wma', 'aif', 'aiff',
-  'mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v', 'mpg', 'mpeg', 'wmv']);
+  'mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v', 'mpg', 'mpeg', 'wmv',
+  'txt', 'md', 'csv', 'tsv', 'jsonl']);  // text: a .txt is one document, each row of a table is one
 
 const ext = (name) => (name.split('.').pop() || '').toLowerCase();
 
@@ -68,7 +69,7 @@ export async function uploadMany(pid, list) {
       const x = queue.shift();
       try {
         const item = await uploadFile(pid, x.file, x.rel, (l) => { loaded.set(x, l); update(); });
-        upsertMedia(item);
+        for (const it of item.items || [item]) upsertMedia(it);  // a table comes back as one document per row
       } catch (e) {
         failed.push(`${x.rel}: ${e.message}`);
       }
