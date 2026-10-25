@@ -24,9 +24,9 @@ export class FileList {
     this.count = h('span.badge');
     const addBtn = h('button.icon-btn.owner-only', { dataset: { guide: 'data.add' }, title: 'Add data', onclick: () => menu(addBtn, addDataMenuItems(this.pid)) }, ico('plus', 17));
     const head = h('div.fp-head',
-      h('h2', 'Files', this.count),
+      h('div.fp-title', h('h2', 'Files'), this.count),
       h('button.icon-btn', { title: 'Project overview', onclick: () => go(links.project(this.pid)) }, ico('grid', 16)),
-      h('button.icon-btn.owner-only', { title: 'Run tasks on files', onclick: () => openRunDialog({ mediaIds: this.checked.size ? [...this.checked] : null }) }, ico('sparkles', 16)),
+      h('button.icon-btn.owner-only', { title: 'Run tasks on files', onclick: () => openRunDialog({ mediaIds: this.checked.size ? [...this.checked] : null }) }, ico('play', 16)),
       addBtn);
     const search = this.search = h('input.input', { placeholder: 'Search files', 'aria-label': 'Search files', oninput: (e) => { this.q = e.target.value.toLowerCase(); this.render(); } });
     // media type is a single choice: segmented control (same pattern as the task library filters)
@@ -146,8 +146,8 @@ export class FileList {
     h('div.fp-meta',
       h('div.fp-name', m.name),
       h('div.fp-sub', h('i.st.' + st), STATUS[st],
-        m.duration ? h('span.fp-dim', '· ' + fmtDur(m.duration)) : (m.width ? h('span.fp-dim', `· ${m.width}×${m.height}`) : null),
-        low ? h('span.fp-low', { title: 'Low-confidence segments' }, '· ', ico('flag', 10), low) : null)));
+        m.duration ? h('span.fp-dim', fmtDur(m.duration)) : (m.width ? h('span.fp-dim', `${m.width}×${m.height}`) : null),
+        low ? h('span.fp-low', { title: 'Low-confidence segments' }, ico('flag', 10), low) : null)));
   }
 
   renderSelbar() {
@@ -155,7 +155,7 @@ export class FileList {
     this.selbar.style.display = n ? '' : 'none';
     if (!n) return;
     this.selbar.replaceChildren(h('span.grow', `${n} selected`),
-      h('button.btn.sm.owner-only', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('sparkles', 13), 'Run tasks…'),
+      h('button.btn.sm.owner-only', { onclick: () => openRunDialog({ mediaIds: [...this.checked] }) }, ico('play', 13), 'Run tasks…'),
       h('button.btn.sm.ghost', { onclick: () => { this.checked.clear(); this.render(); } }, 'Clear'));
   }
 

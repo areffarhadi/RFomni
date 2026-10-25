@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.6.0 "Atelier" (2026-10-25)
+
+The whole website checked against the tells of machine-made pages (Hallmark design checks, plus a fresh-context
+review) and set right, keeping every link, control and hook. The chat page is unchanged.
+
+- **Tasks page**: the task library is a table, one row per task in category groups, the name a button that opens
+  its details; the tiers in a project are a numbered list in editor order (still drag to reorder) instead of a wall
+  of chips; changed and new tasks are plain rows; the empty state is a sentence and its button. Run buttons across the
+  studio use a play icon instead of sparkles.
+- **Studio**: one accent for every project tab instead of a colour per tab; the assistant takes the theme's accent,
+  solid, instead of a violet-to-sky gradient with glows; projects without a picture get a flat cover; labels in sentence
+  case, meta lines with commas instead of middle dots; disabled buttons, focus rings and field edges made clear; the
+  light theme's "on" switches are coloured again.
+- **Landing page**: no numbered section labels or italic tails on headings; a speech waveform in the hero orb instead
+  of the letters "AI"; current screenshots of the studio (all three modes) instead of v0.2.0 ones, real crops on the
+  feature cards and a project overview instead of an invented terminal log; the "nine agents" list and the coloured
+  prompt border are gone, and sending a prompt opens the studio; the grid, crosshairs, glows and footer line art removed.
+- **Public pages** (task sharing, listening tests, data collection, sign-in): solid cards and one solid button colour
+  instead of frosted glass, colour blobs and gradients; an owner's accent fills the buttons with readable ink.
+
 ## v0.5.1 "Agora" (2026-10-25)
 
 A check of the whole website (every page at desktop and phone size, in the three themes, with the axe accessibility

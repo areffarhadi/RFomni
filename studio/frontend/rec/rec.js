@@ -61,10 +61,22 @@
   $('.sid').addEventListener('click', () => navigator.clipboard?.writeText(sid).then(() => toast('Session ID copied. Use it to continue later.'), () => toast(`Your session ID: ${sid}`)));
   $('.change-group').addEventListener('click', () => pickLanguage());
 
+  // an owner's accent fills the buttons; the ink on them is dark or light, whichever reads
+  const inkFor = (c) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(c).trim());
+    if (!m) return null;
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#0b0d11' : '#ffffff';
+  };
   function applyDesign(d) {
     document.documentElement.dataset.theme = d.look?.theme || 'forest';
     const root = document.documentElement.style;
-    if (d.look?.accent) { root.setProperty('--accent', d.look.accent); root.setProperty('--grad-a', `color-mix(in srgb, ${d.look.accent} 70%, white)`); root.setProperty('--grad-b', d.look.accent); }
+    if (d.look?.accent) {
+      root.setProperty('--accent', d.look.accent); root.setProperty('--grad-a', `color-mix(in srgb, ${d.look.accent} 70%, white)`); root.setProperty('--grad-b', d.look.accent);
+      root.setProperty('--btn', d.look.accent);
+      const ink = inkFor(d.look.accent);
+      if (ink) root.setProperty('--btn-ink', ink);
+    }
     document.title = d.title; $('.brand-title').textContent = d.title;
   }
 
@@ -327,7 +339,7 @@
         h('div', { class: 'cond', style: col ? `--c:${col}` : '' }, h('i'), c.label),
         c.hint ? h('p', { class: 'cond-hint' }, c.hint) : null,
         h('p', { class: 'sentence', dir: 'auto', lang }, pr.text),
-        h('div', { class: 'sent-meta' }, `${lg?.name || lang} · sentence ${pair.index + 1} of ${lg?.prompts.length || '?'}`)),
+        h('div', { class: 'sent-meta' }, `${lg?.name || lang}, sentence ${pair.index + 1} of ${lg?.prompts.length || '?'}`)),
       h('section', { class: 'card recorder', 'aria-label': 'Recorder' }, mic, timer, lvl, wave, tools, hint, err,
         project.design.settings.allow_skip ? h('button', { class: 'skip', type: 'button', onclick: () => skip() }, 'Skip this one') : null)));
     current = ui;

@@ -22,8 +22,8 @@
       h('p', {}, p.summary || `${p.prompts} sentences to read.`),
       p.conditions.length > 1 ? h('div', { class: 'tags' }, p.conditions.map(c => h('span', { class: 'tag' }, c))) : null,
       h('div', { class: 'foot' },
-        h('span', {}, `${p.people} ${p.people === 1 ? 'person' : 'people'} · ${p.minutes} min recorded`),
-        h('span', { class: 'go' }, 'Contribute →')));
+        h('span', {}, `${p.people} ${p.people === 1 ? 'person' : 'people'}, ${p.minutes} min recorded`),
+        h('span', { class: 'go' }, 'Record')));
   }
 
   function paint() {

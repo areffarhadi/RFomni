@@ -29,7 +29,7 @@ async function loadMe() {
 }
 function openUserMenu() {
   menu(userBtn, [
-    me && { header: me.name ? `${me.name} · ${me.email}` : me.email },
+    me && { header: me.name ? `${me.name} (${me.email})` : me.email },
     { label: 'Open the chat', icon: 'chat', onClick: () => window.open(`https://${location.hostname}:8080/`, '_blank', 'noopener') },
     'sep',
     { label: 'Sign out', icon: 'logout', onClick: async () => { await api.signOut().catch(() => {}); location.href = '/login/?next=studio'; } },
@@ -126,12 +126,12 @@ on('job', (j) => {
   const pct = j.total ? (j.done / j.total) * 100 : 0;
   if (j.status === 'running' || j.status === 'queued') {
     jobEl.replaceChildren(h('div.spinner'),
-      h('span', `Running ${j.task_ids.length} task${j.task_ids.length > 1 ? 's' : ''} · ${j.done}/${j.total} files`),
+      h('span', `Running ${j.task_ids.length} task${j.task_ids.length > 1 ? 's' : ''}: ${j.done}/${j.total} files`),
       h('div.progress', h('i', { style: { width: pct + '%' } })),
       j.current ? h('span.muted', j.current) : null,
       h('button', { onclick: () => api.cancelJob(j.id) }, 'Cancel'));
   } else {
-    const msg = j.status === 'done' ? `Run finished · ${j.written_tiers} tiers written` + (j.skipped_tiers ? `, ${j.skipped_tiers} skipped` : '')
+    const msg = j.status === 'done' ? `Run finished: ${j.written_tiers} tiers written` + (j.skipped_tiers ? `, ${j.skipped_tiers} skipped` : '')
       : j.status === 'cancelled' ? 'Run cancelled' : 'Run failed';
     jobEl.replaceChildren(ico(j.status === 'done' ? 'check' : 'alert', 14), h('span', msg),
       j.errors?.length ? h('span', { style: { color: 'var(--danger)' } }, `${j.errors.length} error(s)`) : null);
@@ -223,7 +223,7 @@ function setupShared(sh) {
   sharedPill.style.display = '';
   sharedPill.title = [sh.note, sh.expires_at ? `Link expires ${new Date(sh.expires_at).toLocaleDateString()}` : ''].filter(Boolean).join('\n');
   sharedPill.replaceChildren(ico(sh.access === 'edit' ? 'edit' : 'eye', 13),
-    h('span', sh.access === 'edit' ? 'Shared · you can review and edit labels' : 'Shared · view only'),
+    h('span', sh.access === 'edit' ? 'Shared: you can review and edit labels' : 'Shared: view only'),
     sh.label ? h('b', sh.label) : null);
   document.title = `${sh.project_name} · Omni Studio`;
   if (!sh.allow_download) {
@@ -280,11 +280,11 @@ async function shareSessionFor(sh) {
     else loadMe();
     const eng = state.info.engine;
     enginePill.classList.toggle('on', !!eng.connected);
-    enginePill.lastChild.textContent = eng.connected ? eng.title : 'Mock engine · no model';
+    enginePill.lastChild.textContent = eng.connected ? eng.title : 'Mock engine (no model)';
     enginePill.title = eng.description || '';
     wsEl.textContent = state.info.workspace || '';
     wsEl.title = 'Workspace folder';
-    verEl.textContent = `v${state.info.version} · ${state.info.codename}`;
+    verEl.textContent = `v${state.info.version} “${state.info.codename}”`;
     mountAssistant();
   } catch (e) {
     errorToast(e, 'Could not reach the Omni Studio server');

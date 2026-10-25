@@ -35,7 +35,7 @@ export class CollectListView {
     }
     this.list.replaceChildren(...ps.map(p => h('a.st-row', { href: `#/collect/${p.id}` },
       h('span.st-status', { class: `s-${p.status}` }, STATUS[p.status]),
-      h('div.st-row-main', h('b', p.title), h('span.muted', `${p.languages} languages · ${p.prompts} sentences · ${p.conditions} ways${p.listed ? ' · listed' : ''}`)),
+      h('div.st-row-main', h('b', p.title), h('span.muted', `${p.languages} languages, ${p.prompts} sentences, ${p.conditions} ways${p.listed ? ', listed' : ''}`)),
       h('div.st-row-nums', h('span', h('b', String(p.recordings)), ' recordings'), h('span', h('b', String(p.people)), ' people'),
         h('span', h('b', String(p.minutes)), ' min'), h('span.muted', ago(p.updated_at))))));
   }
@@ -119,7 +119,7 @@ export class CollectView {
   sentencesTab() {
     const list = h('div.st-fields');
     const paint = () => list.replaceChildren(...this.d.languages.map((lg, i) => h('div.st-field',
-      h('div.st-field-head', h('b', lg.name || 'New language'), h('span.muted', ` · ${lg.prompts.length} sentences`), h('div.grow'),
+      h('div.st-field-head', h('b', lg.name || 'New language'), h('span.muted', `${lg.prompts.length} sentences`), h('div.grow'),
         h('button.icon-btn.sm', { title: 'Remove the language', disabled: this.d.languages.length === 1,
           onclick: () => { this.d.languages.splice(i, 1); paint(); this.changed(); } }, ico('trash', 13))),
       h('div.st-two', h('label.field', h('span', 'Language'), this.text(lg, 'name', { placeholder: 'e.g. German' })),
@@ -209,7 +209,7 @@ export class CollectView {
       const set = async (st) => { try { r = await api.collectReview(this.id, r.id, st); status.textContent = st; status.className = `badge ${st === 'accepted' ? 'accent' : st === 'rejected' ? 'warn' : ''}`; } catch (e) { errorToast(e); } };
       return h('div.cl-rec',
         h('button.icon-btn.sm', { title: 'Play', onclick: () => { audio?.pause(); audio = new Audio(`/api/collect/${this.id}/recordings/${r.id}/audio`); audio.play(); } }, ico('play', 13)),
-        h('div.cl-rec-main', h('span', { dir: 'auto' }, r.text), h('span.muted', `${d.languages.find(l => l.code === r.lang)?.name || r.lang} · ${d.conditions.find(c => c.id === r.condition)?.label || r.condition} · ${r.seconds} s · ${r.session}`)),
+        h('div.cl-rec-main', h('span', { dir: 'auto' }, r.text), h('span.muted', `${d.languages.find(l => l.code === r.lang)?.name || r.lang}, ${d.conditions.find(c => c.id === r.condition)?.label || r.condition}, ${r.seconds} s, session ${r.session}`)),
         status,
         h('button.icon-btn.sm', { title: 'Accept', onclick: () => set('accepted') }, ico('check', 13)),
         h('button.icon-btn.sm', { title: 'Reject', onclick: () => set('rejected') }, ico('x', 13)));

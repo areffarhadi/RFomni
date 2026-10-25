@@ -71,7 +71,7 @@ class AssistantPanel {
       this.log,
       this.voiceEl,
       h('div.asst-compose', h('div.asst-field', this.input, this.micBtn, this.sendBtn)),
-      h('div.asst-foot', 'Omni Studio assistant · asks before it changes anything'));
+      h('div.asst-foot', 'The assistant asks before it changes anything.'));
     this.fab = h('button.asst-fab', { title: 'Assistant', 'aria-label': 'Open the assistant', 'aria-expanded': 'false', onclick: () => this.toggle() }, ico('chat', 22));
     document.body.append(this.panel, this.fab);
     if (ls.get('assistant-open', false)) this.toggle(true);
@@ -124,7 +124,7 @@ class AssistantPanel {
   }
 
   setStep(step) {
-    this.stepEl.textContent = step ? `Step · ${STEP_LABEL[step] || step}` : '';
+    this.stepEl.textContent = step ? `Step: ${STEP_LABEL[step] || step}` : '';
   }
 
   add(role, text, extra) {

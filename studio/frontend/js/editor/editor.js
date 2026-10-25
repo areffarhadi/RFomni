@@ -78,7 +78,7 @@ export class Editor extends BaseEditor {
   suggestRun() {
     if (!state.project.tasks.length || isShared()) return;
     this.timeline.tiersInner.querySelector('.empty')?.append(
-      h('div', { style: { marginTop: '10px' } }, h('button.btn.primary', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('sparkles', 14), 'Run tasks on this file')));
+      h('div', { style: { marginTop: '10px' } }, h('button.btn.primary', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('play', 14), 'Run tasks on this file')));
   }
 
   applyParams(params) {

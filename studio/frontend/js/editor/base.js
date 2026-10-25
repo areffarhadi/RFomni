@@ -148,7 +148,7 @@ export class BaseEditor {
     return h('div.ed-head',
       h('div.ed-title', ico(modalityIcon(m.modality), 18),
         h('div', h('h1.nm', { title: m.name }, m.name), h('div.pth', [m.rel_path, m.source === 'linked' ? 'linked' : null,
-          m.duration ? fmtDur(m.duration) : null, m.width ? `${m.width}×${m.height}` : null].filter(Boolean).join(' · ')))),
+          m.duration ? fmtDur(m.duration) : null, m.width ? `${m.width}×${m.height}` : null].filter(Boolean).join(', ')))),
       this.saveEl,
       h('button.icon-btn.edit-only', { title: 'Undo (⌘Z)', 'aria-label': 'Undo', onclick: () => this.undo() }, ico('undo', 16)),
       h('button.icon-btn.edit-only', { title: 'Redo (⌘⇧Z)', 'aria-label': 'Redo', onclick: () => this.redo() }, ico('redo', 16)),
@@ -157,7 +157,7 @@ export class BaseEditor {
       h('button.icon-btn', { title: 'Next file (])', 'aria-label': 'Next file', onclick: () => this.dv.step(1) }, ico('chev-r', 17)),
       h('span.ed-sep'),
       this.statusBtn,
-      h('button.btn.sm.owner-only', { onclick: () => this.flush().then(() => openRunDialog({ mediaIds: [m.id] })) }, ico('sparkles', 13), 'Run'),
+      h('button.btn.sm.owner-only', { onclick: () => this.flush().then(() => openRunDialog({ mediaIds: [m.id] })) }, ico('play', 13), 'Run'),
       more);
   }
 

@@ -32,9 +32,9 @@
       listening && t.scales?.length ? h('div', { class: 'tags' }, t.scales.map(x => h('span', { class: 'tag' }, x.split('·').pop().split(':')[0].replace(/[?]/g, '').trim()))) : null,
       t.everyone ? null : h('div', { class: 'meter', title: `${pct}% complete` }, h('i', { style: `width:${pct}%` })),
       h('div', { class: 'foot' },
-        h('span', {}, listening ? `${n(t.items)} clips · ${n(t.people)} ${t.people === 1 ? 'listener' : 'listeners'} so far`
-          : t.everyone ? `${n(t.items)} items · ${people(t.people)} so far` : `${n(t.complete)} of ${n(t.items)} done · ${people(t.people)}`),
-        h('span', { class: 'go' }, 'Start →')));
+        h('span', {}, listening ? `${n(t.items)} clips, ${n(t.people)} ${t.people === 1 ? 'listener' : 'listeners'} so far`
+          : t.everyone ? `${n(t.items)} items, ${people(t.people)} so far` : `${n(t.complete)} of ${n(t.items)} done, ${people(t.people)}`),
+        h('span', { class: 'go' }, listening ? 'Take the test' : 'Start labelling')));
   }
 
   function paint() {

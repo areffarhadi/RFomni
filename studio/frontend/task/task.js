@@ -82,6 +82,13 @@
     set: (v) => { try { v ? localStorage.setItem(key, v) : localStorage.removeItem(key); } catch { /* not remembered */ } } };
 
   // ---------- design: mode, accent, title
+  // an owner's accent fills the buttons; the ink on them is dark or light, whichever reads
+  const inkFor = (c) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(c).trim());
+    if (!m) return null;
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#0b0d11' : '#ffffff';
+  };
   function applyDesign(d) {
     design = d;
     document.documentElement.dataset.theme = d.look?.theme || 'forest';
@@ -90,7 +97,10 @@
       root.setProperty('--accent', d.look.accent);
       root.setProperty('--grad-a', `color-mix(in srgb, ${d.look.accent} 70%, white)`);
       root.setProperty('--grad-b', d.look.accent);
-    } else ['--accent', '--grad-a', '--grad-b'].forEach(p => root.removeProperty(p));
+      root.setProperty('--btn', d.look.accent);
+      const ink = inkFor(d.look.accent);
+      if (ink) root.setProperty('--btn-ink', ink); else root.removeProperty('--btn-ink');
+    } else ['--accent', '--grad-a', '--grad-b', '--btn', '--btn-ink'].forEach(p => root.removeProperty(p));
     document.title = d.title || 'Labelling task';
     document.documentElement.dir = d.look?.dir === 'rtl' ? 'rtl' : 'ltr';
     document.documentElement.lang = ui();
@@ -106,7 +116,7 @@
     const everyone = design?.settings?.labels_per_item === 0;
     $('.progress-text').textContent = limit ? t('done', mine, limit)
       : everyone ? `${group ? `${group}: ` : ''}${t('done', p.mine_here ?? p.complete, p.items)}`
-        : `${mine} done · ${p.complete} of ${p.items} items complete`;
+        : `${mine} done; ${p.complete} of ${p.items} items complete`;
     const frac = limit ? mine / limit : p.items ? (everyone ? (p.mine_here ?? p.complete) : p.complete) / p.items : 0;
     $('.progress-bar i').style.width = `${Math.min(100, frac * 100)}%`;
   }

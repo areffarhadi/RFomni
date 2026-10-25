@@ -39,7 +39,7 @@ export async function pointAt(target, note = '') {
 
   const ring = h('div.guide-ring', { 'aria-hidden': 'true' });
   const tip = h('div.guide-tip', { role: 'status' },
-    h('span.guide-tip-icon', ico('sparkles', 14)),
+    h('span.guide-tip-icon', ico('chat', 14)),
     h('div.guide-tip-text', note),
     h('button.guide-tip-close', { title: 'Got it', 'aria-label': 'Close the hint', onclick: () => close() }, ico('x', 13)));
   document.body.append(ring, tip);

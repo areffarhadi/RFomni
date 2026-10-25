@@ -171,7 +171,7 @@ export class AssistantVoice {
   /** Spoken approvals count only when the speaker check is on and passed for that turn. */
   showGate(g) {
     if (!g.available) {
-      this.speakerEl.textContent = 'Speaker check unavailable · approve with the button';
+      this.speakerEl.textContent = 'Speaker check unavailable; approve with the button';
       this.gateBtn.hidden = true;
       return;
     }
@@ -183,7 +183,7 @@ export class AssistantVoice {
       this.gateBtn.onclick = () => this.send({ type: 'client-message', data: { t: 'enroll-voice', d: {} } });
       return;
     }
-    this.speakerEl.textContent = g.gate ? 'Only your voice · say “yes” to approve' : 'Voice registered';
+    this.speakerEl.textContent = g.gate ? 'Only your voice: say “yes” to approve' : 'Voice registered';
     this.gateBtn.hidden = false;
     this.gateBtn.textContent = g.gate ? 'Anyone' : 'Only my voice';
     this.gateBtn.onclick = () => this.toggleGate();

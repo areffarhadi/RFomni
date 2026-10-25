@@ -13,7 +13,7 @@ const KIND_ICON = { image: 'image', video: 'film', audio: 'audio', text: 'file' 
 const TYPES = { choice: 'One answer', multi: 'Several answers', rating: 'Rating', text: 'Free text' };
 const THEMES = { forest: 'Green', dark: 'Night', light: 'Day' };
 const DATA_ACCEPT = '.jpg,.jpeg,.png,.webp,.bmp,.gif,.tif,.tiff,.wav,.mp3,.flac,.ogg,.opus,.m4a,.aac,.mp4,.mov,.mkv,.webm,.avi,.m4v,.txt,.csv,.tsv,.jsonl,.json';
-const kinds = (by) => Object.entries(by || {}).map(([k, n]) => `${n} ${k}`).join(' · ') || 'no data yet';
+const kinds = (by) => Object.entries(by || {}).map(([k, n]) => `${n} ${k}`).join(', ') || 'no data yet';
 
 // ----------------------------------------------------------------------------- the list
 export class SharedListView {
@@ -41,7 +41,7 @@ export class SharedListView {
           h('button.btn', { dataset: { guide: 'shared.correct' }, onclick: () => correctionDialog(() => this.load()) }, ico('edit', 14), 'Share a project for correction'),
           h('button.btn.primary', { dataset: { guide: 'shared.new' }, onclick: () => this.create() }, ico('plus', 15), 'New shared task'))),
       h('h2.st-section', 'Labelling tasks'), this.list,
-      h('h2.st-section', 'Correction links', h('span.muted', ' · people fix the model’s labels in the editor')), this.fixes = h('div.st-list')));
+      h('h2.st-section', 'Correction links', h('span.muted.st-section-note', 'people fix the model’s labels in the editor')), this.fixes = h('div.st-list')));
     this.load();
   }
 
@@ -59,7 +59,7 @@ export class SharedListView {
     }
     this.list.replaceChildren(...tasks.map(t => h('a.st-row', { href: `#/shared/${t.id}` },
       h('span.st-status', { class: `s-${t.status}` }, STATUS[t.status]),
-      h('div.st-row-main', h('b', t.title), h('span.muted', `${kinds(t.by_kind)}${t.owned ? '' : ` · by ${t.owner_name || 'someone else'}`}`)),
+      h('div.st-row-main', h('b', t.title), h('span.muted', `${kinds(t.by_kind)}${t.owned ? '' : `, by ${t.owner_name || 'someone else'}`}`)),
       h('div.st-row-nums', h('span', h('b', String(t.complete)), ` / ${t.items} done`), h('span', h('b', String(t.people)), ' people'),
         h('span.muted', ago(t.updated_at))))));
   }
@@ -83,9 +83,9 @@ export class SharedListView {
       return h('div.st-fix',
         h('div.st-row.st-row-static',
           h('span.st-status', { class: `s-${state_}` }, s.revoked ? 'Off' : s.expired ? 'Expired' : 'Live'),
-          h('div.st-row-main', h('b', `${s.project_name} · ${s.label}`),
+          h('div.st-row-main', h('b', `${s.project_name}: ${s.label}`),
             h('span.muted', [s.tasks.length ? `${s.tasks.length} tiers` : 'all tiers', s.allow_download ? 'downloads allowed' : 'no downloads',
-              s.expires_at ? `until ${new Date(s.expires_at).toLocaleDateString()}` : null].filter(Boolean).join(' · '))),
+              s.expires_at ? `until ${new Date(s.expires_at).toLocaleDateString()}` : null].filter(Boolean).join(', '))),
           h('div.st-row-nums', h('span', h('b', String(s.people.length)), ' people'), h('span', h('b', String(s.edits || 0)), ' changes')),
           h('div.row', { style: { gap: '4px' } },
             h('button.btn.sm', { title: url, onclick: () => navigator.clipboard.writeText(url).then(() => toast('Link copied')) }, ico('copy', 13), 'Copy link'),
@@ -216,7 +216,7 @@ export class SharedTaskView {
         ...['Short customer reviews: people say if each is positive, negative or neutral, 3 people per review.',
           'Photos of street scenes: is there a pedestrian, a cyclist or a car? Several can apply.',
           'Short audio clips: write down exactly what is said, and rate how clear the speech is from 1 to 5.']
-          .map(s => h('button.chip.st-suggest', { onclick: () => { input.value = s; input.focus(); } }, ico('sparkles', 12), s)));
+          .map(s => h('button.chip.st-suggest', { onclick: () => { input.value = s; input.focus(); } }, s)));
     }
     for (const m of chat) log.append(h(`div.st-msg.${m.role === 'owner' ? 'me' : 'agent'}`, m.text));
     this.panel.replaceChildren(
@@ -337,7 +337,7 @@ export class SharedTaskView {
 
   // ---------- data
   async dataTab() {
-    const status = h('p.muted.st-data-status', kinds(this.task.summary.by_kind) + ` · ${this.task.summary.items} items`);
+    const status = h('p.muted.st-data-status', kinds(this.task.summary.by_kind) + `, ${this.task.summary.items} items`);
     const fileIn = h('input', { type: 'file', multiple: true, accept: DATA_ACCEPT, hidden: true, onchange: () => this.upload([...fileIn.files], status) });
     const folderIn = h('input', { type: 'file', webkitdirectory: true, hidden: true, onchange: () => this.upload([...folderIn.files], status) });
     const drop = h('div.st-drop', { onclick: () => fileIn.click() },
@@ -521,7 +521,7 @@ async function correctionDialog(onDone) {
     if (!(proj.tasks || []).length) tiers.append(h('p.muted', 'This project has no tasks yet.'));
   };
   const pick = h('select.select', { onchange: (e) => { draft.pid = e.target.value; paintTiers(); } },
-    projects.map(p => h('option', { value: p.id }, `${p.name} · ${p.stats?.files ?? 0} files, ${p.stats?.annotated ?? 0} labelled`)));
+    projects.map(p => h('option', { value: p.id }, `${p.name} (${p.stats?.files ?? 0} files, ${p.stats?.annotated ?? 0} labelled)`)));
   const field = (label, el, hint) => h('label.field', h('span', label), el, hint ? h('span.hint', hint) : null);
   const check = (key, label) => h('label.check', h('input', { type: 'checkbox', checked: draft[key], onchange: (e) => { draft[key] = e.target.checked; } }), label);
   paintTiers();

@@ -188,6 +188,10 @@
     });
   });
   if (mode() !== 'forest') shotImg.src = shotSrc('editor');
+  // the feature cards' crops of the studio follow the mode too
+  const ills = () => document.querySelectorAll('img[data-ill]').forEach(im => { im.src = shotSrc(`card-${im.dataset.ill}`); });
+  if (mode() !== 'forest') ills();
+  addEventListener('modechange', ills);
   const preload = () => tabs.forEach(t => { new Image().src = shotSrc(t.dataset.shot); });
   setTimeout(preload, 2500);  // the other screenshots, once the page is idle
 

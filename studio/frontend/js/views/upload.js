@@ -60,7 +60,7 @@ export async function uploadMany(pid, list) {
   const update = () => {
     const bytes = [...loaded.values()].reduce((a, b) => a + b, 0);
     bar.style.width = (total ? (bytes / total) * 100 : 0) + '%';
-    label.textContent = `Uploading ${done}/${files.length} files · ${fmtBytes(bytes)} of ${fmtBytes(total)}`;
+    label.textContent = `Uploading ${done}/${files.length} files, ${fmtBytes(bytes)} of ${fmtBytes(total)}`;
   };
   const queue = files.slice();
   async function worker() {
@@ -81,8 +81,8 @@ export async function uploadMany(pid, list) {
   t.close();
   await refreshProject().catch(() => {});
   const ok = files.length - failed.length;
-  toast(`Added ${ok} file${ok === 1 ? '' : 's'}` + (ignored ? ` · ${ignored} unsupported skipped` : '') +
-    (failed.length ? ` · ${failed.length} failed` : ''), { kind: failed.length ? 'warn' : 'ok', timeout: failed.length ? 8000 : 3500 });
+  toast(`Added ${ok} file${ok === 1 ? '' : 's'}` + (ignored ? `; ${ignored} unsupported skipped` : '') +
+    (failed.length ? `; ${failed.length} failed` : ''), { kind: failed.length ? 'warn' : 'ok', timeout: failed.length ? 8000 : 3500 });
   if (failed.length) console.warn('Upload failures', failed);
 }
 
@@ -122,8 +122,8 @@ export function openLinkDialog(pid) {
       ls.set('linkPath', pathInput.value);
       m.close();
       await refreshProject();
-      toast(`Linked ${r.added} file${r.added === 1 ? '' : 's'}` + (r.skipped ? ` · ${r.skipped} already in project` : '') +
-        (r.errors.length ? ` · ${r.errors.length} could not be read` : ''), { kind: r.errors.length ? 'warn' : 'ok' });
+      toast(`Linked ${r.added} file${r.added === 1 ? '' : 's'}` + (r.skipped ? `; ${r.skipped} already in project` : '') +
+        (r.errors.length ? `; ${r.errors.length} could not be read` : ''), { kind: r.errors.length ? 'warn' : 'ok' });
     } catch (e) {
       errorToast(e);
       btn.disabled = false;

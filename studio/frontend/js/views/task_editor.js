@@ -27,7 +27,7 @@ const EXAMPLES = [
   { name: 'Hands', prompt: 'Find every visible hand.', output: 'boxes', labels: ['left hand', 'right hand'], granularity: 'file', modalities: ['image'] },
 ];
 
-const changedSummary = (t) => [...new Set((t.modified_fields || []).map(k => FIELD_NAMES[k] || k))].join(' · ');
+const changedSummary = (t) => [...new Set((t.modified_fields || []).map(k => FIELD_NAMES[k] || k))].join(', ');
 
 export async function resetTask(task, onChange) {
   const ok = await confirmDialog(`Reset "${task.title || task.name}" to its default ${changedSummary(task) || 'settings'}? ` +

@@ -31,7 +31,7 @@ export class HomeView {
             'Run the tasks, then review and correct every file in the tier editor.')),
         h('button.btn.primary', { onclick: () => newProjectDialog() }, ico('plus', 15), 'New project')),
       this.grid,
-      h('p.proj-hint', 'Rest on a folder to peek at its files · click to open')));
+      h('p.proj-hint', 'Rest on a folder to see its files; click it to open the project.')));
     this.load();
   }
 
@@ -82,8 +82,8 @@ export class HomeView {
         ]);
       },
     }, ico('more', 16));
-    const palette = [...tasks.map(t => t.color), '#5d9bff', '#f472b6', '#f2b84b'].slice(0, 3);
-    const back = h('div.pf-back', { style: { '--c1': palette[0], '--c2': palette[1], '--c3': palette[2] } },
+    const palette = [...tasks.map(t => t.color), 'var(--accent)'].slice(0, 1);  // a folder without a picture: its first tier's colour, flat
+    const back = h('div.pf-back', { style: { '--c1': palette[0] } },
       p.cover ? h('img.pf-cover', { src: urls.thumb(p.id, p.cover), alt: '', loading: 'lazy', draggable: false }) : null);
     const preview = p.preview || [];
     const extra = (s.files || 0) - preview.length;
@@ -94,12 +94,12 @@ export class HomeView {
     const parts = [by.audio ? `${by.audio} audio` : '', by.video ? `${by.video} video` : '', by.image ? `${by.image} image${by.image > 1 ? 's' : ''}` : ''].filter(Boolean);
     const front = h('div.pf-front',
       h('h2', { title: p.name }, h('a', { href: links.project(p.id), onclick: (e) => e.stopPropagation() }, p.name)),
-      h('div.pf-meta', s.files ? [`${s.files} file${s.files > 1 ? 's' : ''}`, s.duration ? fmtDur(s.duration) : '', parts.join(' · ')].filter(Boolean).join(' · ') : 'No files yet'),
-      h('div.pf-tasks', tasks.length ? `${tasks.length} task${tasks.length > 1 ? 's' : ''} · ${tasks.slice(0, 3).map(t => t.name).join(', ')}${tasks.length > 3 ? '…' : ''}` : 'No tasks selected yet'),
+      h('div.pf-meta', s.files ? [`${s.files} file${s.files > 1 ? 's' : ''}`, s.duration ? fmtDur(s.duration) : '', parts.join(', ')].filter(Boolean).join(', ') : 'No files yet'),
+      h('div.pf-tasks', tasks.length ? `${tasks.length} task${tasks.length > 1 ? 's' : ''}: ${tasks.slice(0, 3).map(t => t.name).join(', ')}${tasks.length > 3 ? '…' : ''}` : 'No tasks selected yet'),
       h('div.pf-foot',
         h('div.pf-prog',
           h('div.progress.multi', h('i', { style: { width: rev + '%', background: 'var(--ok)' } }), h('i', { style: { width: Math.max(0, ann - rev) + '%' } })),
-          h('span', `${s.annotated || 0}/${s.files || 0} annotated · ${ago(p.updated_at)}`)),
+          h('span', `${s.annotated || 0}/${s.files || 0} annotated, ${ago(p.updated_at)}`)),
         more));
     const el = h('div.pfold', { onclick: open, title: p.description || '' }, back, files, front);
     el.addEventListener('pointerenter', () => loadWaves(el), { once: true });
@@ -132,7 +132,7 @@ export class HomeView {
 // videos, a waveform for audio (its real peaks, loaded the first time the folder opens).
 function fileCard(p, m) {
   const ext = (m.name.split('.').pop() || '').toUpperCase();
-  const meta = m.modality === 'image' ? `${ext} · ${m.width}×${m.height}` : `${ext} · ${fmtDur(m.duration || 0)}`;
+  const meta = m.modality === 'image' ? `${ext}, ${m.width}×${m.height}` : `${ext}, ${fmtDur(m.duration || 0)}`;
   const body = m.modality === 'audio'
     ? h('canvas.pff-wave', { dataset: { pid: p.id, mid: m.id, dur: m.duration || 0 } })
     : h('img.pff-img', { src: urls.thumb(p.id, m.id), alt: '', loading: 'lazy', draggable: false });

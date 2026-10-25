@@ -200,11 +200,11 @@ export class ImageEditor extends BaseEditor {
     const drawName = this.spatialTargets('boxes').find(b => b.key === this.drawKey)?.title || 'a box task';
     const poseName = this.spatialTargets('keypoints').find(b => b.key === this.poseKey)?.title || 'pose';
     let text;
-    if (this.placing) text = this.placing.k === 'new' ? 'Click on the image to add a new point to this person · Esc to cancel'
-      : `Click on the image to place the ${KP_NAMES[this.placing.k]} · Esc to cancel`;
-    else if (this.mode === 'box') text = `Drag on the image to draw a box into "${drawName}" · Esc to stop`;
+    if (this.placing) text = this.placing.k === 'new' ? 'Click on the image to add a new point to this person. Esc cancels.'
+      : `Click on the image to place the ${KP_NAMES[this.placing.k]}. Esc cancels.`;
+    else if (this.mode === 'box') text = `Drag on the image to draw a box into "${drawName}". Esc stops.`;
     else if (this.mode === 'pose') text = `Drag a box around a person to add a skeleton (${poseName}), then drag each point into place`;
-    else text = 'Drag a box or point to move it · corners resize · wheel zooms · drag empty space (or hold Space) to pan';
+    else text = 'Drag a box or point to move it; corners resize, the wheel zooms, and dragging empty space (or holding Space) pans.';
     this.hint.textContent = text;
     this.hint.classList.toggle('active', !!this.placing || this.mode !== 'select');
   }
@@ -744,7 +744,7 @@ export class ImageEditor extends BaseEditor {
       .filter(t => t && !SPATIAL.has(t.output) && t.modalities.includes('image') && !present.has(t.id));
     if (!doc.tiers.length) {
       cards.unshift(h('div.empty', h('div','No annotations yet. Run the project tasks, or draw / write them by hand.'),
-        h('button.btn.primary.sm', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('sparkles', 13), 'Run tasks')));
+        h('button.btn.primary.sm', { onclick: () => openRunDialog({ mediaIds: [this.media.id] }) }, ico('play', 13), 'Run tasks')));
     }
     if (suggested.length) {
       cards.push(h('div.menu-head', { style: { marginTop: '4px' } }, 'Not annotated yet'));
@@ -848,11 +848,11 @@ export class ImageEditor extends BaseEditor {
           h('button.btn.sm', { onclick: () => this.removeEdge(s.id, a, b) }, ico('trash', 12), 'Remove (Del)')));
       }
       detail.push(h('div.muted', { style: { fontSize: '12px', lineHeight: 1.5 } },
-        'Drag points to move them · Alt + drag moves the whole skeleton · Shift + drag from one point to another connects them · click a line and press Delete to remove it · dashed chips are missing points: click to place.'));
+        'Drag points to move them; Alt + drag moves the whole skeleton; Shift + drag from one point to another connects them; click a line and press Delete to remove it. Dashed chips are missing points: click one to place it.'));
     }
     if (s.meta?.model_geom || (s.meta?.model_value != null && s.meta.model_value !== s.value)) {
       detail.push(h('div.muted', { style: { fontSize: '12px' } }, 'Corrected by hand',
-        s.meta.model_value != null && s.meta.model_value !== s.value ? ` · model said "${valStr(s.meta.model_value)}"` : '',
+        s.meta.model_value != null && s.meta.model_value !== s.value ? `; model said "${valStr(s.meta.model_value)}"` : '',
         h('button.btn.sm.ghost', { style: { marginLeft: '6px' }, onclick: () => this.restoreModel(s.id) }, ico('undo', 12), 'Restore model output')));
     }
     return h('div', row, h('div.region-detail', detail));

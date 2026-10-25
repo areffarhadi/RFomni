@@ -30,7 +30,7 @@ export class Dashboard {
     const head = h('div.dash-head',
       h('div', h('h1', p.name), h('p', p.description || 'No description')),
       h('div.row', addBtn,
-        h('button.btn.primary.owner-only', { onclick: () => openRunDialog(), disabled: !media.length }, ico('sparkles', 15), 'Run tasks…'),
+        h('button.btn.primary.owner-only', { onclick: () => openRunDialog(), disabled: !media.length }, ico('play', 15), 'Run tasks…'),
         h('button.btn', { onclick: () => go(links.tab(p.id, 'stats')) }, ico('chart', 15), 'Statistics'),
         moreBtn));
     const sh = shareInfo();

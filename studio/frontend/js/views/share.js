@@ -77,7 +77,7 @@ export async function openShareDialog() {
         h('span.badge' + (sv.running ? '.ok' : ''), sv.running ? 'on' : 'starts with the first link')),
       h('div.reach-row', ico('globe', 16), h('div.grow',
         h('b', 'Internet'),
-        tn.running && tn.url ? h('div.muted', h('span.mono', tn.url), ' · works while Omni Studio runs; the address changes each time you turn it on.')
+        tn.running && tn.url ? h('div.muted', h('span.mono', tn.url), h('div', 'Works while Omni Studio runs; the address changes each time you turn it on.'))
           : tn.available ? h('div.muted', 'A free Cloudflare tunnel gives your links an https address that works from anywhere.')
             : h('div.muted', 'Install cloudflared to share over the internet (macOS: brew install cloudflared), then reopen this window.')),
       tn.running ? h('button.btn.sm', { type: 'button', onclick: async () => { data.server = await api.stopTunnel().catch(errorToast) || data.server; paintAll(); } }, 'Turn off')
@@ -107,9 +107,9 @@ export async function openShareDialog() {
             s.access === 'edit' ? 'can edit' : 'view only', tiers,
             s.allow_download ? 'downloads on' : null,
             s.expires_at ? `until ${new Date(s.expires_at).toLocaleDateString()}` : null,
-            `opened ${s.views || 0}× · last ${ago(s.last_seen)}`,
+            `opened ${s.views || 0}×, last ${ago(s.last_seen)}`,
             s.access === 'edit' ? `${s.edits || 0} edits` : null,
-          ].filter(Boolean).join(' · '))),
+          ].filter(Boolean).join(', '))),
         h('button.icon-btn.sm', { type: 'button', title: s.active ? 'Turn this link off' : 'Turn this link on again',
           'aria-label': s.active ? 'Turn this link off' : 'Turn this link on again',
           onclick: () => update(s, { revoked: s.active }) }, ico(s.active ? 'lock' : 'repeat', 14)),

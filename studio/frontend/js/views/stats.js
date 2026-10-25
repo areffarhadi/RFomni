@@ -138,14 +138,14 @@ export class StatsView {
     const OV = overlapColor();
     return h('div.section',
       h('div.section-head', h('h2', 'Speakers & overlap'),
-        h('span.muted', { style: { fontSize: '12px' } }, `${sp.files} file${sp.files === 1 ? '' : 's'} with speaker turns` + (sp.derived ? ' · overlap computed from the speaker turns' : ''))),
+        h('span.muted', { style: { fontSize: '12px' } }, `${sp.files} file${sp.files === 1 ? '' : 's'} with speaker turns` + (sp.derived ? '; overlap computed from the speaker turns' : ''))),
       h('div.section-body',
         h('div.stat-row.compact',
           ov('audio', 'Speech', secs(sp.speech), null, h('div.sub', `${sp.turns} speaker turns`)),
           ov('user', 'Pure speech', secs(sp.pure), null, h('div.sub', `${pct1(sp.speech ? sp.pure / sp.speech : 0)} of speech, one speaker`)),
           ov('users', 'Overlap', secs(sp.overlap), null, h('div.sub', `${pct1(sp.overlap_ratio)} of speech, 2+ speakers`)),
           ov('layers', 'Speakers per file', nsp.length ? nsp.map(x => x.speakers).join(' / ') : '–', null,
-            h('div.sub', nsp.map(x => `${x.files}× ${x.speakers}`).join(' · ')))),
+            h('div.sub', nsp.map(x => `${x.files}× ${x.speakers}`).join(', ')))),
         h('div.st-grid2',
           card('Overlap per speaker pair', null,
             sp.pairs.length ? h('div.st-bars', sp.pairs.map(p => h('div.st-brow', { title: `${p.count} regions · ${secs(p.duration)}` },
@@ -165,7 +165,7 @@ export class StatsView {
           h('thead', h('tr', h('th', 'File'), h('th.num', 'Speakers'), h('th.num', 'Speech'), h('th.num', 'Pure'), h('th.num', 'Overlap'), h('th', 'Overlap share'), h('th.go', h('span.sr-only', 'Open')))),
           h('tbody', sp.per_file.slice(0, 12).map(f => h('tr', { onclick: () => go(links.file(pid, f.media_id)) },
             h('td', h('span.file', ico(modalityIcon(f.modality), 13), f.name)),
-            h('td.num', f.speakers), h('td.num', secs(f.speech)), h('td.num', secs(f.pure)), h('td.num', `${secs(f.overlap)} · ${f.overlaps}×`),
+            h('td.num', f.speakers), h('td.num', secs(f.speech)), h('td.num', secs(f.pure)), h('td.num', `${secs(f.overlap)}, ${f.overlaps}×`),
             h('td', h('div.st-share', bar(f.ratio / Math.max(1e-6, sp.per_file[0].ratio), OV), h('span', pct1(f.ratio)))),
             h('td.go', ico('chev-r', 14)))))))));
   }
@@ -183,7 +183,7 @@ export class StatsView {
     const head = h('div.st-task-head',
       h('i.dot', { style: { '--c': t.color } }), h('div.grow', h('b', t.title), h('div.muted', [
         OUT_NAMES[t.output], plural(t.segments, 'segment', 'segments'), `${t.files}/${t.applicable} files`,
-      ].join(' · '))),
+      ].join(', '))),
       t.mean_conf != null ? h('div.st-conf', { title: `Confidence of the model output · mean ${t.mean_conf.toFixed(2)}` },
         histo(t.conf_hist, t.color, t.conf_hist.map((_, i) => `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}`)), h('small', `conf ${t.mean_conf.toFixed(2)}`)) : null);
     if (!t.segments) return h('div.st-task.empty-task', head, h('div.muted', 'Not run yet.'));
@@ -199,7 +199,7 @@ export class StatsView {
       body.push(h('div.st-bars', shown.map(l => h('div.st-brow' + (l.count ? '' : '.zero'), { title: `${l.count} × · ${secs(l.duration)} · ${l.files} files` },
         h('span.st-bl', h('i.dot', { style: { '--c': segColor(tier, l.value) } }), l.value),
         bar(val(l) / max, segColor(tier, l.value)),
-        h('span.st-bn', l.count ? `${useDur ? secs(l.duration) : l.count.toLocaleString()} · ${pct(val(l), total)}%` : '0')))),
+        h('span.st-bn', l.count ? `${useDur ? secs(l.duration) : l.count.toLocaleString()} (${pct(val(l), total)}%)` : '0')))),
       labs.length > 12 ? h('div.st-note', `+ ${labs.length - 12} more labels`) : null,
       labs.length < t.labels.length ? h('div.st-note', `${plural(t.labels.length - labs.length, 'class has', 'classes have')} no examples yet`) : null);
     }

@@ -44,7 +44,7 @@ export function tierLabels(tier, doc) {
 
 export function srcBadge(src, by) {
   const k = (src || '').split('+')[0];
-  return h('span.src.' + k, { title: by ? `Edited through the shared link "${by}"` : '' }, src || '?', by ? h('small', ` · ${by}`) : null);
+  return h('span.src.' + k, { title: by ? `Edited through the shared link "${by}"` : '' }, src || '?', by ? h('small', ` by ${by}`) : null);
 }
 
 /** Editor widget for a value of the given tier. onChange(value, {merge}) */
