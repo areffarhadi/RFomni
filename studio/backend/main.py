@@ -29,7 +29,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.6.2", "Atelier"
+VERSION, CODENAME = "0.6.3", "Atelier"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -138,9 +138,17 @@ def sign_out():
 @app.get("/api/auth/me")
 def me(request: Request):
     user = getattr(request.state, "user", None)
+    if not auth.ENABLED:
+        # the studio lets everyone in, but the chat still has its own sign-in: say whether this browser holds a
+        # chat session, so the sign-in page can send someone already signed in straight on
+        try:
+            session = auth.request_user(request.headers)
+        except auth.AuthError:
+            session = None
+        return {"user": user, "auth": False, "session": bool(session)}
     if not user:
         return JSONResponse({"detail": "Please sign in"}, status_code=401)
-    return {"user": user, "auth": auth.ENABLED}
+    return {"user": user, "auth": True, "session": True}
 
 
 def _share(request: Request):

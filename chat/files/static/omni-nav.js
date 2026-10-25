@@ -86,11 +86,18 @@
     var signOut = document.getElementById("omni-signout");
     if (signOut) {
       signOut.addEventListener("click", function () {
-        try {
-          localStorage.removeItem("token");
-        } catch (e) {}
-        document.cookie = "token=; Max-Age=0; path=/";
-        location.href = "/auth";
+        // the chat's own sign-out clears its session cookie, which scripts cannot reach; that cookie is also the
+        // studio's session, so this signs you out of both
+        var t = token();
+        fetch("/api/v1/auths/signout", { method: "POST", headers: t ? { Authorization: "Bearer " + t } : {} })
+          .catch(function () {})
+          .then(function () {
+            try {
+              localStorage.removeItem("token");
+            } catch (e) {}
+            document.cookie = "token=; Max-Age=0; path=/";
+            location.href = "/auth";
+          });
       });
     }
 
@@ -107,8 +114,19 @@
     }
   }
 
-  function start() {
+  // The chat signs in without reloading the page (its sign-in page, or the session the studio's sign-in left), so
+  // the bar is drawn again whenever the session changes, not only on load
+  var shown = null;
+  function refresh() {
+    var t = token();
+    if (t === shown) return;
+    shown = t;
     session().then(render);
+  }
+
+  function start() {
+    refresh();
+    setInterval(refresh, 1000);
   }
 
   if (document.readyState === "loading") {

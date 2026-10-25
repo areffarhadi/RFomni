@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.3 "Atelier" (2026-10-26)
+
+One sign-in for the whole site.
+
+- **Sign in once**: the sign-in page first asks whether you are signed in already (on the studio's page or on the
+  chat) and, if so, goes straight on to the Studio, the Chat, Task sharing, Subjective tests or Data collection; the
+  form only shows when you are not. Once you are signed in, the landing page links go straight to the apps.
+- **Chat top bar**: shows your name as soon as the chat signs you in (it said "Sign in" until a reload), and its
+  *Sign out* now ends the session for the chat and the studio together.
+- **Home** instead of *About* in the studio's top bar, for the link back to the landing page.
+
 ## v0.6.2 "Atelier" (2026-10-25)
 
 Text, a fourth kind of data next to audio, video and images.

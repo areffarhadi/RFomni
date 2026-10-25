@@ -147,6 +147,9 @@ h1 { margin: 0; text-align: center; font-size: 23px; font-weight: 700; letter-sp
   font-weight: 700; font-size: 15px; color: var(--switch); transition: background-color .2s, border-color .2s; }
 .switch:hover { background: var(--glass-2); border-color: color-mix(in srgb, var(--switch) 50%, transparent); }
 
+/* hidden for the moment the page asks whether you are signed in already (login.js) */
+.checking .card { visibility: hidden; }
+
 /* the same card in two modes */
 .card[data-mode="signin"] .only-register, .card[data-mode="register"] .only-signin { display: none; }
 .card.swap { animation: swap .45s var(--ease); }

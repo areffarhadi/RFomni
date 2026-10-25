@@ -20,7 +20,7 @@ const themeBtn = h('button.icon-btn', { onclick: () => openThemeMenu(), 'aria-ha
 const shareBtn = h('button.btn.sm.share-btn', { title: 'Share this project with a link', onclick: () => openShareDialog(), style: { display: 'none' } }, ico('share', 14), 'Share');
 const sharedPill = h('div.shared-pill', { style: { display: 'none' } });
 // to the landing page (what Omni Studio is); its "Open the studio" signs you in and brings you back here
-const aboutLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'About Omni Studio: what it does' }, ico('info', 14), 'About');
+const homeLink = h('a.btn.sm.ghost.owner-only', { href: '/landing/', title: 'Home page: the platform, with Chat, Task sharing, Subjective tests and Data collection' }, ico('home', 14), 'Home');
 // who is signed in (accounts are the chat page's, see backend/auth.py), and signing out
 const userBtn = h('button.icon-btn.owner-only', { title: 'Account', 'aria-label': 'Account', 'aria-haspopup': 'menu', onclick: () => openUserMenu() }, ico('user', 17));
 let me = null;
@@ -42,7 +42,7 @@ const collectLink = h('a.btn.sm.ghost.owner-only', { href: '#/collect', title: '
 const brand = h('a.brand', { href: '#/' }, ico('logo', 26, ''), h('b', 'Omni'), h('span.light', 'Studio'));
 const topbar = h('header.topbar',
   brand,
-  crumbs, h('div.grow'), sharedPill, sharedTasksLink, listenLink, collectLink, aboutLink, shareBtn, enginePill,
+  crumbs, h('div.grow'), sharedPill, sharedTasksLink, listenLink, collectLink, homeLink, shareBtn, enginePill,
   h('button.icon-btn', { title: 'Keyboard shortcuts (?)', onclick: showShortcuts }, ico('keyboard', 17)),
   themeBtn, userBtn);
 const main = h('main.main');

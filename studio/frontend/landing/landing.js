@@ -13,6 +13,14 @@
   const signIn = location.protocol === 'file:' ? 'http://127.0.0.1:8710/login/' : '../login/';
   $$('.open-studio').forEach(a => { a.href = signIn; });
   $$('[data-app]').forEach(a => { a.href = signIn + '?next=' + a.dataset.app; });  // Studio / Chat: sign in, then that app
+  // signed in already (one session for the studio and the chat): the links go straight to the apps
+  if (location.protocol !== 'file:') {
+    fetch('/api/auth/me').then(r => (r.ok ? r.json() : null)).then(d => {
+      if (!d?.session) return;
+      $$('.open-studio, [data-app="studio"]').forEach(a => { a.href = '../'; });
+      $$('[data-app="chat"]').forEach(a => { a.href = `https://${location.hostname}:8080/auth`; });
+    }).catch(() => {});
+  }
   // phones: the platform links fold into a drop-down behind the menu button
   const menuBtn = $('.menu-btn'), navEl = $('.nav');
   const setMenu = (on) => { navEl.classList.toggle('open', on); menuBtn.setAttribute('aria-expanded', String(on)); };

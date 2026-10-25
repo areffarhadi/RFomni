@@ -65,9 +65,17 @@
     if (!reduce) { card.classList.remove('swap'); void card.offsetWidth; card.classList.add('swap'); }
   }
   pickApp(app);
-  // while the studio runs without sign-in (OMNI_AUTH=off, during development) the card steps aside
-  if (location.protocol !== 'file:' && app !== 'chat') {
-    fetch('/api/auth/me').then(r => r.json()).then(d => { if (d && d.auth === false) location.replace(APPS[app].url); }).catch(() => {});
+  // signed in already (here or on the chat page: one session for both) → straight on, without the card. While the
+  // studio runs without sign-in (OMNI_AUTH=off, during development) the card also steps aside for every app but the chat.
+  // The card stays hidden while this is asked, so someone signed in never sees it flash.
+  if (location.protocol !== 'file:' && !new URLSearchParams(location.search).get('pending')) {
+    document.documentElement.classList.add('checking');
+    const showCard = () => document.documentElement.classList.remove('checking');
+    const slow = setTimeout(showCard, 1500);
+    fetch('/api/auth/me').then(r => (r.ok ? r.json() : null)).then(d => {
+      if (d && (d.session || (d.auth === false && app !== 'chat'))) location.replace(APPS[app].url);
+      else { clearTimeout(slow); showCard(); }
+    }).catch(() => { clearTimeout(slow); showCard(); });
   }
   $('#switch').addEventListener('click', () => setMode(card.dataset.mode === 'signin' ? 'register' : 'signin'));
 
