@@ -55,13 +55,13 @@
 }
 /* ---------- Day: the app's light theme ---------- */
 :root[data-theme="light"] {
-  --bg: #f5f6f8; --bg-1: #ffffff; --bg-2: #f7f8fa; --bg-3: #eef0f3;
+  --bg: #f4f3ee; --bg-1: #ffffff; --bg-2: #f7f8fa; --bg-3: #eef0f3;
   --text: #1a1c1f; --text-2: #40444c; --muted: #5f646e; --faint: #8e929a;
   --line: rgba(16, 18, 24, .08); --line-2: rgba(16, 18, 24, .14);
   --accent: #0969da; --accent-soft: rgba(9, 105, 218, .09); --accent-ink: #ffffff;
   --btn-a: #1a6fdc; --btn-b: #0969da; --btn-a-h: #0f6ad8; --btn-b-h: #0757ba; --btn-glow: rgba(9, 105, 218, .35);
   --panel-a: #ffffff; --panel-b: #f1f3f6; --demo-a: #ffffff; --demo-b: #f8f9fb;
-  --sheet: rgba(255, 255, 255, .97); --menu: #ffffff; --nav: rgba(245, 246, 248, .82);
+  --sheet: rgba(255, 255, 255, .97); --menu: #ffffff; --nav: rgba(244, 243, 238, .82);
   --card-a: #ffffff; --card-b: #f8f9fb; --faq: #ffffff; --faq-open: #ffffff;
   --note-bg: #1a1c1f; --note-fg: #ffffff;
   --wave: rgba(45, 95, 180, .9); --wave-dim: rgba(45, 95, 180, .3); --play: #cf222e;

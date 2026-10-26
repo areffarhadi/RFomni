@@ -30,7 +30,7 @@
   color-scheme: dark;
 }
 :root[data-theme="light"] {
-  --bg: #f5f6f8; --bg-1: #ffffff; --bg-2: #f7f8fa; --bg-3: #eef0f3; --bg-4: #e1e4e8;
+  --bg: #f4f3ee; --bg-1: #ffffff; --bg-2: #f7f8fa; --bg-3: #eef0f3; --bg-4: #e1e4e8;
   --line: #e4e6ea; --line-2: #d3d6dc;
   --text: #1a1c1f; --text-2: #40444c; --muted: #646973; --faint: #8e929a;
   --input-bg: #ffffff;

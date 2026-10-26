@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.5 "Atelier" (2026-10-27)
+
+A warmer day mode, and the sign-in page's glass back.
+
+- **Day mode background is #F4F3EE** (warm off-white) on the landing page, the studio, the sign-in page and the
+  shared pages; cards, panels and the top bar stay white.
+- **Sign-in page**: the v0.5.1 design is back: soft drifting lights behind a frosted-glass card, gradient buttons
+  and badge (v0.6.0 had replaced it with one flat card on a plain ground).
+- **Stylesheets are versioned** (`?v=0.6.5`), so a new look reaches browsers at once even where Cloudflare tells
+  them to keep files for hours.
+
 ## v0.6.4 "Atelier" (2026-10-26)
 
 The site on its own domain.

@@ -27,7 +27,7 @@
   color-scheme: dark;
 }
 :root[data-theme="light"] {
-  --bg: #eef2f7; --bg-2: #ffffff; --text: #14161a; --text-2: #3d424b; --muted: #5f646e; --accent: #0969da;
+  --bg: #f4f3ee; --bg-2: #ffffff; --text: #14161a; --text-2: #3d424b; --muted: #5f646e; --accent: #0969da;
   --glass: rgba(255, 255, 255, .6); --glass-2: rgba(255, 255, 255, .4); --glass-line: rgba(255, 255, 255, .95);
   --field: rgba(255, 255, 255, .7); --field-line: #8a8f99; --field-focus: #0969da;
   --grad-a: #3b86e0; --grad-b: #0969da; --grad-ink: #ffffff; --on: rgba(9, 105, 218, .12);

@@ -1,6 +1,6 @@
 # Omni Studio
 
-**Current release: v0.6.4 "Atelier"** · see [CHANGELOG.md](CHANGELOG.md)
+**Current release: v0.6.5 "Atelier"** · see [CHANGELOG.md](CHANGELOG.md)
 
 ![Tier editor with waveform, spectrogram and forced-alignment boundaries](docs/screenshots/forced_alignment.png)
 
