@@ -14,6 +14,8 @@ git apply /path/to/tracked.patch
 cp -a /path/to/files/. .
 # .env is not shipped — platform/setup.sh writes one for the host it runs on
 NODE_OPTIONS=--max-old-space-size=12288 npx vite build
+# vite build empties build/; the site's own pages and top bar live in backend/open_webui/static
+cp -p backend/open_webui/static/{omni-hub.html,omni-nav.js,omni-pages.css,omni-studio.html,custom.css} build/static/
 bash start_remote.sh
 ```
 

@@ -12,14 +12,15 @@
   let lastPlace = '';
   try { lastPlace = JSON.parse(localStorage.getItem('omni:last') || '""'); } catch { /* blocked storage */ }
   if (!/^#\/[\w\-/?=&.%]*$/.test(lastPlace)) lastPlace = '';
-  const studio = (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + lastPlace;
-  // the chat app (Open WebUI with the agent) on the same address; its /auth page picks up the shared cookie
-  const CHAT_URL = `https://${location.hostname || '192.168.8.174'}:8080/auth`;
+  const studio = (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../?app') + lastPlace;
+  // the chat app (Open WebUI with the agent): port 8080 on the LAN address, chat.<domain> behind the public domain
+  const CHAT_URL = (location.port || location.protocol === 'file:'
+    ? `https://${location.hostname || '192.168.8.174'}:8080` : `https://chat.${location.hostname}`) + '/auth';
   // Task sharing lives in the studio (#/shared); it has no switch of its own on the card, only ?next=share
   const APPS = { studio: { url: studio, name: 'Omni Studio' }, chat: { url: CHAT_URL, name: 'the chat' },
-    share: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/shared', name: 'Task sharing' },
-    listen: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/listen', name: 'Subjective tests' },
-    collect: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../') + '#/collect', name: 'Data collection' } };
+    share: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../?app') + '#/shared', name: 'Task sharing' },
+    listen: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../?app') + '#/listen', name: 'Subjective tests' },
+    collect: { url: (location.protocol === 'file:' ? 'https://127.0.0.1:8710/' : '../?app') + '#/collect', name: 'Data collection' } };
 
   // ---------- the card
   const card = $('#auth'), toast = $('.toast');

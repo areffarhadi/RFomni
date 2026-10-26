@@ -166,6 +166,12 @@ class Qwen3OmniVoiceService(FrameProcessor):
         )
         self._sample_rate = 16000
         self._audio_buffer = bytearray()
+        # OMNI_MIC_DEBUG_DIR: record the raw mic stream per session and log its level once a
+        # second, to tell silence, echo and a dead track apart. Off unless the variable is set.
+        self._mic_dir = os.environ.get("OMNI_MIC_DEBUG_DIR", "").strip()
+        self._mic_wav = None
+        self._mic_win = bytearray()
+        self._mic_last = 0.0
         self._user_speaking = False
         self._preroll_bytes = 0
         self._turn_task: asyncio.Task | None = None
@@ -585,6 +591,9 @@ class Qwen3OmniVoiceService(FrameProcessor):
 
         if isinstance(frame, (EndFrame, CancelFrame)):
             await self._cancel_turn()
+            if self._mic_wav is not None:
+                self._mic_wav.close()
+                self._mic_wav = None
             await self.push_frame(frame, direction)
             return
 
@@ -665,6 +674,8 @@ class Qwen3OmniVoiceService(FrameProcessor):
             return
 
         if isinstance(frame, (InputAudioRawFrame, UserAudioRawFrame)):
+            if self._mic_dir:
+                self._debug_mic(frame.audio)
             self._buffer_audio(frame.audio)
             await self.push_frame(frame, direction)
             return
@@ -703,6 +714,39 @@ class Qwen3OmniVoiceService(FrameProcessor):
             self._latest_jpeg_b64 = base64.b64encode(buf.getvalue()).decode()
         except Exception as exc:
             logger.debug("user image store failed: {}", exc)
+
+    def _debug_mic(self, audio: bytes):
+        import time
+        import wave
+
+        import numpy as np
+
+        now = time.monotonic()
+        if self._mic_wav is None:
+            os.makedirs(self._mic_dir, exist_ok=True)
+            path = os.path.join(self._mic_dir, f"{self._session_id[:8] or 'session'}_{int(time.time())}.wav")
+            self._mic_wav = wave.open(path, "wb")
+            self._mic_wav.setnchannels(1)
+            self._mic_wav.setsampwidth(2)
+            self._mic_wav.setframerate(self._sample_rate)
+            logger.info("Omni [{}] mic debug: recording {}", self._session_id[:8] or "?", path)
+        elif now - self._mic_last > 0.5:
+            logger.info("Omni [{}] mic debug: no audio for {:.2f}s", self._session_id[:8] or "?", now - self._mic_last)
+        self._mic_last = now
+        self._mic_wav.writeframes(audio)
+        self._mic_win += audio
+        if len(self._mic_win) >= self._sample_rate * 2:
+            x = np.frombuffer(bytes(self._mic_win), dtype=np.int16).astype(np.float32)
+            self._mic_win.clear()
+            rms = float(np.sqrt(np.mean(x * x))) or 1.0
+            logger.info(
+                "Omni [{}] mic debug: {:.1f} dBFS peak {:.1f} dBFS bot_audible={} user_speaking={}",
+                self._session_id[:8] or "?",
+                20 * np.log10(rms / 32768),
+                20 * np.log10((float(np.abs(x).max()) or 1.0) / 32768),
+                self._bot_audible,
+                self._user_speaking,
+            )
 
     def _buffer_audio(self, audio: bytes):
         self._audio_buffer += audio

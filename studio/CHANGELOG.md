@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.6.4 "Atelier" (2026-10-26)
+
+The site on its own domain.
+
+- **labelomni.com**: a Cloudflare Tunnel (`stack/configs/cloudflared_labelomni.yml`, the stack's eighth service
+  `tunnel`) serves the studio at https://labelomni.com and the chat at https://chat.labelomni.com, with a real
+  certificate and nothing opened on the firewall.
+- **Landing page first**: the bare domain opens the landing page; its links open the studio as `/?app`. The LAN
+  address (port 8710) still opens the studio directly.
+- **Links between studio and chat** use `chat.<domain>` / `<domain>` behind the domain and the ports on the LAN.
+- **Voice chat**: every reply was saved twice in the chat, and a reply of several sentences kept only the last one.
+  Both came from the chat page's handling of the agent's events; it now saves each reply once and in full.
+- **Voice debugging**: `OMNI_MIC_DEBUG_DIR` records each call's microphone and logs its level once a second;
+  `OMNI_RTVI_DEBUG=1` logs every event the agent sends to the browser. Both are off unless set.
+
 ## v0.6.3 "Atelier" (2026-10-26)
 
 One sign-in for the whole site.

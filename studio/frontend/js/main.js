@@ -30,7 +30,7 @@ async function loadMe() {
 function openUserMenu() {
   menu(userBtn, [
     me && { header: me.name ? `${me.name} (${me.email})` : me.email },
-    { label: 'Open the chat', icon: 'chat', onClick: () => window.open(`https://${location.hostname}:8080/`, '_blank', 'noopener') },
+    { label: 'Open the chat', icon: 'chat', onClick: () => window.open((location.port ? `https://${location.hostname}:8080` : `https://chat.${location.hostname}`) + '/', '_blank', 'noopener') },
     'sep',
     { label: 'Sign out', icon: 'logout', onClick: async () => { await api.signOut().catch(() => {}); location.href = '/login/?next=studio'; } },
   ], { placement: 'bottom-end' });

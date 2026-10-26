@@ -17,8 +17,8 @@
   if (location.protocol !== 'file:') {
     fetch('/api/auth/me').then(r => (r.ok ? r.json() : null)).then(d => {
       if (!d?.session) return;
-      $$('.open-studio, [data-app="studio"]').forEach(a => { a.href = '../'; });
-      $$('[data-app="chat"]').forEach(a => { a.href = `https://${location.hostname}:8080/auth`; });
+      $$('.open-studio, [data-app="studio"]').forEach(a => { a.href = '../?app'; });
+      $$('[data-app="chat"]').forEach(a => { a.href = (location.port ? `https://${location.hostname}:8080` : `https://chat.${location.hostname}`) + '/auth'; });
     }).catch(() => {});
   }
   // phones: the platform links fold into a drop-down behind the menu button

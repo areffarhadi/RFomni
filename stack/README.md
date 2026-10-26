@@ -30,6 +30,10 @@ Any of them takes service names to act on only some, e.g. `~/omni-stack/stack.py
 | voice  | 7912 | Pipecat voice agent v5.3 (https), has the `studio` mode | |
 | webui  | 8080 | Open WebUI chat page, https://192.168.8.174:8080/ | |
 | studio | 8710 | Omni Studio + assistant panel, https://192.168.8.174:8710/ (sign-in required) | |
+| tunnel | 20241 | Cloudflare Tunnel: https://labelomni.com/ → studio, https://chat.labelomni.com/ → chat (`configs/cloudflared_labelomni.yml`) | |
+
+The tunnel is `~/bin/cloudflared` with tunnel `labelomni`; its credentials are in `~/.cloudflared/` (not in git).
+Only page traffic and voice signalling cross it; voice audio goes peer-to-peer, so callers off the LAN need a TURN server.
 
 `vllm` is the slow one: a cold start loads three stages and can take several minutes. The
 script waits up to 20 minutes for it. Everything else is ready within seconds to a minute.

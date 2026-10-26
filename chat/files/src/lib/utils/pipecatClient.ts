@@ -272,12 +272,12 @@ export class PipecatVoiceSession {
 		}
 	}
 
-	private appendBot(text: string, replace: boolean) {
+	private appendBot(text: string) {
 		if (this.botDone) {
 			this.botBuf = '';
 			this.botDone = false;
 		}
-		this.botBuf = replace ? text : this.botBuf + text;
+		this.botBuf += text;
 		this.handlers.onBotText?.(this.botBuf, false);
 	}
 
@@ -313,14 +313,13 @@ export class PipecatVoiceSession {
 				break;
 			case 'bot-llm-text': {
 				const chunk = msg.data?.text ?? '';
-				if (chunk) this.appendBot(chunk, false);
+				if (chunk) this.appendBot(chunk);
 				break;
 			}
-			case 'bot-transcription': {
-				const text = msg.data?.text ?? '';
-				if (text) this.appendBot(text, true);
+			case 'bot-transcription':
+				// One sentence at a time, repeating what bot-llm-text already streamed;
+				// taking it as the reply kept only the last sentence.
 				break;
-			}
 			case 'bot-llm-stopped':
 				this.finishBot();
 				break;
@@ -331,8 +330,10 @@ export class PipecatVoiceSession {
 				break;
 			case 'bot-tts-stopped':
 			case 'bot-stopped-speaking':
-				this.handlers.onBotSpeaking?.(false);
+				// Finish first: the overlay saves the turn on either call, and finishing after
+				// it left the text pending, so the next stop event saved it a second time.
 				this.finishBot();
+				this.handlers.onBotSpeaking?.(false);
 				this.handlers.onStatus?.('Listening…');
 				break;
 			case 'server-message':

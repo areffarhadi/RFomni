@@ -22,6 +22,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # env.tuned pinned 0.37.
 load_dotenv(override=True)
 
+if os.environ.get("OMNI_RTVI_DEBUG", "0") not in ("0", "false", "no"):
+    # Log every RTVI message sent to the browser, to see the event order a client receives.
+    from loguru import logger as _log
+    from pipecat.processors.frameworks.rtvi.processor import RTVIProcessor
+
+    _push = RTVIProcessor.push_transport_message
+
+    async def _logged_push(self, model, exclude_none: bool = True):
+        msg = model.model_dump(exclude_none=exclude_none)
+        if msg.get("type") not in ("bot-audio-level", "user-audio-level", "metrics"):
+            _log.info("rtvi → {} {}", msg.get("type"), str(msg.get("data", ""))[:120])
+        return await _push(self, model, exclude_none)
+
+    RTVIProcessor.push_transport_message = _logged_push
+
 from camera_tap import CameraTap
 from local_talking_avatar import build_avatar_processor
 from omni_concurrency import max_concurrent_turns

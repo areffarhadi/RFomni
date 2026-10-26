@@ -1,7 +1,9 @@
 (function () {
   var CHAT = "/";
-  // the studio runs on its own port (8710) with its own sign-in, on the same host as the chat
-  var STUDIO = location.protocol + "//" + location.hostname + ":8710/";
+  // the studio: port 8710 on the LAN address; behind the public domain the chat is chat.<domain>, the studio <domain>
+  var STUDIO = location.port
+    ? location.protocol + "//" + location.hostname + ":8710/"
+    : location.protocol + "//" + location.hostname.replace(/^chat\./, "") + "/";
   var HOME = "/hub";
 
   function token() {

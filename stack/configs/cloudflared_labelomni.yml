@@ -1,0 +1,17 @@
+# Cloudflare Tunnel for labelomni.com (tunnel "labelomni"). cloudflared dials out to Cloudflare,
+# so nothing is opened on the firewall. The credentials file is not in the repository: it is written
+# by `cloudflared tunnel create labelomni` into ~/.cloudflared/.
+tunnel: 7d6efbb7-e06f-4924-a5f2-ece11da8c26b
+credentials-file: /home/rf/.cloudflared/7d6efbb7-e06f-4924-a5f2-ece11da8c26b.json
+
+ingress:
+  # the services use the self-signed LAN certificate; Cloudflare serves the real one to visitors
+  - hostname: chat.labelomni.com
+    service: https://127.0.0.1:8080
+    originRequest:
+      noTLSVerify: true
+  - hostname: labelomni.com
+    service: https://127.0.0.1:8710
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404

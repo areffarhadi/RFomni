@@ -37,6 +37,9 @@ STACK = [
     {"name": "webui", "port": 8080, "what": "Open WebUI chat page (https)", "wait": 300},
     {"name": "studio", "port": 8710, "what": "Omni Studio + assistant", "wait": 120,
      "ready": "https://127.0.0.1:8710/api/info"},
+    # Cloudflare Tunnel: labelomni.com -> studio, chat.labelomni.com -> chat. The port is its metrics server.
+    {"name": "tunnel", "port": 20241, "what": "Cloudflare Tunnel for labelomni.com", "wait": 60,
+     "ready": "http://127.0.0.1:20241/ready"},
 ]
 URLS = {"webui": "https://192.168.8.174:8080/", "studio": "https://192.168.8.174:8710/", "voice": "https://127.0.0.1:7912/"}
 # environment variables of the shell the services happened to be started from, not of the services
@@ -171,7 +174,8 @@ def status() -> int:
         ok = ready(svc)
         down += not ok
         print(f"  {'up  ' if ok else 'DOWN'}  {svc['name']:7} :{svc['port']:<5} {svc['what']}")
-    print("\n  chat page:   " + URLS["webui"] + "\n  studio:      " + URLS["studio"])
+    print("\n  chat page:   " + URLS["webui"] + "   public: https://chat.labelomni.com/"
+          + "\n  studio:      " + URLS["studio"] + "   public: https://labelomni.com/")
     return down
 
 

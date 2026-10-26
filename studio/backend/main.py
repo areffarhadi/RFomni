@@ -29,7 +29,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.6.3", "Atelier"
+VERSION, CODENAME = "0.6.4", "Atelier"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -74,6 +74,10 @@ def _admin_only(path: str, method: str) -> bool:
 @app.middleware("http")
 async def require_sign_in(request: Request, call_next):
     path = request.url.path
+    # Behind the public domain (no port in the address) the bare address is the front door: the landing page.
+    # The landing and sign-in pages open the app as /?app, which stays the app on any address.
+    if path == "/" and not request.url.query and ":" not in request.headers.get("host", ":"):
+        return Response(status_code=303, headers={"location": "/landing/"})
     app_page = path in ("/", "/index.html")
     if _share(request) or not (path.startswith("/api/") or app_page):
         return await call_next(request)
