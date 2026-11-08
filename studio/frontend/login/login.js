@@ -69,13 +69,17 @@
   // signed in already (here or on the chat page: one session for both) → straight on, without the card. While the
   // studio runs without sign-in (OMNI_AUTH=off, during development) the card also steps aside for every app but the chat.
   // The card stays hidden while this is asked, so someone signed in never sees it flash.
+  // The page-to-page movement (fx/journey.js) waits for this check, then opens the card or passes straight on
+  const J = window.omniJourney;
   if (location.protocol !== 'file:' && !new URLSearchParams(location.search).get('pending')) {
+    J?.hold();
     document.documentElement.classList.add('checking');
-    const showCard = () => document.documentElement.classList.remove('checking');
+    const showCard = () => { document.documentElement.classList.remove('checking'); J?.arrive(); };
     const slow = setTimeout(showCard, 1500);
     fetch('/api/auth/me').then(r => (r.ok ? r.json() : null)).then(d => {
-      if (d && (d.session || (d.auth === false && app !== 'chat'))) location.replace(APPS[app].url);
-      else { clearTimeout(slow); showCard(); }
+      if (d && (d.session || (d.auth === false && app !== 'chat'))) {
+        if (J?.active) J.pass(APPS[app].url, APPS[app].name); else location.replace(APPS[app].url);
+      } else { clearTimeout(slow); showCard(); }
     }).catch(() => { clearTimeout(slow); showCard(); });
   }
   $('#switch').addEventListener('click', () => setMode(card.dataset.mode === 'signin' ? 'register' : 'signin'));
@@ -116,12 +120,16 @@
       card.classList.remove('busy');
       return tell('Your account was created. An administrator has to approve it before you can continue.', false);
     }
-    setTimeout(() => { location.href = APPS[app].url; }, reduce ? 0 : 550);
+    // signed in: the card's mark flies to the middle and the next page opens with the movement (same site only)
+    const next = APPS[app].url;
+    if (/^https?:/.test(next) || !J?.leave({ url: next, title: APPS[app].name, from: $('.badge svg') })) {
+      setTimeout(() => { location.href = next; }, reduce ? 0 : 550);
+    }
   }
   card.addEventListener('submit', (e) => { e.preventDefault(); if (!card.classList.contains('busy')) enter(); });
   if (new URLSearchParams(location.search).get('pending')) tell('Your account is waiting for an administrator\'s approval.', false);
 
-  // ---------- colour mode: Day / Night / Green, saved for the app and the landing page as well
+  // ---------- colour mode: Day / Night / Green / Navy / Cream / Charcoal, saved for the app and the landing page as well
   const modes = $$('.modes [role=radio]');
   const mode = () => document.documentElement.dataset.theme || 'forest';
   function paintModes() {

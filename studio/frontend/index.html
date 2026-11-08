@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-glass>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,13 +9,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Poppins:wght@300;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/app.css?v=0.6.5">
+  <link rel="stylesheet" href="/css/app.css?v=0.6.6">
+  <link rel="stylesheet" href="/fx/glass.css?v=0.6.6"><!-- the glass look, on with data-glass above -->
   <style>/* Hallmark · checked: 2026-10-25 · the studio shell; the rest is in /css/app.css · built: the project · redesign: polish · v2.0.0 */ html, body { overflow-x: clip; }</style>
   <script>
-    try { const t = JSON.parse(localStorage.getItem('omni:theme')); if (['dark', 'light', 'forest'].includes(t)) document.documentElement.dataset.theme = t; } catch (e) {}
+    try { const t = JSON.parse(localStorage.getItem('omni:theme')); if (['dark', 'light', 'forest', 'navy', 'cream', 'charcoal'].includes(t)) document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
 </head>
 <body>
+  <script src="/fx/journey.js?v=0.6.6"></script><!-- the movement between pages -->
   <div id="app"></div>
   <div id="toasts"></div>
   <script type="module" src="/js/main.js"></script>

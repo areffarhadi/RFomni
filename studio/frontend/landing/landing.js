@@ -199,7 +199,7 @@
   const preload = () => tabs.forEach(t => { new Image().src = shotSrc(t.dataset.shot); });
   setTimeout(preload, 2500);  // the other screenshots, once the page is idle
 
-  // ---------- colour mode: Day / Night / Green, saved for the app as well
+  // ---------- colour mode: Day / Night / Green / Navy / Cream / Charcoal, saved for the app as well
   const modes = $$('.modes [role=radio]');
   const themeMeta = $('meta[name=theme-color]');
   function paintModes() {

@@ -35,6 +35,34 @@
   --glow-1: transparent; --glow-2: transparent; --bad: #c0392b;
   color-scheme: light;
 }
+/* Navy (#0F1B3D, #FFFFFF, #FF3D8B), Cream (#F3EEE3, #111111, #D9541E) and Charcoal (#1E1E1C, #D8CBB3, #2F6BFF) */
+:root[data-theme="navy"] {
+  --bg: #0c1735; --bg-2: #14234a; --text: #ffffff; --text-2: #c9d0e6; --muted: #9aa5c6; --accent: #ff3d8b;
+  --glass: rgba(255, 255, 255, .075); --glass-2: rgba(255, 255, 255, .04); --glass-line: rgba(255, 255, 255, .15);
+  --field: rgba(4, 10, 28, .3); --field-line: #6a77a0; --field-focus: #ff6fa8;
+  --grad-a: #e11d74; --grad-b: #c9145f; --grad-ink: #ffffff; --on: rgba(255, 61, 139, .2);
+  --btn: #e11d74; --btn-ink: #ffffff; --surface: #13214a; --red: #e5534b; --red-ink: #fff;
+  --glow-1: rgba(255, 61, 139, .1); --glow-2: transparent; --bad: #ff9b8f;
+  color-scheme: dark;
+}
+:root[data-theme="cream"] {
+  --bg: #f3eee3; --bg-2: #fbf8f2; --text: #111111; --text-2: #3a3833; --muted: #5f5a50; --accent: #b8430f;
+  --glass: rgba(255, 253, 248, .6); --glass-2: rgba(255, 253, 248, .4); --glass-line: rgba(255, 255, 255, .95);
+  --field: rgba(255, 253, 248, .75); --field-line: #857e70; --field-focus: #c94a14;
+  --grad-a: #c94a14; --grad-b: #b8430f; --grad-ink: #ffffff; --on: rgba(217, 84, 30, .12);
+  --btn: #c94a14; --btn-ink: #ffffff; --surface: #fbf8f2; --red: #b3261e; --red-ink: #fff;
+  --glow-1: transparent; --glow-2: transparent; --bad: #b3261e;
+  color-scheme: light;
+}
+:root[data-theme="charcoal"] {
+  --bg: #1a1a18; --bg-2: #242422; --text: #d8cbb3; --text-2: #bdb29e; --muted: #a49a88; --accent: #6e97ff;
+  --glass: rgba(216, 203, 179, .07); --glass-2: rgba(216, 203, 179, .04); --glass-line: rgba(216, 203, 179, .15);
+  --field: rgba(0, 0, 0, .28); --field-line: #7a7366; --field-focus: #6e97ff;
+  --grad-a: #2f6bff; --grad-b: #2459e0; --grad-ink: #ffffff; --on: rgba(110, 151, 255, .2);
+  --btn: #2f6bff; --btn-ink: #ffffff; --surface: #222220; --red: #e5534b; --red-ink: #fff;
+  --glow-1: transparent; --glow-2: transparent; --bad: #ff9b8f;
+  color-scheme: dark;
+}
 :root { --font: "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; --ease: cubic-bezier(.2, .7, .1, 1);
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace; --media-bg: rgba(0, 0, 0, .25);
   --shadow: 0 18px 40px -24px rgba(0, 0, 0, .5); --btn-shadow: 0 8px 18px -10px rgba(0, 0, 0, .45); }

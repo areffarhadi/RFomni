@@ -27,7 +27,7 @@ TEXT_EXT = {".txt", ".csv", ".tsv", ".jsonl", ".json"}
 DATA_EXT = config.MEDIA_EXT | TEXT_EXT
 FIELD_TYPES = ("choice", "multi", "rating", "text")
 STATUSES = ("draft", "live", "paused", "closed")
-THEMES = ("forest", "dark", "light")
+THEMES = ("forest", "dark", "light", "navy", "cream", "charcoal")
 LEASE_SEC = 600            # an item handed to one person is not handed to another for this long
 MAX_TEXT = 20000           # characters kept per text item
 

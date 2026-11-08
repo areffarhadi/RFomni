@@ -7,14 +7,15 @@
   <meta name="description" content="Labelling tasks people have shared. Pick one and help: no account needed.">
   <meta name="theme-color" content="#051f20">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/task/task.css?v=0.6.5">
+  <link rel="stylesheet" href="/task/task.css?v=0.6.6">
   <link rel="stylesheet" href="/tasks/tasks.css">
   <script>
     try { const t = JSON.parse(localStorage.getItem('omni:theme'));
-      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; } catch (e) { /* default mode */ }
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest', 'navy', 'cream', 'charcoal'].includes(t) ? t : 'forest'; } catch (e) { /* default mode */ }
   </script>
 </head>
 <body>
+  <script src="/fx/journey.js?v=0.6.6"></script><!-- the movement between pages -->
   <!-- The public Task sharing page (tasks.js): every live task its owner listed here; anyone can open one and help. -->
   <div class="glow" aria-hidden="true"></div>
   <header class="top">

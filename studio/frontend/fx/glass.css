@@ -1,0 +1,76 @@
+/* The glass Studio (since v0.6.6): the Studio on a softly lit, blurred background with frosted glass panels on top.
+   It applies where <html> carries data-glass (the Studio page, index.html), after app.css. The light comes from three large, soft colour fields per mode; the panels let it through and blur what is
+   behind them, so the page reads as layers of glass over one lit surface. */
+
+/* the three lights of each mode (strong, second, third) and how much of each shows */
+:root[data-glass] { --gl-1: #3f8f73; --gl-2: #e2c275; --gl-3: #8fd3c6; --gl-k: 40%; --gl-glass: 48%; }
+:root[data-glass][data-theme="dark"] { --gl-1: #2f6fe4; --gl-2: #a98bff; --gl-3: #43cf8a; --gl-k: 30%; }
+:root[data-glass][data-theme="light"] { --gl-1: #9cc2f5; --gl-2: #f6c9a8; --gl-3: #b4e6cf; --gl-k: 70%; --gl-glass: 58%; }
+:root[data-glass][data-theme="navy"] { --gl-1: #ff3d8b; --gl-2: #5b7cff; --gl-3: #b54dff; --gl-k: 30%; }
+:root[data-glass][data-theme="cream"] { --gl-1: #f2a77f; --gl-2: #ecc56a; --gl-3: #e98b5c; --gl-k: 62%; --gl-glass: 56%; }
+:root[data-glass][data-theme="charcoal"] { --gl-1: #2f6bff; --gl-2: #d8cbb3; --gl-3: #e0a458; --gl-k: 26%; }
+
+:root[data-glass] {
+  --glass: color-mix(in srgb, var(--bg-1) var(--gl-glass), transparent);
+  --glass-2: color-mix(in srgb, var(--bg-1) calc(var(--gl-glass) + 22%), transparent);
+  --glass-line: color-mix(in srgb, var(--text) 10%, transparent);
+  --glass-hi: inset 0 1px 0 color-mix(in srgb, var(--c-white) 7%, transparent);
+  --glass-blur: blur(26px) saturate(160%);
+  /* the editor's lanes and ruler let the light through as well */
+  --lane: color-mix(in srgb, var(--bg) 42%, transparent); --lane-2: color-mix(in srgb, var(--bg) 52%, transparent);
+  --ruler: color-mix(in srgb, var(--bg) 46%, transparent);
+}
+:root[data-glass]:is([data-theme="light"], [data-theme="cream"]) { --glass-hi: inset 0 1px 0 color-mix(in srgb, var(--c-white) 70%, transparent); }
+
+/* ---------- the lit background ---------- */
+:root[data-glass] body { background: var(--bg); }
+:root[data-glass] body::before {
+  content: ""; position: fixed; inset: -12%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(38% 46% at 14% 20%, color-mix(in srgb, var(--gl-1) var(--gl-k), transparent), transparent 72%),
+    radial-gradient(34% 42% at 86% 14%, color-mix(in srgb, var(--gl-2) var(--gl-k), transparent), transparent 72%),
+    radial-gradient(44% 50% at 72% 88%, color-mix(in srgb, var(--gl-3) var(--gl-k), transparent), transparent 72%),
+    radial-gradient(30% 36% at 30% 80%, color-mix(in srgb, var(--gl-2) calc(var(--gl-k) * .6), transparent), transparent 72%);
+  animation: gl-drift 48s ease-in-out infinite alternate;
+}
+@keyframes gl-drift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(3%, -2%, 0) rotate(4deg) scale(1.05); }
+  100% { transform: translate3d(-2%, 3%, 0) rotate(-3deg) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { :root[data-glass] body::before { animation: none; } }
+:root[data-glass] #app { position: relative; z-index: 1; }
+
+/* ---------- glass panels ---------- */
+:root[data-glass] :is(.topbar, .statusbar) {
+  background: var(--glass); border-color: var(--glass-line);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-glass] .topbar { box-shadow: var(--glass-hi); }
+/* the project rail floats as a glass pill */
+:root[data-glass] .rail-dock {
+  background: var(--glass-2); border-color: var(--glass-line); box-shadow: var(--glass-hi), 0 18px 40px -18px color-mix(in srgb, var(--c-black) 45%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-glass] .rail-ring .fill { fill: color-mix(in srgb, var(--bg-1) 88%, transparent); }
+:root[data-glass] .proj-glow { opacity: .6; }
+/* side panels and the editor's panes: lit glass, separated by hairlines */
+:root[data-glass] :is(.files, .insp, .ed-media, .st-preview, .txt-left) { background: var(--glass); border-color: var(--glass-line); }
+:root[data-glass] :is(.ed-top, .ed-head) { border-color: var(--glass-line); }
+/* in a project the files and the editor float as two glass cards over the light, with a little room around them */
+:root[data-glass] .data { gap: 10px; padding: 10px 10px 10px 0; }
+:root[data-glass] .data.files-hidden { gap: 0; }
+:root[data-glass] :is(.data > .files, .data > .detail) {
+  border-radius: 16px; border: 1px solid var(--glass-line); overflow: hidden;
+  box-shadow: var(--glass-hi), 0 24px 50px -30px color-mix(in srgb, var(--c-black) 55%, transparent);
+}
+/* headers that stay put while a list scrolls under them: frosted, so the rows blur behind them */
+:root[data-glass] :is(.insp-head, table.list th, table.cov th) {
+  background: var(--glass-2); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+/* floating layers: menus, pop-overs and dialogs */
+:root[data-glass] :is(.popover, .modal) {
+  background: var(--glass-2); border-color: var(--glass-line); box-shadow: var(--glass-hi), var(--shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%);
+}
+:root[data-glass] .modal-foot { background: transparent; border-color: var(--glass-line); }

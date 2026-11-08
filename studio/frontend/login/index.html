@@ -7,15 +7,16 @@
   <meta name="description" content="Sign in to Omni Studio to open your annotation projects.">
   <meta name="theme-color" content="#051f20">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238eb69b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="login.css?v=0.6.5">
+  <link rel="stylesheet" href="login.css?v=0.6.6">
   <script>
     // mode before the first paint (the same saved setting as the app and the landing page)
     try { const t = JSON.parse(localStorage.getItem('omni:theme'));
-      document.documentElement.dataset.theme = ['dark', 'light', 'forest'].includes(t) ? t : 'forest'; }
+      document.documentElement.dataset.theme = ['dark', 'light', 'forest', 'navy', 'cream', 'charcoal'].includes(t) ? t : 'forest'; }
     catch (e) { document.documentElement.dataset.theme = 'forest'; }
   </script>
 </head>
 <body>
+  <script src="/fx/journey.js?v=0.6.6"></script><!-- the movement between pages -->
   <!-- background: soft out-of-focus lights drifting (login.js), and the landing page's orb as the light source (orb.js) -->
   <canvas class="bokeh" aria-hidden="true"></canvas>
   <div class="orb" data-orb aria-hidden="true"><canvas></canvas></div>
@@ -32,6 +33,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
       <button type="button" role="radio" data-mode="forest" aria-checked="false" aria-label="Green" title="Green">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></button>
+      <button type="button" role="radio" data-mode="navy" aria-checked="false" aria-label="Navy" title="Navy">
+        <svg class="sw" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="#0f1b3d" stroke="none"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="#ff3d8b" stroke="none"/><circle cx="12" cy="12" r="8"/></svg></button>
+      <button type="button" role="radio" data-mode="cream" aria-checked="false" aria-label="Cream" title="Cream">
+        <svg class="sw" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="#f3eee3" stroke="none"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="#d9541e" stroke="none"/><circle cx="12" cy="12" r="8"/></svg></button>
+      <button type="button" role="radio" data-mode="charcoal" aria-checked="false" aria-label="Charcoal" title="Charcoal">
+        <svg class="sw" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="#1e1e1c" stroke="none"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="#2f6bff" stroke="none"/><circle cx="12" cy="12" r="8"/></svg></button>
     </div>
   </header>
 
@@ -93,7 +100,7 @@
     </form>
   </main>
 
-  <script src="login.js?v=0.6.5"></script>
+  <script src="login.js?v=0.6.6"></script>
   <script src="../landing/orb.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Omni Studio landing page. Three modes, the same as the app: Green (Forest palette), Night and Day.
+/* Omni Studio landing page. Six modes, the same as the app: Green (Forest palette), Night, Day, Navy, Cream, Charcoal.
    Every colour below comes from the theme tokens at the top. Satoshi for text, Instrument Serif
    for accent words, Poppins for the wordmark. Everything is local: no CDN. */
 
@@ -73,6 +73,69 @@
   --hero-a: #a9c9f5; --hero-b: rgba(9, 105, 218, .1); --orb: #0b5cc4; --terrain: #0969da; --cell: rgba(9, 105, 218, .06);
   --bar: rgba(255, 255, 255, .82); --bar-line: rgba(16, 18, 24, .12); --mark: rgba(16, 18, 24, .4); --guide: rgba(16, 18, 24, .07);
   color-scheme: light;
+}
+/* ---------- Navy: #0F1B3D navy, #FFFFFF white, #FF3D8B hot pink (buttons a step deeper for white text) ---------- */
+:root[data-theme="navy"] {
+  --bg: #0f1b3d; --bg-1: #14234a; --bg-2: #172752; --bg-3: #1c2e5c;
+  --text: #ffffff; --text-2: #c9d0e6; --muted: #9aa5c6; --faint: #7480a6;
+  --line: rgba(255, 255, 255, .08); --line-2: rgba(255, 255, 255, .14);
+  --accent: #ff3d8b; --accent-soft: rgba(255, 61, 139, .14); --accent-ink: #ffffff;
+  --btn-a: #e11d74; --btn-b: #cc1667; --btn-a-h: #d81a6e; --btn-b-h: #bf1360; --btn-glow: rgba(255, 61, 139, .5);
+  --panel-a: #13224a; --panel-b: #0d1836; --demo-a: #152550; --demo-b: #0f1c40;
+  --sheet: rgba(22, 37, 80, .95); --menu: #172852; --nav: rgba(15, 27, 61, .74);
+  --card-a: rgba(28, 46, 92, .55); --card-b: rgba(20, 35, 74, .2); --faq: rgba(20, 35, 74, .55); --faq-open: rgba(23, 39, 82, .85);
+  --note-bg: #ffffff; --note-fg: #0f1b3d;
+  --wave: rgba(255, 111, 168, .95); --wave-dim: rgba(255, 61, 139, .4); --play: #ff3d8b;
+  --ok: #2fbf83; --glow: rgba(255, 61, 139, .24);
+  --shadow-xl: 0 40px 120px -40px rgba(2, 6, 20, .85); --shadow-lg: 0 24px 40px -14px rgba(2, 6, 20, .75);
+  --pill-bg: #172752; --pill-line: rgba(255, 255, 255, .1); --pill-fg: #ffffff; --pill-dim: rgba(255, 255, 255, .5);
+  --run-1: #ff3d8b; --run-2: #ffb547; --run-3: #6fd3ff; --run-4: #3ddc97;
+  --term-bg: #0a1430; --term-fg: #ffffff; --term-muted: #9aa5c6; --term-accent: #ff6fa8; --term-line: rgba(255, 255, 255, .08);
+  --hero-a: #c2185b; --hero-b: rgba(255, 61, 139, .22); --orb: #ffc2db; --terrain: #ff6fa8; --cell: rgba(255, 255, 255, .05);
+  --bar: rgba(10, 19, 44, .8); --bar-line: rgba(255, 255, 255, .12); --mark: rgba(255, 255, 255, .45); --guide: rgba(255, 255, 255, .06);
+  color-scheme: dark;
+}
+/* ---------- Cream: #F3EEE3 cream, #111111 ink black, #D9541E burnt orange (orange text #B8430F, buttons #C94A14) ---------- */
+:root[data-theme="cream"] {
+  --bg: #f3eee3; --bg-1: #fbf8f2; --bg-2: #f7f3eb; --bg-3: #ebe5d7;
+  --text: #111111; --text-2: #3a3833; --muted: #5f5a50; --faint: #8c8577;
+  --line: rgba(17, 17, 17, .08); --line-2: rgba(17, 17, 17, .14);
+  --accent: #b8430f; --accent-soft: rgba(217, 84, 30, .1); --accent-ink: #ffffff;
+  --btn-a: #c94a14; --btn-b: #b8430f; --btn-a-h: #bd4511; --btn-b-h: #a83c0c; --btn-glow: rgba(217, 84, 30, .35);
+  --panel-a: #fbf8f2; --panel-b: #efe9dc; --demo-a: #fbf8f2; --demo-b: #f6f1e7;
+  --sheet: rgba(251, 248, 242, .97); --menu: #fbf8f2; --nav: rgba(243, 238, 227, .84);
+  --card-a: #fbf8f2; --card-b: #f6f1e7; --faq: #fbf8f2; --faq-open: #fbf8f2;
+  --note-bg: #111111; --note-fg: #f3eee3;
+  --wave: rgba(217, 84, 30, .9); --wave-dim: rgba(217, 84, 30, .3); --play: #d9541e;
+  --ok: #2f7a3c; --glow: rgba(217, 84, 30, .14);
+  --shadow-xl: 0 30px 80px -30px rgba(60, 45, 20, .28); --shadow-lg: 0 18px 30px -14px rgba(60, 45, 20, .22);
+  --pill-bg: #111111; --pill-line: transparent; --pill-fg: #f3eee3; --pill-dim: rgba(243, 238, 227, .55);
+  --run-1: #d9541e; --run-2: #111111; --run-3: #b8860b; --run-4: #2f7a3c;
+  --term-bg: #161512; --term-fg: #f3eee3; --term-muted: #a39b8b; --term-accent: #f08a5d; --term-line: rgba(243, 238, 227, .08);
+  --hero-a: #f2b48f; --hero-b: rgba(217, 84, 30, .1); --orb: #c2410c; --terrain: #d9541e; --cell: rgba(217, 84, 30, .06);
+  --bar: rgba(251, 248, 242, .84); --bar-line: rgba(17, 17, 17, .12); --mark: rgba(17, 17, 17, .4); --guide: rgba(17, 17, 17, .07);
+  color-scheme: light;
+}
+/* ---------- Charcoal: #1E1E1C charcoal, #D8CBB3 sand, #2F6BFF electric blue (blue text #6E97FF) ---------- */
+:root[data-theme="charcoal"] {
+  --bg: #1e1e1c; --bg-1: #242422; --bg-2: #2a2a27; --bg-3: #32312e;
+  --text: #d8cbb3; --text-2: #bdb29e; --muted: #a49a88; --faint: #7a7366;
+  --line: rgba(216, 203, 179, .08); --line-2: rgba(216, 203, 179, .14);
+  --accent: #6e97ff; --accent-soft: rgba(47, 107, 255, .16); --accent-ink: #ffffff;
+  --btn-a: #2f6bff; --btn-b: #2a5fe6; --btn-a-h: #2a62f0; --btn-b-h: #2457dc; --btn-glow: rgba(47, 107, 255, .5);
+  --panel-a: #252523; --panel-b: #1b1b19; --demo-a: #262624; --demo-b: #1f1f1d;
+  --sheet: rgba(40, 40, 37, .95); --menu: #2b2b28; --nav: rgba(30, 30, 28, .76);
+  --card-a: rgba(50, 49, 46, .6); --card-b: rgba(36, 36, 34, .2); --faq: rgba(36, 36, 34, .6); --faq-open: rgba(42, 42, 39, .9);
+  --note-bg: #d8cbb3; --note-fg: #1e1e1c;
+  --wave: rgba(110, 151, 255, .95); --wave-dim: rgba(110, 151, 255, .38); --play: #2f6bff;
+  --ok: #5fae6e; --glow: rgba(47, 107, 255, .22);
+  --shadow-xl: 0 40px 120px -40px rgba(0, 0, 0, .85); --shadow-lg: 0 24px 40px -14px rgba(0, 0, 0, .75);
+  --pill-bg: #2a2a27; --pill-line: rgba(216, 203, 179, .1); --pill-fg: #e8dfcd; --pill-dim: rgba(216, 203, 179, .5);
+  --run-1: #6e97ff; --run-2: #d8cbb3; --run-3: #e0a458; --run-4: #7cc68a;
+  --term-bg: #161615; --term-fg: #d8cbb3; --term-muted: #8f8676; --term-accent: #8eaeff; --term-line: rgba(216, 203, 179, .08);
+  --hero-a: #2f6bff; --hero-b: rgba(47, 107, 255, .2); --orb: #e9dcc2; --terrain: #6e97ff; --cell: rgba(216, 203, 179, .05);
+  --bar: rgba(24, 24, 22, .8); --bar-line: rgba(216, 203, 179, .12); --mark: rgba(216, 203, 179, .45); --guide: rgba(216, 203, 179, .06);
+  color-scheme: dark;
 }
 :root {
   --font: "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -164,6 +227,7 @@ p { margin: 0; }
 .modes button:hover { color: var(--text); }
 .modes button[aria-checked="true"] { background: var(--bg-3); color: var(--accent); box-shadow: inset 0 0 0 1px var(--line-2); }
 .modes svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.modes svg.sw { stroke-width: 1.5; }  /* the colour swatches: a thin ring around the two colours */
 
 /* ---------- type ---------- */
 .h1 { font-size: clamp(42px, 6.4vw, 80px); line-height: 1.02; letter-spacing: -.045em; max-width: 20ch; text-wrap: balance; }
@@ -433,6 +497,27 @@ main::before { content: ""; position: absolute; inset: 0 auto 0 50%; width: min(
 :root[data-theme="light"] .c-vision { --pf: #ffffff; --pi: #1a1c1f; --pr: 0 0 0 1px rgba(16, 18, 24, .16); }
 :root[data-theme="light"] .c-spoof { --pf: #cf222e; --pi: #ffffff; }
 :root[data-theme="light"] .c-caption { --pf: #8250df; --pi: #ffffff; }
+:root[data-theme="navy"] .c-speech { --pf: #ff3d8b; --pi: #0f1b3d; }
+:root[data-theme="navy"] .c-speaker { --pf: #ffffff; --pi: #0f1b3d; }
+:root[data-theme="navy"] .c-para { --pf: #ffb547; --pi: #2a1a00; }
+:root[data-theme="navy"] .c-audio { --pf: #6fd3ff; --pi: #06223a; }
+:root[data-theme="navy"] .c-vision { --pf: #263a6e; --pi: #ffffff; --pr: 0 0 0 1px rgba(255, 255, 255, .14); }
+:root[data-theme="navy"] .c-spoof { --pf: #ff7a6b; --pi: #2a0905; }
+:root[data-theme="navy"] .c-caption { --pf: #c9b6ff; --pi: #1b0f3d; }
+:root[data-theme="cream"] .c-speech { --pf: #c94a14; --pi: #ffffff; }
+:root[data-theme="cream"] .c-speaker { --pf: #111111; --pi: #f3eee3; }
+:root[data-theme="cream"] .c-para { --pf: #e9b949; --pi: #2a1d00; }
+:root[data-theme="cream"] .c-audio { --pf: #2f7a3c; --pi: #ffffff; }
+:root[data-theme="cream"] .c-vision { --pf: #fbf8f2; --pi: #111111; --pr: 0 0 0 1px rgba(17, 17, 17, .16); }
+:root[data-theme="cream"] .c-spoof { --pf: #b3261e; --pi: #ffffff; }
+:root[data-theme="cream"] .c-caption { --pf: #7a4f2b; --pi: #ffffff; }
+:root[data-theme="charcoal"] .c-speech { --pf: #2f6bff; --pi: #ffffff; }
+:root[data-theme="charcoal"] .c-speaker { --pf: #d8cbb3; --pi: #1e1e1c; }
+:root[data-theme="charcoal"] .c-para { --pf: #e0a458; --pi: #231503; }
+:root[data-theme="charcoal"] .c-audio { --pf: #7cc68a; --pi: #0b1f0f; }
+:root[data-theme="charcoal"] .c-vision { --pf: #3d3c38; --pi: #efe6d4; --pr: 0 0 0 1px rgba(216, 203, 179, .14); }
+:root[data-theme="charcoal"] .c-spoof { --pf: #f2785f; --pi: #2a0b05; }
+:root[data-theme="charcoal"] .c-caption { --pf: #b4a6e6; --pi: #191233; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* ---------- your own task (ask.js): a prompt box with a running colour border, then the agents at work ---------- */

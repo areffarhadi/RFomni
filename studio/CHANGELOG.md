@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.6.6 "Atelier" (2026-11-08)
+
+Three new colour modes, a movement from page to page, and the studio on glass.
+
+- **Six colour modes**: Navy (navy, white, hot pink), Cream (cream, ink black, burnt orange) and Charcoal
+  (charcoal, sand, electric blue) join Day, Night and Green, everywhere: studio, landing page, sign-in page and the
+  shared task, test and collection pages. The landing page's screenshots exist in each new mode.
+- **Movement between pages** (`frontend/fx/journey.js`): clicking a landing-page header (Omni Studio, Task sharing,
+  Subjective test, Data collection) or signing in covers the page with a circle from where you clicked. The Omni
+  mark settles in the middle and pulses while the next page loads, then jumps to its place in the top-left corner,
+  and that page's parts fly into place as a circle opens from there. Numbers count up and bars fill. Off for anyone
+  whose system asks for reduced motion.
+- **Omni Studio opens on the Data tab** of the last project you had open, or the most recently changed one, and
+  skips the sign-in page when there is nothing to sign in to.
+- **The studio on glass** (`frontend/fx/glass.css`): a softly lit background in the mode's colours with frosted
+  panels on top; in a project, the file list and the detail float as two glass cards.
+
 ## v0.6.5 "Atelier" (2026-10-27)
 
 A warmer day mode, and the sign-in page's glass back.

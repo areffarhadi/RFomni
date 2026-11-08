@@ -8,7 +8,7 @@ import { confirmDialog, errorToast, openModal, toast } from '../ui.js';
 import { ago } from './home.js';
 
 const STATUS = { draft: 'Draft', live: 'Live', paused: 'Paused', closed: 'Closed' };
-const THEMES = { forest: 'Green', dark: 'Night', light: 'Day' };
+const THEMES = { forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
 const INFO = { name: 'Name or ID', gender: 'Gender', age: 'Age range', first_language: 'First language', accent: 'Accent or region' };
 
 export class CollectListView {
