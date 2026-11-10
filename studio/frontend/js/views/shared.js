@@ -13,7 +13,7 @@ import * as charts from '../charts.js';
 const STATUS = { draft: 'Draft', live: 'Live', paused: 'Paused', closed: 'Closed' };
 const KIND_ICON = { image: 'image', video: 'film', audio: 'audio', text: 'file' };
 const TYPES = { choice: 'One answer', multi: 'Several answers', rating: 'Rating', text: 'Free text' };   // the older editor's kinds; pages made from a default have them all
-const THEMES = { forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
+const THEMES = { forest: 'Green', sand: 'Sand', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
 const DATA_ACCEPT = '.jpg,.jpeg,.png,.webp,.bmp,.gif,.tif,.tiff,.wav,.mp3,.flac,.ogg,.opus,.m4a,.aac,.mp4,.mov,.mkv,.webm,.avi,.m4v,.txt,.csv,.tsv,.jsonl,.json';
 const ARCHIVE_ACCEPT = '.zip,.tar,.tgz,.gz,.tbz2,.bz2,.txz,.xz';
 const kinds = (by) => Object.entries(by || {}).map(([k, n]) => `${n} ${k}`).join(', ') || 'no data yet';

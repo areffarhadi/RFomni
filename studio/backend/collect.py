@@ -26,7 +26,7 @@ from .util import new_id, now_iso, read_json, slugify, write_json
 
 ROOT = config.WORKSPACE / "collect"
 STATUSES = ("draft", "live", "paused", "closed")
-THEMES = ("forest", "dark", "light", "navy", "cream", "charcoal")
+THEMES = ("forest", "sand", "dark", "light", "navy", "cream", "charcoal")
 INFO_FIELDS = {  # what people may be asked about themselves (all optional unless the owner requires them)
     "name": "Name or ID",
     "gender": "Gender",

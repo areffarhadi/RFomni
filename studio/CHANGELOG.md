@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.6.8 "Atelier" (2026-11-10)
+
+A new Green, and its light version, Sand.
+
+- **Green** (still the default on the public pages) is now one strong green #0C3F2B as the ground, sand #EEE5D4
+  for text and vermilion #F2462E as the accent, in place of six steps of green. The landing page's sphere,
+  glows and waves, the Studio's lit glass background and the movement between pages follow it.
+- **Sand**, a seventh colour mode: the same three colours with sand as the ground and green text. It sits after
+  Green in every mode switch (landing, sign-in, Studio menu) and in the colour choice of shared tasks, tests and
+  data collections.
+- Vermilion is too light for small text, so text and icons use #FF8A70 on green and #B8301A on sand, and buttons
+  #D63A22 with white text (4.7:1). Every text colour in both modes passes WCAG AA.
+- The landing page's Studio screenshots are retaken in both modes, and the mode buttons are 28px wide so the
+  header still holds Sign in with seven of them.
+
 ## v0.6.7 "Atelier" (2026-11-10)
 
 Default pages adapted in a chat, and a library of 23 kinds of question for audio, video, images and text.

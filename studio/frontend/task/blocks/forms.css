@@ -3,7 +3,7 @@
 
 /* eight highlight colours for the spans labels, by index; darker on the light grounds so the underline still shows */
 :root { --hl-0: #5b9bff; --hl-1: #f2994a; --hl-2: #4fc27a; --hl-3: #f2667a; --hl-4: #b48cf2; --hl-5: #e3c341; --hl-6: #3cc6c0; --hl-7: #f07fc4; }
-:root[data-theme="light"], :root[data-theme="cream"] {
+:root[data-theme="light"], :root[data-theme="cream"], :root[data-theme="sand"] {
   --hl-0: #1f6fd6; --hl-1: #d2691e; --hl-2: #23964b; --hl-3: #d23a52; --hl-4: #8250df; --hl-5: #a68a00; --hl-6: #0f8f8a; --hl-7: #c2399a; }
 
 .ob-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

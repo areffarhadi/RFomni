@@ -59,7 +59,8 @@ app.append(topbar, main, statusbar);
 const THEMES = [  // same names as the mode switch on the landing page
   { id: 'light', label: 'Day', hint: 'Bright, for daylight', icon: 'sun', sw: ['#f5f6f8', '#ffffff', '#0969da'] },
   { id: 'dark', label: 'Night', hint: 'Neutral greys, blue accent', icon: 'moon', sw: ['#0f1012', '#24262a', '#5d9bff'] },
-  { id: 'forest', label: 'Green', hint: 'Deep greens, sage accent', icon: 'leaf', sw: ['#051f20', '#235347', '#8eb69b'] },
+  { id: 'forest', label: 'Green', hint: 'Strong green and sand, vermilion accent', icon: 'leaf', sw: ['#0c3f2b', '#eee5d4', '#f2462e'] },
+  { id: 'sand', label: 'Sand', hint: 'Sand and strong green, vermilion accent', icon: 'palette', sw: ['#eee5d4', '#0c3f2b', '#f2462e'] },
   { id: 'navy', label: 'Navy', hint: 'Navy and white, hot pink accent', icon: 'palette', sw: ['#0f1b3d', '#ffffff', '#ff3d8b'] },
   { id: 'cream', label: 'Cream', hint: 'Cream and ink black, burnt orange accent', icon: 'palette', sw: ['#f3eee3', '#111111', '#d9541e'] },
   { id: 'charcoal', label: 'Charcoal', hint: 'Charcoal and sand, electric blue accent', icon: 'palette', sw: ['#1e1e1c', '#d8cbb3', '#2f6bff'] },

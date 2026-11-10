@@ -4,7 +4,7 @@
    so a mark reads on any picture and its swatch reads on the card */
 :root { --dr-c0: #ff6b6b; --dr-c1: #ffa94d; --dr-c2: #ffd43b; --dr-c3: #69db7c; --dr-c4: #3bc9db; --dr-c5: #74a7ff;
   --dr-c6: #c99bff; --dr-c7: #f783ac; --dr-halo: rgba(0, 0, 0, .55); --dr-knob: #ffffff; }
-:root[data-theme="light"], :root[data-theme="cream"] { --dr-c0: #d92626; --dr-c1: #e8590c; --dr-c2: #a16207; --dr-c3: #2b8a3e;
+:root[data-theme="light"], :root[data-theme="cream"], :root[data-theme="sand"] { --dr-c0: #d92626; --dr-c1: #e8590c; --dr-c2: #a16207; --dr-c3: #2b8a3e;
   --dr-c4: #0c8599; --dr-c5: #1c5fd4; --dr-c6: #8a3ffc; --dr-c7: #c2255c; --dr-halo: rgba(255, 255, 255, .8); }
 
 .dr { width: 100%; display: grid; gap: 10px; container-type: inline-size; padding-bottom: 12px; }  /* room for the item's name under it */

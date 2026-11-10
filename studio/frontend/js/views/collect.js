@@ -9,7 +9,7 @@ import { ago } from './home.js';
 import { pageDesign, pageSettings, approvePage, approveLabel } from './pages.js';
 
 const STATUS = { draft: 'Draft', live: 'Live', paused: 'Paused', closed: 'Closed' };
-const THEMES = { forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
+const THEMES = { forest: 'Green', sand: 'Sand', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
 const INFO = { name: 'Name or ID', gender: 'Gender', age: 'Age range', first_language: 'First language', accent: 'Accent or region' };
 
 export class CollectListView {

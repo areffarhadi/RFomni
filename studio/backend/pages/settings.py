@@ -13,7 +13,7 @@ import re
 
 from ..util import slugify
 
-THEMES = ["forest", "dark", "light", "navy", "cream", "charcoal"]
+THEMES = ["forest", "sand", "dark", "light", "navy", "cream", "charcoal"]
 
 
 class Bad(ValueError):

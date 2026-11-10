@@ -52,33 +52,55 @@
   --dock-line: #cfd3da; --dock-shadow: .06;
   color-scheme: light;
 }
-/* Forest: a dark theme built from a six-step green palette
-   #051F20 #0B2B26 #163832 #235347 #8EB69B #DAF1DE (darkest to lightest).
-   Surfaces step up through the dark greens, text is the pale mint, the sage is the accent.
-   Checked for WCAG AA: text 10-14:1, secondary text >= 4.9:1 on every surface, button text 7.6:1,
-   input borders >= 3:1. #235347 is used for borders only, never behind small text. */
+/* Green: one strong green #0C3F2B as the ground, sand #EEE5D4 for text, vermilion #F2462E as the accent.
+   Vermilion is too light for small text, so text and icons use #FF8A70 and buttons #D63A22 (white text 4.7:1);
+   #F2462E itself fills large marks. Checked for WCAG AA: text 6-9.5:1, secondary text >= 4.8:1, input borders >= 3:1. */
 :root[data-theme="forest"] {
-  --bg: #051f20; --bg-1: #0b2b26; --bg-2: #10312c; --bg-3: #163832; --bg-4: #1f4a40;
-  --line: #173f37; --line-2: #235347;
-  --text: #daf1de; --text-2: #b6d6bf; --muted: #98b0a3; --faint: #6e9381;
-  --input-bg: #072522; --input-line: #4f8370;
-  --accent: #8eb69b; --accent-strong: #b3d6bd; --accent-ink: #051f20; --accent-soft: rgba(142, 182, 155, .15);
-  --accent-fill: #8eb69b; --accent-fill-hover: #a3c8ae; --accent-line: rgba(142, 182, 155, .5);
-  --warn: #e2c275; --warn-soft: rgba(226, 194, 117, .12);
-  --danger: #f0907f; --danger-soft: rgba(240, 144, 127, .12); --danger-fill: #c9302c;
-  --ok: #7ed6a0; --ok-soft: rgba(126, 214, 160, .13);
-  --wave: #8eb69b; --wave-2: rgba(142, 182, 155, .3);
-  --lane: #06211f; --lane-2: #082522; --ruler: #062220;
-  --seg-text: #e4f5e7; --seg-alpha: .22;
-  --bnd: rgba(218, 241, 222, .5); --bnd-bg: rgba(5, 31, 32, .78);
-  --shadow: 0 8px 28px rgba(0, 0, 0, .5), 0 0 0 1px rgba(218, 241, 222, .05);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
-  --overlay: rgba(2, 14, 14, .6);
-  /* tab colours kept inside the palette's family: sage, sea-foam, gold, mint, peach (all >= 6.7:1) */
+  --bg: #0c3f2b; --bg-1: #114732; --bg-2: #134c36; --bg-3: #18553d; --bg-4: #205f46;
+  --line: #1b5540; --line-2: #28654d;
+  --text: #eee5d4; --text-2: #d6ccb8; --muted: #bdb4a0; --faint: #8d9a88;
+  --input-bg: #0a3726; --input-line: #7d9a88;
+  --accent: #ff8a70; --accent-strong: #ffa68f; --accent-ink: #ffffff; --accent-soft: rgba(242, 70, 46, .16);
+  --accent-fill: #d63a22; --accent-fill-hover: #c2311b; --accent-line: rgba(255, 138, 112, .55);
+  --warn: #e9c46a; --warn-soft: rgba(233, 196, 106, .12);
+  --danger: #ff9aa2; --danger-soft: rgba(255, 154, 162, .12); --danger-fill: #b3142e;
+  --ok: #8fdcaa; --ok-soft: rgba(143, 220, 170, .13);
+  --wave: #e3d6bc; --wave-2: rgba(238, 229, 212, .3);
+  --lane: #0b3b28; --lane-2: #0d4130; --ruler: #0b3c29;
+  --seg-text: #f6efe2; --seg-alpha: .22;
+  --bnd: rgba(238, 229, 212, .5); --bnd-bg: rgba(12, 63, 43, .8);
+  --shadow: 0 8px 28px rgba(0, 12, 6, .5), 0 0 0 1px rgba(238, 229, 212, .05);
+  --shadow-sm: 0 1px 2px rgba(0, 12, 6, .45);
+  --overlay: rgba(3, 18, 12, .6);
   --tab-data: var(--accent); --tab-tasks: var(--accent); --tab-stats: var(--accent); --tab-review: var(--accent); --tab-export: var(--accent);
-  --bead-ink: #051f20; --bead-glow: .2;
-  --dock-line: #3c6b5c; --dock-shadow: .35;
+  --bead-ink: #0c3f2b; --bead-glow: .2;
+  --dock-line: #3d6e58; --dock-shadow: .35;
   color-scheme: dark;
+}
+
+/* Sand: Green's light version, sand #EEE5D4 as the ground, the strong green #0C3F2B for text, vermilion accent
+   (text #B8301A, buttons #D63A22 with white text). Checked for WCAG AA: text 9.5:1, muted text >= 4.7:1. */
+:root[data-theme="sand"] {
+  --bg: #eee5d4; --bg-1: #f8f3e9; --bg-2: #f3ecdf; --bg-3: #e6dcc8; --bg-4: #d9ccb3;
+  --line: #e0d5c0; --line-2: #cdbfa4;
+  --text: #0c3f2b; --text-2: #2c5645; --muted: #4a6557; --faint: #7f8f84;
+  --input-bg: #fbf8f1; --input-line: #7d8a7c;
+  --accent: #b8301a; --accent-strong: #9c2714; --accent-ink: #ffffff; --accent-soft: rgba(242, 70, 46, .11);
+  --accent-fill: #d63a22; --accent-fill-hover: #c2311b; --accent-line: rgba(214, 58, 34, .45);
+  --warn: #8a5a00; --warn-soft: rgba(176, 120, 0, .1);
+  --danger: #a3142e; --danger-soft: rgba(163, 20, 46, .07); --danger-fill: #a3142e;
+  --ok: #1d6b3f; --ok-soft: rgba(29, 107, 63, .1); --ok-strong: #155a33;
+  --wave: #2f6b52; --wave-2: rgba(47, 107, 82, .22);
+  --lane: #f6f0e4; --lane-2: #f1e9da; --ruler: #f3ecdf;
+  --seg-text: #0c3f2b; --seg-alpha: .26;
+  --bnd: rgba(12, 63, 43, .45); --bnd-bg: rgba(248, 243, 233, .9);
+  --shadow: 0 8px 28px rgba(40, 45, 20, .13), 0 0 0 1px rgba(40, 45, 20, .07);
+  --shadow-sm: 0 1px 2px rgba(40, 45, 20, .09);
+  --overlay: rgba(12, 30, 20, .32);
+  --tab-data: var(--accent); --tab-tasks: var(--accent); --tab-stats: var(--accent); --tab-review: var(--accent); --tab-export: var(--accent);
+  --bead-ink: #ffffff; --bead-glow: .12; --folder-shadow: rgba(40, 45, 20, .16);
+  --dock-line: #d2c6ad; --dock-shadow: .06;
+  color-scheme: light;
 }
 /* Three palettes of three colours each (background, text, accent). Where the accent itself is too faint for small
    text or for white text on it, a deeper or lighter step of the same colour is used for that job only. */
@@ -273,8 +295,8 @@ a.btn { text-decoration: none; }  /* links styled as buttons */
 .chip.on .ico { color: var(--accent); }
 .chip .dot, .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--muted)); flex: none; }
 /* tier colour marks: pastel tier colours need a hairline ring on light surfaces */
-:root:is([data-theme="light"], [data-theme="cream"]) .tchip::before,
-:root:is([data-theme="light"], [data-theme="cream"]) :is(.dot, .now-chip i, .tl-head .sw, .insp-head .tname i, .ov-tier i, .st-legend i, .tiers-pop label i, .label-pop .opt i, .task-pick .sw, .tier-item .sw, .task-row .sw, .mine-card .sw) {
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .tchip::before,
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) :is(.dot, .now-chip i, .tl-head .sw, .insp-head .tname i, .ov-tier i, .st-legend i, .tiers-pop label i, .label-pop .opt i, .task-pick .sw, .tier-item .sw, .task-row .sw, .mine-card .sw) {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent);
 }
 .chip .x { opacity: .6; margin-right: -3px; }
@@ -292,8 +314,8 @@ a.btn { text-decoration: none; }  /* links styled as buttons */
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch span { position: absolute; inset: 0; background: var(--bg-4); border-radius: 99px; transition: background-color .15s var(--ease); cursor: pointer; }
 .switch span::after { content: ""; position: absolute; width: 14px; height: 14px; left: 2px; top: 2px; border-radius: 50%; background: var(--c-white); box-shadow: 0 1px 2px color-mix(in srgb, var(--c-black) 25%, transparent); transition: transform .15s var(--ease); }
-:root:is([data-theme="light"], [data-theme="cream"]) .switch span { background: var(--faint); }
-:root:is([data-theme="light"], [data-theme="cream"]) .switch input:checked + span { background: var(--accent-fill); }  /* on stays on in the light theme */
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .switch span { background: var(--faint); }
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .switch input:checked + span { background: var(--accent-fill); }  /* on stays on in the light theme */
 .switch input:checked + span { background: var(--accent-fill); }
 .switch input:checked + span::after { background: var(--accent-ink); }
 .switch input:checked + span::after { transform: translateX(12px); }
@@ -641,7 +663,7 @@ body:has(.editor) .statusbar .save-state { display: none; } /* the editor header
 .st.in_review { background: var(--warn); }
 .st.reviewed { background: var(--ok); }
 .fp-low { color: var(--danger); font-size: var(--fs-xs); display: inline-flex; align-items: center; gap: 3px; }
-:root:not([data-theme="light"], [data-theme="cream"]) .sel .fp-low { color: color-mix(in srgb, var(--danger) 75%, white); }  /* readable on the selected row */
+:root:not([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .sel .fp-low { color: color-mix(in srgb, var(--danger) 75%, white); }  /* readable on the selected row */
 .fp-empty { padding: 32px 12px; gap: 12px; font-size: var(--fs-base); }
 .fp-selbar {
   display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 8px 0 12px; flex: none;
@@ -1117,7 +1139,7 @@ table.list .file .ico { color: var(--muted); }
 .seg.low { border-color: var(--danger); border-style: dashed; }
 .seg.low .cf { background: var(--danger); opacity: 1; }
 .seg.mock { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--c-white) 3.5%, transparent) 6px 12px); }
-:root:is([data-theme="light"], [data-theme="cream"]) .seg.mock { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--c-black) 3.5%, transparent) 6px 12px); }
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .seg.mock { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--c-black) 3.5%, transparent) 6px 12px); }
 /* reviewed: a small drawn check at the right edge (hidden on tiny segments) */
 .seg.rev { padding-right: 14px; }
 .seg.rev::after {
@@ -1294,7 +1316,7 @@ table.list .file .ico { color: var(--muted); }
   transition: background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease);
 }
 .kp-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--k); flex: none; box-sizing: border-box; }
-:root:is([data-theme="light"], [data-theme="cream"]) .kp-chip:not(.miss) i { box-shadow: 0 0 0 1px var(--line-2); }
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .kp-chip:not(.miss) i { box-shadow: 0 0 0 1px var(--line-2); }
 .kp-chip.occ i { background: transparent; border: 2px solid var(--k); }
 .kp-chip.miss { border-style: dashed; color: var(--muted); background: transparent; }
 .kp-chip.miss i { background: transparent; border: 1px dashed var(--faint); }
@@ -1589,10 +1611,16 @@ body.readonly .edit-only { display: none !important; }
   --ag-bubble: color-mix(in srgb, var(--c-near-black) 5.5%, transparent); --ag-hover: color-mix(in srgb, var(--c-near-black) 6%, transparent); --ag-online: #1a7f37;
 }
 :root[data-theme="forest"] {
-  --ag-glass: rgba(16, 52, 46, .74); --ag-glass-2: rgba(3, 22, 21, .84); --ag-line: rgba(218, 241, 222, .16);
-  --ag-field: rgba(3, 22, 21, .4); --ag-field-line: rgba(218, 241, 222, .16); --ag-focus: #8fd3c6;
+  --ag-glass: rgba(20, 77, 55, .76); --ag-glass-2: rgba(6, 40, 27, .84); --ag-line: rgba(238, 229, 212, .16);
+  --ag-field: rgba(4, 30, 20, .4); --ag-field-line: rgba(238, 229, 212, .16); --ag-focus: #ff8a70;
   --ag-a: var(--accent-fill); --ag-b: var(--accent-fill); --ag-ink: var(--accent-ink);
-  --ag-bubble: rgba(218, 241, 222, .08); --ag-hover: rgba(218, 241, 222, .08); --ag-online: #7ed6a0;
+  --ag-bubble: rgba(238, 229, 212, .08); --ag-hover: rgba(238, 229, 212, .08); --ag-online: #8fdcaa;
+}
+:root[data-theme="sand"] {
+  --ag-glass: rgba(248, 243, 233, .8); --ag-glass-2: rgba(248, 243, 233, .64); --ag-line: rgba(255, 255, 255, .9);
+  --ag-field: rgba(251, 248, 241, .78); --ag-field-line: rgba(12, 63, 43, .14); --ag-focus: #d63a22;
+  --ag-a: var(--accent-fill); --ag-b: var(--accent-fill); --ag-ink: var(--accent-ink);
+  --ag-bubble: rgba(12, 63, 43, .055); --ag-hover: rgba(12, 63, 43, .06); --ag-online: #1d6b3f;
 }
 :root[data-theme="navy"] {
   --ag-glass: rgba(24, 40, 86, .76); --ag-glass-2: rgba(8, 15, 36, .84); --ag-line: rgba(255, 255, 255, .14);
@@ -1747,7 +1775,7 @@ body:has(.asst-fab) #toasts { right: 82px; }
   box-shadow: 0 0 0 9999px color-mix(in srgb, var(--c-black) 42%, transparent), 0 0 24px 2px color-mix(in srgb, var(--ag-focus) 55%, transparent);
   animation: guide-in .35s var(--ease) both;
 }
-:root:is([data-theme="light"], [data-theme="cream"]) .guide-ring { box-shadow: 0 0 0 9999px color-mix(in srgb, var(--c-near-black) 26%, transparent), 0 0 24px 2px color-mix(in srgb, var(--ag-focus) 45%, transparent); }
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .guide-ring { box-shadow: 0 0 0 9999px color-mix(in srgb, var(--c-near-black) 26%, transparent), 0 0 24px 2px color-mix(in srgb, var(--ag-focus) 45%, transparent); }
 .guide-ring::after {
   content: ""; position: absolute; inset: -2px; border-radius: inherit; border: 2px solid var(--ag-focus);
   animation: guide-pulse 1.6s var(--ease) infinite;
@@ -1788,7 +1816,7 @@ body:has(.asst-fab) #toasts { right: 82px; }
   background: var(--bg-3); color: var(--text-2); white-space: nowrap; flex: none; }
 .st-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .st-status.s-live { background: var(--ok-soft); color: var(--ok); }
-:root:is([data-theme="light"], [data-theme="cream"]) .st-status.s-live { color: var(--ok-strong); }  /* the light green is too pale for small text on its tint */
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .st-status.s-live { color: var(--ok-strong); }  /* the light green is too pale for small text on its tint */
 .st-status.s-paused { background: var(--warn-soft); color: var(--warn); }
 .st-empty { display: grid; justify-items: center; gap: 8px; padding: 70px 20px; text-align: center; color: var(--muted);
   border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
@@ -2145,7 +2173,7 @@ body:has(.asst-fab) #toasts { right: 82px; }
 .pg-settings-head p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; }
 .pg-saved { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 500;
   color: var(--ok); background: var(--ok-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
-:root:is([data-theme="light"], [data-theme="cream"]) .pg-saved:not(.busy):not(.bad) { color: var(--ok-strong, var(--ok)); }
+:root:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) .pg-saved:not(.busy):not(.bad) { color: var(--ok-strong, var(--ok)); }
 .pg-saved.busy { color: var(--text-2); background: var(--bg-3); }
 .pg-saved.bad { color: var(--danger); background: var(--danger-soft); }
 .pg-saved .spinner { width: 11px; height: 11px; }

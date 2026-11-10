@@ -3,10 +3,11 @@
    behind them, so the page reads as layers of glass over one lit surface. */
 
 /* the three lights of each mode (strong, second, third) and how much of each shows */
-:root[data-glass] { --gl-1: #3f8f73; --gl-2: #e2c275; --gl-3: #8fd3c6; --gl-k: 40%; --gl-glass: 48%; }
+:root[data-glass] { --gl-1: #f2462e; --gl-2: #eee5d4; --gl-3: #2e9a68; --gl-k: 22%; --gl-glass: 48%; }
 :root[data-glass][data-theme="dark"] { --gl-1: #2f6fe4; --gl-2: #a98bff; --gl-3: #43cf8a; --gl-k: 30%; }
 :root[data-glass][data-theme="light"] { --gl-1: #9cc2f5; --gl-2: #f6c9a8; --gl-3: #b4e6cf; --gl-k: 70%; --gl-glass: 58%; }
 :root[data-glass][data-theme="navy"] { --gl-1: #ff3d8b; --gl-2: #5b7cff; --gl-3: #b54dff; --gl-k: 30%; }
+:root[data-glass][data-theme="sand"] { --gl-1: #f59a86; --gl-2: #8fbfa5; --gl-3: #e6c89a; --gl-k: 55%; --gl-glass: 56%; }
 :root[data-glass][data-theme="cream"] { --gl-1: #f2a77f; --gl-2: #ecc56a; --gl-3: #e98b5c; --gl-k: 62%; --gl-glass: 56%; }
 :root[data-glass][data-theme="charcoal"] { --gl-1: #2f6bff; --gl-2: #d8cbb3; --gl-3: #e0a458; --gl-k: 26%; }
 
@@ -20,7 +21,7 @@
   --lane: color-mix(in srgb, var(--bg) 42%, transparent); --lane-2: color-mix(in srgb, var(--bg) 52%, transparent);
   --ruler: color-mix(in srgb, var(--bg) 46%, transparent);
 }
-:root[data-glass]:is([data-theme="light"], [data-theme="cream"]) { --glass-hi: inset 0 1px 0 color-mix(in srgb, var(--c-white) 70%, transparent); }
+:root[data-glass]:is([data-theme="light"], [data-theme="cream"], [data-theme="sand"]) { --glass-hi: inset 0 1px 0 color-mix(in srgb, var(--c-white) 70%, transparent); }
 
 /* ---------- the lit background ---------- */
 :root[data-glass] body { background: var(--bg); }

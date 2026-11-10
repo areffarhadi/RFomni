@@ -183,7 +183,7 @@ HINTS = {
     "askName": r"\bname\b|\bid\b", "comment": r"comment|note|remark|feedback", "finalComment": r"comment|feedback",
     "language": r"page in|interface|buttons|persian page|farsi page", "progress": r"progress|ring",
     "finishCharts": r"chart|graph|plot|statistic", "charts": r"chart|graph|plot|statistic",
-    "theme": r"colou?r|dark|light|night|navy|cream|charcoal|green|theme", "accent": r"#[0-9a-f]{3,6}|accent",
+    "theme": r"colou?r|dark|light|night|navy|cream|charcoal|green|sand|theme", "accent": r"#[0-9a-f]{3,6}|accent",
     "randomOrder": r"random|shuffle|order", "allowSkip": r"skip", "allowBack": r"go back|change (their|an) answer",
     "practiceItems": r"practi|training|warm.?up", "mustPlay": r"whole|the end|full|complete|entire",
     "noRepeat": r"repeat|twice|same sentence", "multiple": r"several|multiple|more than one|all that apply|any number",
@@ -263,7 +263,7 @@ GUARD = {
     "before_start": r"before|\bstart|beginning|ask (them|people|participants|listeners|raters|annotators|volunteers|about)|"
                     r"their (own )?(age|gender|first language|native|mother tongue|accent|name|headphones)|native|headphone|"
                     r"hearing|demograph|participant|about (them|themselves)|expertise|experience",
-    "look.colours": r"colou?r|dark|light|night|navy|cream|charcoal|green|theme|mode",
+    "look.colours": r"colou?r|dark|light|night|navy|cream|charcoal|green|sand|theme|mode",
     "look.accent": r"#[0-9a-f]{3,6}|accent|button colou?r|colou?r of",
     "look.language": r"persian|farsi|english|language|rtl|right to left",
     "look.progress": r"progress|ring|\bbar\b",

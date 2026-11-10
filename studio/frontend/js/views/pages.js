@@ -423,7 +423,7 @@ const L = {
   sampleRate: ['Recording quality'], peoplePerPrompt: ['People per prompt', '0 means everyone records everything.'],
 };
 const OPTION = {
-  forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal', en: 'English', fa: 'Persian',
+  forest: 'Green', sand: 'Sand', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal', en: 'English', fa: 'Persian',
   bar: 'Bar', ring: 'Ring', off: 'Off', optional: 'Optional', required: 'Required', read: 'Read each prompt aloud',
   answer: 'Answer each prompt out loud', together: 'One prompt in every way', shuffled: 'Mixed',
   16000: '16 kHz (speech)', 48000: '48 kHz (full quality)', 'my-answers': 'Their answers', everyone: 'Everyone’s answers',
@@ -821,7 +821,7 @@ async function pageEditor(host, r) {
       h('div.pg-f', h('span.pg-f-t', h('span.pg-f-l', 'On your Results tab')), chartChips('results', ['answers', 'scores', 'systems', 'agreement', 'timeline', 'time-per-item', 'people']))),
     section('Look', 'Colours, language and progress',
       h('div.pg-f', h('span.pg-f-t', h('span.pg-f-l', 'Colour mode')), h('select.select', { 'aria-label': 'Colour mode', onchange: (e) => { v.look.colours = e.target.value; touch('look'); } },
-        ['forest', 'dark', 'light', 'navy', 'cream', 'charcoal'].map(o => h('option', { value: o, selected: v.look.colours === o }, optName(o))))),
+        ['forest', 'sand', 'dark', 'light', 'navy', 'cream', 'charcoal'].map(o => h('option', { value: o, selected: v.look.colours === o }, optName(o))))),
       h('div.pg-f', h('span.pg-f-t', h('span.pg-f-l', 'Accent colour'), h('small', 'For buttons and highlights.')), accent),
       h('div.pg-f', h('span.pg-f-t', h('span.pg-f-l', 'Page language'), h('small', 'The language of the buttons.')),
         seg([['en', 'English'], ['fa', 'Persian']], v.look.language, (k) => { v.look.language = k; touch('look'); }, 'Page language')),

@@ -20,7 +20,7 @@
   const MARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="12" r="9.5"/>'
     + '<path pathLength="1" d="M6.5 12h1.5l1.5-4 2 8 2-10 2 9 1.5-3h1"/></svg>';
   // page colour, mark colour, title colour of each mode (the same on every page, so the hand-over does not flicker)
-  const PAL = { forest: ['#051f20', '#8eb69b', '#daf1de'], dark: ['#0f1012', '#6ea6ff', '#ececee'], light: ['#f4f3ee', '#0969da', '#1a1c1f'],
+  const PAL = { forest: ['#0c3f2b', '#f2462e', '#eee5d4'], sand: ['#eee5d4', '#f2462e', '#0c3f2b'], dark: ['#0f1012', '#6ea6ff', '#ececee'], light: ['#f4f3ee', '#0969da', '#1a1c1f'],
     navy: ['#0f1b3d', '#ff3d8b', '#ffffff'], cream: ['#f3eee3', '#d9541e', '#111111'], charcoal: ['#1e1e1c', '#6e97ff', '#d8cbb3'] };
   const palette = () => PAL[root.dataset.theme] || PAL.forest;
   const EASE = 'cubic-bezier(.65, 0, .35, 1)';

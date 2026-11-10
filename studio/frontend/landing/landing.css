@@ -11,26 +11,47 @@
 @font-face { font-family: "Poppins"; src: url("fonts/poppins-300.woff2") format("woff2"); font-weight: 300; font-display: swap; }
 @font-face { font-family: "Poppins"; src: url("fonts/poppins-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
-/* ---------- Green (default): #051F20 #0B2B26 #163832 #235347 #8EB69B #DAF1DE ---------- */
+/* ---------- Green (default): #0C3F2B strong green, #EEE5D4 sand, #F2462E vermilion (text #FF8A70, buttons #D63A22) ---------- */
 :root, :root[data-theme="forest"] {
-  --bg: #051f20; --bg-1: #0b2b26; --bg-2: #10312c; --bg-3: #163832;
-  --text: #daf1de; --text-2: #b6d6bf; --muted: #8fa79a; --faint: #6e9381;
-  --line: rgba(218, 241, 222, .08); --line-2: rgba(218, 241, 222, .14);
-  --accent: #8eb69b; --accent-soft: rgba(142, 182, 155, .14); --accent-ink: #051f20;
-  --btn-a: #a6cbb2; --btn-b: #8eb69b; --btn-a-h: #b6d8c0; --btn-b-h: #a3c8ae; --btn-glow: rgba(142, 182, 155, .6);
-  --panel-a: #0a2925; --panel-b: #072320; --demo-a: #0c2e28; --demo-b: #08231f;
-  --sheet: rgba(16, 49, 44, .92); --menu: #0f342d; --nav: rgba(5, 31, 32, .72);
-  --card-a: rgba(22, 56, 50, .55); --card-b: rgba(11, 43, 38, .2); --faq: rgba(11, 43, 38, .5); --faq-open: rgba(16, 49, 44, .7);
-  --note-bg: rgba(218, 241, 222, .94); --note-fg: #051f20;
-  --wave: rgba(163, 200, 174, .95); --wave-dim: rgba(142, 182, 155, .42); --play: #f0907f;
-  --ok: #3f9b62; --glow: rgba(142, 182, 155, .35);
-  --shadow-xl: 0 40px 120px -40px rgba(0, 0, 0, .8); --shadow-lg: 0 24px 40px -14px rgba(0, 0, 0, .7);
-  --pill-bg: #0e322c; --pill-line: rgba(218, 241, 222, .1); --pill-fg: #e6f5e8; --pill-dim: rgba(218, 241, 222, .5);
-  --run-1: #8eb69b; --run-2: #e2c275; --run-3: #8fd3c6; --run-4: #f2b59b;
-  --term-bg: #031615; --term-fg: #daf1de; --term-muted: #6e9381; --term-accent: #8eb69b; --term-line: rgba(218, 241, 222, .08);
-  --hero-a: #3f8f73; --hero-b: rgba(35, 83, 71, .55); --orb: #c9f5d8; --terrain: #8eb69b; --cell: rgba(218, 241, 222, .07);
-  --bar: rgba(4, 24, 24, .78); --bar-line: rgba(218, 241, 222, .14); --mark: rgba(218, 241, 222, .5); --guide: rgba(218, 241, 222, .07);
+  --bg: #0c3f2b; --bg-1: #114732; --bg-2: #134c36; --bg-3: #18553d;
+  --text: #eee5d4; --text-2: #d6ccb8; --muted: #bdb4a0; --faint: #8d9a88;
+  --line: rgba(238, 229, 212, .09); --line-2: rgba(238, 229, 212, .15);
+  --accent: #ff8a70; --accent-soft: rgba(242, 70, 46, .16); --accent-ink: #ffffff;
+  --btn-a: #d63a22; --btn-b: #c2311b; --btn-a-h: #c9341d; --btn-b-h: #b02c17; --btn-glow: rgba(242, 70, 46, .55);
+  --panel-a: #114732; --panel-b: #0d4130; --demo-a: #134c36; --demo-b: #0e4230;
+  --sheet: rgba(17, 71, 50, .94); --menu: #134c36; --nav: rgba(12, 63, 43, .74);
+  --card-a: rgba(24, 85, 61, .55); --card-b: rgba(17, 71, 50, .2); --faq: rgba(17, 71, 50, .5); --faq-open: rgba(19, 76, 54, .75);
+  --note-bg: rgba(238, 229, 212, .95); --note-fg: #0c3f2b;
+  --wave: rgba(238, 229, 212, .92); --wave-dim: rgba(238, 229, 212, .38); --play: #f2462e;
+  --ok: #8fdcaa; --glow: rgba(242, 70, 46, .3);
+  --shadow-xl: 0 40px 120px -40px rgba(0, 10, 5, .8); --shadow-lg: 0 24px 40px -14px rgba(0, 10, 5, .7);
+  --pill-bg: #114732; --pill-line: rgba(238, 229, 212, .12); --pill-fg: #f6efe2; --pill-dim: rgba(238, 229, 212, .55);
+  --run-1: #f2462e; --run-2: #eee5d4; --run-3: #e9c46a; --run-4: #8fdcaa;
+  --term-bg: #082e1f; --term-fg: #eee5d4; --term-muted: #9fae9b; --term-accent: #ff8a70; --term-line: rgba(238, 229, 212, .08);
+  --hero-a: #f2462e; --hero-b: rgba(238, 229, 212, .12); --orb: #eee5d4; --terrain: #eee5d4; --cell: rgba(238, 229, 212, .07);
+  --bar: rgba(8, 46, 31, .8); --bar-line: rgba(238, 229, 212, .14); --mark: rgba(238, 229, 212, .5); --guide: rgba(238, 229, 212, .07);
   color-scheme: dark;
+}
+/* ---------- Sand: #EEE5D4 sand, #0C3F2B strong green, #F2462E vermilion (text #B8301A, buttons #D63A22) ---------- */
+:root[data-theme="sand"] {
+  --bg: #eee5d4; --bg-1: #f8f3e9; --bg-2: #f3ecdf; --bg-3: #e6dcc8;
+  --text: #0c3f2b; --text-2: #2c5645; --muted: #4a6557; --faint: #7f8f84;
+  --line: rgba(12, 63, 43, .1); --line-2: rgba(12, 63, 43, .16);
+  --accent: #b8301a; --accent-soft: rgba(242, 70, 46, .1); --accent-ink: #ffffff;
+  --btn-a: #d63a22; --btn-b: #c2311b; --btn-a-h: #c9341d; --btn-b-h: #b02c17; --btn-glow: rgba(242, 70, 46, .35);
+  --panel-a: #f8f3e9; --panel-b: #e9dfcb; --demo-a: #f8f3e9; --demo-b: #f2eadb;
+  --sheet: rgba(248, 243, 233, .97); --menu: #f8f3e9; --nav: rgba(238, 229, 212, .84);
+  --card-a: #f8f3e9; --card-b: #f2eadb; --faq: #f8f3e9; --faq-open: #f8f3e9;
+  --note-bg: #0c3f2b; --note-fg: #eee5d4;
+  --wave: rgba(242, 70, 46, .9); --wave-dim: rgba(12, 63, 43, .3); --play: #f2462e;
+  --ok: #1d6b3f; --glow: rgba(242, 70, 46, .14);
+  --shadow-xl: 0 30px 80px -30px rgba(40, 45, 20, .28); --shadow-lg: 0 18px 30px -14px rgba(40, 45, 20, .22);
+  --pill-bg: #0c3f2b; --pill-line: transparent; --pill-fg: #eee5d4; --pill-dim: rgba(238, 229, 212, .6);
+  --run-1: #f2462e; --run-2: #0c3f2b; --run-3: #b8860b; --run-4: #2f8a5c;
+  --term-bg: #0c3f2b; --term-fg: #eee5d4; --term-muted: #a9b8a6; --term-accent: #ff8a70; --term-line: rgba(238, 229, 212, .1);
+  --hero-a: #f5a08c; --hero-b: rgba(12, 63, 43, .1); --orb: #f2462e; --terrain: #0c3f2b; --cell: rgba(12, 63, 43, .06);
+  --bar: rgba(248, 243, 233, .84); --bar-line: rgba(12, 63, 43, .12); --mark: rgba(12, 63, 43, .4); --guide: rgba(12, 63, 43, .07);
+  color-scheme: light;
 }
 /* ---------- Night: the app's dark theme ---------- */
 :root[data-theme="dark"] {
@@ -201,6 +222,9 @@ p { margin: 0; }
 .nav-bar::before { left: -5px; top: -5px; border-width: 1px 0 0 1px; }
 .nav-bar::after { right: -5px; bottom: -5px; border-width: 0 1px 1px 0; }
 .nav.scrolled .nav-bar { width: min(1120px, 100%); height: 56px; box-shadow: 0 22px 60px -22px rgba(0, 0, 0, .75); }
+/* the narrower bar still holds the links, the seven mode buttons and Sign in */
+.nav.scrolled .nav-links a, .nav.scrolled .nav-links .soon { padding-inline: 9px; }
+.nav-bar .open-studio { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 300 21px/1 "Poppins", var(--font); letter-spacing: -.02em; color: var(--muted); }
 .brand b { font-weight: 700; color: var(--text); }
 .logo-tile { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; flex: none;
@@ -222,7 +246,7 @@ p { margin: 0; }
 
 /* mode switch: Day / Night / Green */
 .modes { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--t3); flex: none; }
-.modes button { width: 32px; height: 30px; border-radius: 6px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer;
+.modes button { width: 28px; height: 30px; border-radius: 6px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer;
   transition: background-color .2s var(--ease), color .2s var(--ease); }
 .modes button:hover { color: var(--text); }
 .modes button[aria-checked="true"] { background: var(--bg-3); color: var(--accent); box-shadow: inset 0 0 0 1px var(--line-2); }
@@ -476,12 +500,12 @@ main::before { content: ""; position: absolute; inset: 0 auto 0 50%; width: min(
 .pile-btns button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pile-btns svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* pill colours by task group (text on pill >= 5:1 in every mode) */
-:root .c-speech, :root[data-theme="forest"] .c-speech { --pf: #8eb69b; --pi: #051f20; }
-:root .c-speaker, :root[data-theme="forest"] .c-speaker { --pf: #daf1de; --pi: #0b2b26; }
-:root .c-para, :root[data-theme="forest"] .c-para { --pf: #e2c275; --pi: #231a02; }
-:root .c-audio, :root[data-theme="forest"] .c-audio { --pf: #8fd3c6; --pi: #04221e; }
-:root .c-vision, :root[data-theme="forest"] .c-vision { --pf: #2f6b5b; --pi: #eaf7ec; }
-:root .c-spoof, :root[data-theme="forest"] .c-spoof { --pf: #f0907f; --pi: #2a0b05; }
+:root .c-speech, :root[data-theme="forest"] .c-speech { --pf: #ff8a70; --pi: #0c3f2b; }
+:root .c-speaker, :root[data-theme="forest"] .c-speaker { --pf: #eee5d4; --pi: #0c3f2b; }
+:root .c-para, :root[data-theme="forest"] .c-para { --pf: #e9c46a; --pi: #231a02; }
+:root .c-audio, :root[data-theme="forest"] .c-audio { --pf: #8fdcaa; --pi: #06281b; }
+:root .c-vision, :root[data-theme="forest"] .c-vision { --pf: #276b4f; --pi: #f6efe2; }
+:root .c-spoof, :root[data-theme="forest"] .c-spoof { --pf: #ff9aa2; --pi: #2a0508; }
 :root .c-caption, :root[data-theme="forest"] .c-caption { --pf: #f2b59b; --pi: #2a1206; }
 :root[data-theme="dark"] .c-speech { --pf: #6ea6ff; --pi: #0b1020; }
 :root[data-theme="dark"] .c-speaker { --pf: #e6e8ee; --pi: #15171c; }
@@ -504,6 +528,13 @@ main::before { content: ""; position: absolute; inset: 0 auto 0 50%; width: min(
 :root[data-theme="navy"] .c-vision { --pf: #263a6e; --pi: #ffffff; --pr: 0 0 0 1px rgba(255, 255, 255, .14); }
 :root[data-theme="navy"] .c-spoof { --pf: #ff7a6b; --pi: #2a0905; }
 :root[data-theme="navy"] .c-caption { --pf: #c9b6ff; --pi: #1b0f3d; }
+:root[data-theme="sand"] .c-speech { --pf: #d63a22; --pi: #ffffff; }
+:root[data-theme="sand"] .c-speaker { --pf: #0c3f2b; --pi: #eee5d4; }
+:root[data-theme="sand"] .c-para { --pf: #e9b949; --pi: #2a1d00; }
+:root[data-theme="sand"] .c-audio { --pf: #1d6b3f; --pi: #ffffff; }
+:root[data-theme="sand"] .c-vision { --pf: #f8f3e9; --pi: #0c3f2b; --pr: 0 0 0 1px rgba(12, 63, 43, .16); }
+:root[data-theme="sand"] .c-spoof { --pf: #a3142e; --pi: #ffffff; }
+:root[data-theme="sand"] .c-caption { --pf: #7a4f2b; --pi: #ffffff; }
 :root[data-theme="cream"] .c-speech { --pf: #c94a14; --pi: #ffffff; }
 :root[data-theme="cream"] .c-speaker { --pf: #111111; --pi: #f3eee3; }
 :root[data-theme="cream"] .c-para { --pf: #e9b949; --pi: #2a1d00; }

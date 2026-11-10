@@ -7,16 +7,25 @@
 @font-face { font-family: "Poppins"; src: url("../landing/fonts/poppins-300.woff2") format("woff2"); font-weight: 300; font-display: swap; }
 @font-face { font-family: "Poppins"; src: url("../landing/fonts/poppins-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
-/* ---------- Green (default) ---------- */
+/* ---------- Green (default): #0C3F2B strong green, #EEE5D4 sand, #F2462E vermilion ---------- */
 :root, :root[data-theme="forest"] {
-  --bg: #031615; --bg-2: #0b2b26; --text: #e6f5e8; --text-2: #b6d6bf; --muted: #8fa79a; --accent: #8eb69b;
-  --glass: rgba(170, 214, 188, .085); --glass-2: rgba(170, 214, 188, .05); --glass-line: rgba(218, 241, 222, .16);
-  --field: rgba(3, 22, 21, .35); --field-line: rgba(218, 241, 222, .16); --field-focus: #8fd3c6;
-  --grad-a: #a6d9b8; --grad-b: #2f8a6c; --grad-ink: #04221e;
-  --badge-a: #8fd3c6; --badge-b: #2f6b5b;
-  --switch: #b9e7c8; --orb: #f6e7c1;
-  --light-1: 246, 196, 120; --light-2: 142, 182, 155; --light-3: 143, 211, 198;
+  --bg: #0c3f2b; --bg-2: #114732; --text: #eee5d4; --text-2: #d6ccb8; --muted: #bdb4a0; --accent: #ff8a70;
+  --glass: rgba(238, 229, 212, .08); --glass-2: rgba(238, 229, 212, .05); --glass-line: rgba(238, 229, 212, .16);
+  --field: rgba(4, 30, 20, .35); --field-line: rgba(238, 229, 212, .18); --field-focus: #ff8a70;
+  --grad-a: #d63a22; --grad-b: #b8301a; --grad-ink: #ffffff; --badge-a: #f2462e; --badge-b: #eee5d4;
+  --switch: #ff8a70; --orb: #eee5d4;
+  --light-1: 242, 70, 46; --light-2: 238, 229, 212; --light-3: 46, 154, 104;
   color-scheme: dark;
+}
+/* ---------- Sand: the same three colours, sand as the ground ---------- */
+:root[data-theme="sand"] {
+  --bg: #eee5d4; --bg-2: #f8f3e9; --text: #0c3f2b; --text-2: #2c5645; --muted: #4a6557; --accent: #b8301a;
+  --glass: rgba(255, 252, 245, .55); --glass-2: rgba(255, 252, 245, .35); --glass-line: rgba(255, 255, 255, .9);
+  --field: rgba(255, 252, 245, .65); --field-line: rgba(12, 63, 43, .16); --field-focus: #d63a22;
+  --grad-a: #d63a22; --grad-b: #b8301a; --grad-ink: #ffffff; --badge-a: #f2462e; --badge-b: #0c3f2b;
+  --switch: #d63a22; --orb: #f2462e;
+  --light-1: 242, 70, 46; --light-2: 12, 63, 43; --light-3: 214, 190, 150;
+  color-scheme: light;
 }
 /* ---------- Night ---------- */
 :root[data-theme="dark"] {
