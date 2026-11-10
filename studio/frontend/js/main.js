@@ -12,6 +12,7 @@ import { swap, watchSegments } from './motion.js';
 import { mountAssistant } from './assistant.js';
 import { SharedListView, SharedTaskView } from './views/shared.js';
 import { CollectListView, CollectView } from './views/collect.js';
+import { PageWizardView, RequestsView } from './views/pages.js';
 
 const app = $('#app');
 const crumbs = h('div.crumbs');
@@ -108,6 +109,9 @@ function renderCrumbs() {
   const items = shared ? [] : parts[0] === 'shared' ? [h('span', '/'), h('a', { href: '#/shared' }, 'Shared tasks')]
     : parts[0] === 'collect' ? [h('span', '/'), h('a', { href: '#/collect' }, 'Data collection')]
     : parts[0] === 'listen' ? [h('span', '/'), h('a', { href: '#/listen' }, 'Subjective tests')]
+    : parts[0] === 'new' ? [h('span', '/'), h('a', { href: { tasks: '#/shared', listen: '#/listen', collect: '#/collect' }[parts[1]] || '#/shared' },
+      { tasks: 'Shared tasks', listen: 'Subjective tests', collect: 'Data collection' }[parts[1]] || 'Shared tasks'), h('span', '/'), h('span', 'New page')]
+    : parts[0] === 'requests' ? [h('span', '/'), h('a', { href: '#/requests' }, 'Requests')]
     : [h('span', '/'), h('a', { href: '#/' }, 'Projects')];
   shareBtn.style.display = !shared && parts[0] === 'p' && state.project ? '' : 'none';
   if (parts[0] === 'p' && state.project) {
@@ -185,6 +189,14 @@ async function route() {
       crumbFile = null;
       view = parts[1] ? new CollectView(parts[1]) : new CollectListView();
       swap(main, old?.el, view.el, parts[1] ? 1 : -1, !!old);
+      renderCrumbs();
+    } else if (parts[0] === 'new' || parts[0] === 'requests') {  // a page from a default page; requests to the admins
+      const old = view;
+      if (old) { await old.beforeLeave?.(); old.destroy?.(); }
+      state.project = null;
+      crumbFile = null;
+      view = parts[0] === 'new' ? new PageWizardView(parts[1]) : new RequestsView();
+      swap(main, old?.el, view.el, 1, !!old);
       renderCrumbs();
     } else if (parts[0] === 'shared') {
       const old = view;

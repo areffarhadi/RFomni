@@ -1,0 +1,71 @@
+{
+ "id": "text-classify",
+ "area": "tasks",
+ "modality": "text",
+ "family": "classify",
+ "name": "Classification",
+ "layout": "stacked",
+ "pick": "People read each text (a review, a message, a sentence) and choose a class: sentiment, topic, intent, toxicity, language, spam or not.",
+ "summary": "Read short texts and choose what fits.",
+ "suggest": [
+  "Topics are sport, politics, science and other",
+  "Ask how sure people are",
+  "3 people per text"
+ ],
+ "examples": [
+  [
+   "classes positive negative neutral",
+   {
+    "classes": [
+     "Positive",
+     "Negative",
+     "Neutral"
+    ],
+    "question": "What is the tone of this text?"
+   }
+  ],
+  [
+   "people can choose more than one topic",
+   {
+    "multiple": true
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 3,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "What is this text about?",
+  "instructions": "Read each text and choose the answer that fits best. Go with your first impression; there is no need to look anything up.",
+  "question": "What is the tone of this text?",
+  "classes": [
+   "Positive",
+   "Negative",
+   "Neutral"
+  ],
+  "multiple": false,
+  "notSure": false,
+  "other": false,
+  "classHelp": "",
+  "confidence": false,
+  "charts": [
+   "answers",
+   "agreement",
+   "people"
+  ]
+ }
+}

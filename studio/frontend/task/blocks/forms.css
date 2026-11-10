@@ -1,0 +1,156 @@
+/* Form blocks (forms.js): dropdown, number, rank, grid, prefill and spans. Built on task.css: its tokens, .input, .opt,
+   .btn, .hint and .scale-ends. Logical properties throughout, so right-to-left pages mirror by themselves. */
+
+/* eight highlight colours for the spans labels, by index; darker on the light grounds so the underline still shows */
+:root { --hl-0: #5b9bff; --hl-1: #f2994a; --hl-2: #4fc27a; --hl-3: #f2667a; --hl-4: #b48cf2; --hl-5: #e3c341; --hl-6: #3cc6c0; --hl-7: #f07fc4; }
+:root[data-theme="light"], :root[data-theme="cream"] {
+  --hl-0: #1f6fd6; --hl-1: #d2691e; --hl-2: #23964b; --hl-3: #d23a52; --hl-4: #8250df; --hl-5: #a68a00; --hl-6: #0f8f8a; --hl-7: #c2399a; }
+
+.ob-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ob-ico.fill { fill: currentColor; stroke: none; }
+/* the lock: a bare fieldset; while the clip has not been heard everything in it is dimmed and off */
+.ob-lock { border: 0; margin: 8px 0 0; padding: 0; min-inline-size: 0; }
+.ob-lock:disabled { opacity: .5; cursor: not-allowed; }
+.ob-lock:disabled * { cursor: not-allowed; }
+.ob-msg { margin: 6px 0 0; min-height: 0; font-size: 13px; color: var(--muted); }
+.ob-msg:empty { display: none; }
+.ob-number .ob-msg, .ob-msg.bad { color: var(--bad); }
+.btn.ob-small { padding: 6px 12px; font-size: 13px; gap: 6px; border-color: var(--field-line); }
+.btn.ob-small:hover:not(:disabled) { border-color: var(--accent); }
+
+/* ---------- dropdown: a box to type in, with the list under it */
+.ob-combo-box { position: relative; }
+.ob-combo { padding-inline-end: 44px; }
+.ob-chev { position: absolute; inset-block: 0; inset-inline-end: 4px; width: 40px; display: grid; place-items: center; border: 0;
+  background: none; color: var(--muted); cursor: pointer; border-radius: 12px; }
+.ob-chev:hover { color: var(--text); }
+.ob-pop { position: absolute; z-index: 4; inset-inline: 0; top: calc(100% + 6px); max-height: min(300px, 50vh); overflow: auto;
+  overscroll-behavior: contain; padding: 6px; border-radius: 16px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--field-line) 55%, transparent);
+  box-shadow: var(--shadow); }
+.ob-listbox { list-style: none; margin: 0; padding: 0; }
+.ob-option { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; cursor: pointer; overflow-wrap: anywhere; }
+.ob-option:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.ob-option.active { background: var(--on); outline: 1px solid var(--accent); outline-offset: -1px; }
+.ob-option[aria-selected="true"] { font-weight: 600; }
+.ob-option[aria-selected="true"]::after { content: "✓"; margin-inline-start: auto; color: var(--accent); }
+.ob-none { margin: 0; padding: 9px 12px; color: var(--muted); font-size: 13px; }
+
+/* ---------- number: a short box with the unit after it */
+.ob-num-row { display: flex; align-items: center; gap: 10px; }
+.input.ob-num { width: 11em; max-width: 100%; flex: 0 1 auto; font-variant-numeric: tabular-nums; }
+.ob-num[aria-invalid="true"] { border-color: var(--bad); }
+.ob-unit { color: var(--text-2); font-weight: 500; overflow-wrap: anywhere; min-width: 0; }
+
+/* ---------- rank: rows to drag, with arrows for keys and small screens */
+.ob-rank { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ob-rank-row { display: flex; align-items: center; gap: 8px; padding: 6px; padding-inline-start: 4px; border-radius: 14px;
+  border: 1px solid var(--field-line); background: var(--field); cursor: grab; user-select: none; -webkit-user-select: none;
+  transition: border-color .15s, box-shadow .15s; }
+.ob-rank-row:hover { border-color: var(--accent); }
+.ob-rank-row.dragging { position: relative; z-index: 2; cursor: grabbing; border-color: var(--accent); background: var(--surface);
+  box-shadow: var(--shadow); }
+.ob-grip { display: grid; place-items: center; width: 28px; height: 36px; flex: none; color: var(--muted); touch-action: none; cursor: grab; }
+.ob-pos { min-width: 1.4em; flex: none; text-align: center; font-variant-numeric: tabular-nums; color: var(--accent); }
+.ob-rank-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ob-move { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; background: none; color: var(--text-2); }
+.ob-move:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.ob-move:disabled { opacity: .3; cursor: default; }
+.ob-rank-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+.ob-rank-foot .hint { margin: 0; }
+.ob-ok .ob-ico { display: none; }
+.ob-ok[aria-pressed="true"] .ob-ico { display: block; color: var(--accent); }
+.ob-lock:disabled .ob-rank-row { cursor: not-allowed; }
+
+/* ---------- grid: stacked by default (name, then the points); a table when there is room (.table, set from the width) */
+.ob-grid { display: grid; gap: 14px; }
+.ob-g-head { display: none; }
+.ob-g-ends .scale-ends { margin: 0; }
+.ob-g-ends > span:first-child { display: none; }
+.ob-g-row { display: grid; gap: 6px; }
+.ob-g-name { font-weight: 500; color: var(--text-2); overflow-wrap: anywhere; }
+.ob-g-pts { display: grid; grid-template-columns: repeat(var(--pts), minmax(0, 1fr)); gap: 6px; }
+.ob-g-cell { position: relative; display: grid; min-width: 0; cursor: pointer; }
+.ob-g-cell input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.ob-g-face { display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 6px 2px;
+  border-radius: 12px; border: 1px solid var(--field-line); background: var(--field); font-variant-numeric: tabular-nums;
+  transition: border-color .15s, background .15s; }
+.ob-g-face small, .ob-g-pt small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;
+  font-weight: 500; color: var(--muted); }
+.ob-g-cell:hover .ob-g-face { border-color: var(--accent); }
+.ob-g-cell input:checked + .ob-g-face { border-color: var(--accent); background: var(--on); }
+.ob-g-cell input:checked + .ob-g-face small { color: var(--text); }
+.ob-g-cell input:focus-visible + .ob-g-face { outline: 2px solid var(--field-focus); outline-offset: 2px; }
+.ob-grid.many .ob-g-pts { gap: 3px; }
+
+.ob-grid.table { gap: 0; }
+.ob-grid.table .ob-g-head, .ob-grid.table .ob-g-row, .ob-grid.table .ob-g-ends {
+  display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr); align-items: center; gap: 0 10px; }
+.ob-grid.table .ob-g-ends > span:first-child { display: block; }
+.ob-grid.table .ob-g-ends { padding-bottom: 6px; }
+.ob-grid.table .ob-g-head { padding-bottom: 6px; }
+.ob-g-pt { display: grid; justify-items: center; align-content: end; gap: 1px; min-width: 0; text-align: center; font-size: 13px; }
+.ob-g-pt small { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+.ob-grid.table .ob-g-row { padding: 6px 0; border-top: 1px solid color-mix(in srgb, var(--field-line) 40%, transparent); border-radius: 6px; }
+.ob-grid.table .ob-g-row:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.ob-grid.table .ob-g-face { border: 0; background: none; padding: 0; min-height: 40px; }
+.ob-grid.table .ob-g-face > * { display: none; }
+.ob-grid.table .ob-g-face::before { content: ""; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--field-line);
+  background: var(--field); transition: border-color .15s, box-shadow .15s; }
+.ob-grid.table .ob-g-cell:hover .ob-g-face::before { border-color: var(--accent); }
+.ob-grid.table .ob-g-cell input:checked + .ob-g-face { background: none; }
+.ob-grid.table .ob-g-cell input:checked + .ob-g-face::before { border-color: var(--btn); background: var(--btn); box-shadow: inset 0 0 0 4px var(--surface); }
+.ob-grid.table .ob-g-cell input:focus-visible + .ob-g-face { outline: 0; }
+.ob-grid.table .ob-g-cell input:focus-visible + .ob-g-face::before { outline: 2px solid var(--field-focus); outline-offset: 3px; }
+
+/* ---------- prefill: the box, and "start again" under it */
+.ob-prefill { display: grid; gap: 8px; margin-top: 8px; }
+.ob-prefill-foot { display: flex; justify-content: flex-end; }
+
+/* ---------- spans: label chips over the text, the highlights in it, and the list under the question */
+.ob-spans { display: grid; gap: 10px; }
+.ob-tools { position: sticky; top: 0; z-index: 2; display: grid; gap: 8px; padding-block: 4px 8px; background: var(--surface);
+  border-bottom: 1px solid color-mix(in srgb, var(--field-line) 40%, transparent); }
+.ob-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ob-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 14px;
+  border: 1px solid var(--field-line); background: var(--field); transition: border-color .15s, background .15s; }
+.ob-chip:hover { border-color: var(--hl); }
+.ob-chip[aria-pressed="true"] { border-color: var(--hl); background: color-mix(in srgb, var(--hl) 24%, transparent); font-weight: 600; }
+.ob-sw { display: inline-block; width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--hl); }
+.ob-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-height: 32px; }
+.ob-status .ob-msg { margin: 0; flex: 1 1 14em; min-width: 0; overflow-wrap: anywhere; }
+
+.text blockquote.ob-text { line-height: 1.85; cursor: text; }
+.ob-w { border-radius: 4px; -webkit-tap-highlight-color: transparent; }
+.ob-w, mark.ob-hl { scroll-margin-block: 120px 24px; }   /* scrolled to: clear of the sticky label bar */
+.ob-text:focus-visible { outline: 1px dashed color-mix(in srgb, var(--field-focus) 70%, transparent); outline-offset: 8px; border-radius: 4px; }
+.ob-text:focus-visible .ob-cur { outline: 2px solid var(--field-focus); outline-offset: 1px; }
+.ob-w.ob-start { outline: 2px dashed var(--hl); outline-offset: 2px; background: color-mix(in srgb, var(--hl) 20%, transparent); }
+@media (hover: hover) { .ob-w:hover { background: color-mix(in srgb, var(--hl) 16%, transparent); } .ob-hl .ob-w:hover { background: none; } }
+mark.ob-hl { color: inherit; padding: 1px 2px; border-radius: 5px; cursor: pointer; background: color-mix(in srgb, var(--hl) 28%, transparent);
+  box-shadow: inset 0 -2px 0 var(--hl); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+mark.ob-hl[data-label]::after { content: attr(data-label); margin-inline-start: 5px; padding: 0 5px; border-radius: 5px; font-size: 11px;
+  font-weight: 600; line-height: 1.5; vertical-align: 2px; color: var(--text); background: color-mix(in srgb, var(--hl) 34%, var(--surface));
+  user-select: none; -webkit-user-select: none; }
+mark.ob-hl.on { background: color-mix(in srgb, var(--hl) 46%, transparent); outline: 2px solid var(--hl); outline-offset: 1px; }
+@media (hover: none) and (pointer: coarse) {   /* phones: tap the first and last word instead of the system's selection */
+  .ob-text { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+}
+
+.ob-marks-box { margin-top: 8px; }
+.ob-marks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ob-mark { display: flex; align-items: stretch; gap: 4px; }
+.ob-m { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; cursor: pointer;
+  text-align: start; border: 1px solid var(--field-line); background: var(--field); overflow-wrap: anywhere; }
+.ob-m:hover { border-color: var(--hl); }
+.ob-m[aria-pressed="true"] { border-color: var(--hl); background: color-mix(in srgb, var(--hl) 22%, transparent); }
+.ob-m .ob-sw { align-self: center; }
+.ob-lab { color: var(--muted); }
+.ob-x { width: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; cursor: pointer; color: var(--muted);
+  border: 1px solid transparent; background: none; }
+.ob-x:hover { color: var(--text); border-color: var(--bad); }
+.ob-marks-box .hint { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-rank-row, .ob-g-face, .ob-chip, .ob-grid.table .ob-g-face::before { transition: none; }
+}

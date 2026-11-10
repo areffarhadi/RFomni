@@ -1,0 +1,72 @@
+{
+ "id": "video-classify",
+ "area": "tasks",
+ "modality": "video",
+ "family": "classify",
+ "name": "Classification",
+ "layout": "side",
+ "pick": "People watch each video clip and choose a class: the action or event, the scene, whether something happens, quality problems.",
+ "summary": "Watch short clips and choose what happens.",
+ "suggest": [
+  "Actions are walking, running, cycling and driving",
+  "They must watch to the end",
+  "3 people per clip"
+ ],
+ "examples": [
+  [
+   "does the clip contain violence, yes or no",
+   {
+    "question": "Does this clip contain violence?",
+    "classes": [
+     "Yes",
+     "No"
+    ]
+   }
+  ],
+  [
+   "watch the whole clip before answering",
+   {
+    "mustPlay": true
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "What happens in the clip?",
+  "instructions": "Watch each clip and choose what happens in it. If several things happen, choose the main one.",
+  "question": "What is the main action in this clip?",
+  "classes": [
+   "Walking",
+   "Running",
+   "Cycling",
+   "Driving"
+  ],
+  "multiple": false,
+  "notSure": true,
+  "other": true,
+  "classHelp": "",
+  "confidence": false,
+  "mustPlay": true,
+  "charts": [
+   "answers",
+   "agreement",
+   "people"
+  ]
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "id": "image-classify",
+ "area": "tasks",
+ "modality": "image",
+ "family": "classify",
+ "name": "Classification",
+ "layout": "side",
+ "pick": "People look at each image and choose a class: what it shows, whether something is present, quality problems, content safety, and the like.",
+ "summary": "Look at images and choose what fits.",
+ "suggest": [
+  "Classes are cat, dog and other",
+  "Several classes can apply",
+  "Add short definitions of the classes"
+ ],
+ "examples": [
+  [
+   "is there a person in the photo yes or no",
+   {
+    "question": "Is there a person in this image?",
+    "classes": [
+     "Yes",
+     "No"
+    ]
+   }
+  ],
+  [
+   "let people tell us when it's something else",
+   {
+    "other": true
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "What is in the picture?",
+  "instructions": "Look at each image and choose the answer that fits best. Click the image to see it larger.",
+  "question": "What does this image show?",
+  "classes": [
+   "People",
+   "Animals",
+   "Buildings",
+   "Nature"
+  ],
+  "multiple": false,
+  "notSure": false,
+  "other": true,
+  "classHelp": "",
+  "confidence": false,
+  "charts": [
+   "answers",
+   "agreement",
+   "people"
+  ]
+ }
+}

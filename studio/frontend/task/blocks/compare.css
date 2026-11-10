@@ -1,0 +1,62 @@
+/* Comparisons: several items on one screen (blocks/compare.js) */
+.cmp { display: grid; gap: 12px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.cmp-audio { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.cmp-text { grid-template-columns: 1fr; }
+.cmp-card { position: relative; display: grid; gap: 8px; align-content: start; justify-items: center; min-width: 0;
+  padding: 12px; border-radius: 16px; border: 1px solid var(--glass-line); background: var(--glass-2);
+  transition: border-color .15s, background-color .15s; }
+.cmp-card.picked { border-color: var(--accent); background: var(--on); box-shadow: inset 0 0 0 1px var(--accent); }
+.cmp-head { justify-self: start; }
+.cmp-letter { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 9px;
+  font-weight: 700; font-size: 14px; color: var(--text); background: var(--glass); border: 1px solid var(--glass-line); }
+.cmp-card img, .cmp-card video { width: 100%; max-height: 46vh; object-fit: contain; border-radius: 10px; background: var(--media-bg); }
+.cmp-card img { cursor: zoom-in; }
+.cmp-card img.zoom { position: fixed; inset: 4vh 4vw; z-index: 50; width: 92vw; height: 92vh; max-height: none; cursor: zoom-out;
+  background: rgba(0, 0, 0, .85); }
+.cmp-card blockquote { justify-self: stretch; margin: 0; padding: 4px 2px; line-height: 1.6; white-space: pre-wrap; color: var(--text); }
+.cmp-card.text { justify-items: stretch; }
+
+/* a clip: a round play button with its letter, and how far it has played */
+.cmp-play { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--glass-line); background: var(--glass); color: var(--text); font: inherit; min-height: 44px; }
+.cmp-play svg { width: 22px; height: 22px; fill: currentColor; }
+.cmp-play .cmp-letter { background: none; border: 0; min-width: 0; padding: 0; height: auto; }
+.cmp-play:hover, .cmp-play.on { border-color: var(--accent); }
+.cmp-play.on { background: var(--on); }
+.cmp-play:focus-visible { outline: 2px solid var(--field-focus); outline-offset: 2px; }
+.cmp-bar { display: block; width: 100%; height: 4px; border-radius: 4px; background: var(--glass); overflow: hidden; }
+.cmp-bar b { display: block; height: 100%; width: 0; background: var(--accent); }
+
+/* the answers */
+.cmp-cmos { flex-wrap: nowrap; }
+.cmp-cmos .opt { flex-direction: column; gap: 4px; padding: 8px 2px; min-width: 0; }
+.scale.cmp-cmos .opt small { font-size: 11px; line-height: 1.25; text-align: center; white-space: normal; overflow: visible; hyphens: auto; }
+@media (max-width: 620px) {
+  .cmp-cmos { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .cmp-cmos .opt { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 10px 14px; }
+  .scale.cmp-cmos .opt small { text-align: start; font-size: 13px; }
+}
+.cmp-letters .opt { min-width: 52px; justify-content: center; font-weight: 700; }
+.cmp-bws { display: grid; gap: 10px; }
+.cmp-bw { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 10px; }
+.cmp-bw-l { font-weight: 600; color: var(--text-2); }
+
+/* MUSHRA: a row per version: play, slider, score; the quality words above the sliders */
+.cmp-mushra { display: grid; gap: 10px; }
+.cmp-row { display: grid; grid-template-columns: auto 1fr 3.2em; align-items: center; gap: 12px; }
+.cmp-row .cmp-card { padding: 0; border: 0; background: none; }
+.cmp-row .cmp-bar { display: none; }
+.cmp-row .slider { width: 100%; }
+.cmp-score { font-variant-numeric: tabular-nums; text-align: end; font-weight: 600; color: var(--text); }
+.cmp-score.idle { color: var(--muted); }
+.cmp-bands { display: grid; grid-template-columns: repeat(5, 1fr); margin-inline-start: calc(88px + 12px); margin-inline-end: calc(3.2em + 12px);
+  font-size: 12px; color: var(--muted); text-align: center; }
+.cmp-bands span { border-inline-start: 1px dashed var(--glass-line); padding-block: 2px; }
+.cmp-ref { grid-template-columns: minmax(0, 200px); justify-content: center; }
+
+@media (max-width: 520px) {
+  .cmp-bands { display: none; }
+  .cmp-row { grid-template-columns: auto 1fr 2.6em; gap: 8px; }
+  .cmp-bw { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .cmp-card { transition: none; } }

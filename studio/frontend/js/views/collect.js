@@ -6,6 +6,7 @@ import { h, ico, debounce, download } from '../util.js';
 import { go } from '../nav.js';
 import { confirmDialog, errorToast, openModal, toast } from '../ui.js';
 import { ago } from './home.js';
+import { pageDesign, pageSettings, approvePage, approveLabel } from './pages.js';
 
 const STATUS = { draft: 'Draft', live: 'Live', paused: 'Paused', closed: 'Closed' };
 const THEMES = { forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
@@ -50,13 +51,15 @@ export class CollectView {
     this.id = id;
     this.p = null;
     this.tab = 'sentences';
-    this.title = h('input.st-title', { 'aria-label': 'Project title', maxLength: 120, oninput: () => { this.d.title = this.title.value; this.changed(); } });
+    this.title = h('input.st-title', { 'aria-label': 'Project title', maxLength: 120, oninput: () => {
+      if (this.p.page) return this.saveTitle();   // made from a default page: the title is one of its settings
+      this.d.title = this.title.value; this.changed();
+    } });
     this.statusEl = h('span.st-status');
     this.goLive = h('button.btn.primary', { onclick: () => this.toggleLive() });
     this.panel = h('div.st-panel-body');
     this.saved = h('span.muted.st-saved');
-    this.tabs = h('div.seg-ctl.st-tabs', Object.entries({ sentences: 'Sentences', ways: 'Ways to read', page: 'Page', settings: 'Settings', recordings: 'Recordings' })
-      .map(([k, v]) => h('button', { type: 'button', dataset: { v: k }, onclick: () => this.show(k) }, v)));
+    this.tabs = h('div.seg-ctl.st-tabs');
     this.frame = h('iframe.st-frame', { title: 'Preview of the recording page', allow: 'microphone' });
     const deviceCtl = h('div.seg-ctl.sm', ['desktop', 'phone'].map(d => h('button', { type: 'button', class: d === 'desktop' ? 'on' : '',
       onclick: (e) => { [...deviceCtl.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); this.frameWrap.classList.toggle('phone', d === 'phone'); } },
@@ -76,16 +79,64 @@ export class CollectView {
   async load() {
     try { this.p = await api.collect(this.id); } catch (e) { errorToast(e); go('#/collect'); return; }
     this.d = structuredClone(this.p.design);
+    // a page made from a default page (views/pages.js) is changed through its settings: chat or by hand
+    const tabs = this.p.page ? { design: 'Design', psettings: 'Settings', prompts: 'Prompts', recordings: 'Recordings' }
+      : { sentences: 'Sentences', ways: 'Ways to read', page: 'Page', settings: 'Settings', recordings: 'Recordings' };
+    this.tabs.replaceChildren(...Object.entries(tabs).map(([k, v]) => h('button', { type: 'button', dataset: { v: k }, onclick: () => this.show(k) }, v)));
     this.paintHead();
     this.reload();
-    this.show('sentences');
+    this.show(this.p.page ? 'design' : 'sentences');
+  }
+
+  pageHost() {
+    return { kind: 'collect', id: this.id, panel: this.panel, obj: () => this.p,
+      setObj: (p) => { this.p = p; this.d = structuredClone(p.design); this.paintHead(); }, preview: () => this.reloadSoon() };
+  }
+  designTab() { pageDesign(this.pageHost()); }
+  psettingsTab() { pageSettings(this.pageHost()); }
+  saveTitle = debounce(async () => {
+    const v = this.title.value.trim();
+    if (!v || v === this.p.design.title) return;
+    try { this.pageHost().setObj((await api.pageSettings('collect', this.id, { title: v })).obj); this.reloadSoon(); }
+    catch (e) { toast(e.message, { kind: 'warn' }); }
+  }, 600);
+
+  // the prompts of a page made from a default: typed, pasted, or from a .txt / .csv file (one per line)
+  promptsTab() {
+    const lg = this.p.design.languages[0];
+    const note = h('span.muted.st-saved');
+    const box = h('textarea.textarea', { rows: 14, dir: 'auto', value: lg.prompts.map(x => x.text).join('\n') });
+    const save = debounce(async () => {
+      try {
+        const r = await api.pagePrompts(this.id, { text: box.value });
+        this.pageHost().setObj(r.obj); this.reloadSoon();
+        note.textContent = `${r.obj.design.languages[0].prompts.length} prompts, saved as version ${r.page.version}`;
+      } catch (e) { note.textContent = ''; toast(e.message, { kind: 'warn' }); }
+    }, 900);
+    box.addEventListener('input', () => { note.textContent = 'Saving…'; save(); });
+    const file = h('input', { type: 'file', accept: '.txt,.csv,.tsv', hidden: true, onchange: async () => {
+      const f = file.files[0];
+      if (!f) return;
+      try {
+        const r = await api.pagePrompts(this.id, { text: await f.text(), name: f.name });
+        this.pageHost().setObj(r.obj); this.reloadSoon(); this.promptsTab();
+        toast(`${r.obj.design.languages[0].prompts.length} prompts from ${f.name}`);
+      } catch (e) { toast(e.message, { kind: 'warn' }); }
+    } });
+    this.panel.replaceChildren(h('div.st-form',
+      h('div.st-form-head', h('h2', `Prompts (${lg.name})`), note),
+      h('p.st-note', ico('info', 14), h('span', 'One per line: the sentences people read aloud, or the questions they answer. ' +
+        'A .csv file uses its text column. Each change is a new version of the page.')),
+      box, h('div.row', { style: { gap: '8px', marginTop: '10px' } }, file,
+        h('button.btn.sm', { onclick: () => file.click() }, ico('upload', 13), 'Load a .txt or .csv file'))));
   }
   reload() { this.frame.src = `${this.p.link}?preview=1`; }
   paintHead() {
     if (document.activeElement !== this.title) this.title.value = this.p.design.title;
     this.statusEl.className = `st-status s-${this.p.status}`;
     this.statusEl.textContent = STATUS[this.p.status];
-    this.goLive.replaceChildren(ico(this.p.status === 'live' ? 'pause' : 'share', 14), this.p.status === 'live' ? 'Pause' : 'Go live');
+    const [i, label] = this.p.page ? approveLabel(this.p) : this.p.status === 'live' ? ['pause', 'Pause'] : ['share', 'Go live'];
+    this.goLive.replaceChildren(ico(i, 14), label);
   }
   show(tab) {
     this.tab = tab;
@@ -233,6 +284,15 @@ export class CollectView {
   // ---------- going live and the link
   async toggleLive() {
     const live = this.p.status === 'live';
+    if (this.p.page && !live) {   // made from a default page: approve this version, live once the prompts are there
+      const r = await approvePage('collect', this.id);
+      if (!r) return;
+      this.pageHost().setObj(r.obj);
+      if (this.tab === 'design') this.show('design');
+      if (r.obj.status === 'live') this.linkDialog(true);
+      else toast(`Version ${r.obj.page.approved.version} is approved. ${r.note}.`, { kind: 'warn', timeout: 8000, action: { label: 'Add prompts', onClick: () => this.show('prompts') } });
+      return;
+    }
     try {
       this.p = await api.collectPatch(this.id, { status: live ? 'paused' : 'live' });
       this.paintHead();

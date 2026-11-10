@@ -1,0 +1,82 @@
+{
+ "id": "voice-mos",
+ "area": "listen",
+ "modality": "voice",
+ "family": "rate",
+ "name": "MOS rating",
+ "layout": "stacked",
+ "pick": "A listening test: people hear each clip (for example from several speech or TTS systems) and rate it on a scale, like MOS naturalness or quality from 1 to 5.",
+ "summary": "Listen to clips and rate how natural they sound, from 1 to 5.",
+ "suggest": [
+  "Rate audio quality instead of naturalness",
+  "Also ask how easy it is to understand",
+  "Practice with the first 2 clips"
+ ],
+ "examples": [
+  [
+   "rate quality 1 to 7",
+   {
+    "scaleMin": 1,
+    "scaleMax": 7,
+    "pointLabels": [
+     "Very bad",
+     "Very good"
+    ],
+    "question": "How good is the quality of this recording?"
+   }
+  ],
+  [
+   "they should also rate intelligibility",
+   {
+    "secondQuestion": "How easy is it to understand?"
+   }
+  ],
+  [
+   "first two clips for practice",
+   {
+    "practiceItems": 2
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": false,
+  "allowBack": true,
+  "askName": false,
+  "askAbout": [
+   "native speaker",
+   "headphones"
+  ],
+  "peoplePerItem": 0,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": true,
+  "practiceItems": 0,
+  "progress": "ring",
+  "finishCharts": [],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "How natural does it sound?",
+  "instructions": "Put on headphones and find a quiet place. You will hear short recordings, one at a time. Listen to each to the end, then rate how natural the voice sounds: 1 means clearly artificial, 5 means just like a real person speaking.",
+  "question": "How natural does the voice sound?",
+  "scaleMin": 1,
+  "scaleMax": 5,
+  "pointLabels": [
+   "Bad",
+   "Poor",
+   "Fair",
+   "Good",
+   "Excellent"
+  ],
+  "secondQuestion": "",
+  "mustPlay": true,
+  "noRepeat": true,
+  "charts": [
+   "scores",
+   "systems",
+   "people",
+   "time-per-item"
+  ]
+ }
+}

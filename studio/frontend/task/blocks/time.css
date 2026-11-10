@@ -1,0 +1,79 @@
+/* Time questions (blocks/time.js): the clip with a waveform or timeline, marked parts and moments, a traced line.
+   Only the page's theme tokens, so every theme works; logical sides, so right-to-left pages work. The waveform
+   itself always runs left to right, like the time it shows. */
+
+.tb { width: 100%; display: grid; gap: 12px; padding-bottom: 18px; }   /* room for the item's name under it */
+.tb .stim { margin: 0; }
+.media .tb-video { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; }   /* the clip's own shape once it is known */
+
+/* the waveform or timeline: its height is fixed from the start, so nothing moves when it arrives */
+.tb-wave { position: relative; overflow: hidden; border-radius: 12px; touch-action: pan-y; color: var(--text);
+  background: var(--field); border: 1px solid color-mix(in srgb, var(--field-line) 45%, transparent); }
+.tb-wave div::part(scroll) { touch-action: pan-y; }   /* a sideways drag marks, an up-down one scrolls the page */
+.tb-wait { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 12px; text-align: center;
+  font-size: 12px; color: var(--muted); background: linear-gradient(90deg, transparent, var(--glass), transparent) 0 0 / 50% 100% no-repeat;
+  animation: tb-wait 1.4s linear infinite; }
+.tb-off .tb-wait { animation: none; background: none; }
+@keyframes tb-wait { from { background-position: -100% 0; } to { background-position: 200% 0; } }
+@media (pointer: coarse) { .tb-wave div::part(region-handle) { width: 16px; } }   /* edges a finger can hold */
+
+/* play, the time, and the block's own button */
+.tb-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.tb .play.tb-play { width: 46px; height: 46px; flex: none; }
+.tb .play.tb-play svg { width: 18px; height: 18px; }
+.tb-clock { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tb-grow { flex: 1; }
+.tb-mark { padding: 10px 18px; }
+.tb .btn:not(.primary), .tb-ans .btn { border-color: color-mix(in srgb, var(--field-line) 60%, transparent); }   /* an edge on light cards too */
+.tb-hint { margin: 0; }
+
+/* label chips, like the page's answer buttons */
+.tb-cap { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.tb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tb-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--field-line); background: var(--field); text-align: start; overflow-wrap: anywhere;
+  transition: border-color .15s, background .15s; }
+.tb-chip:hover { border-color: var(--accent); }
+.tb-chip[aria-checked="true"] { border-color: var(--accent); background: var(--on); font-weight: 600; }
+.tb-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* the list of marks */
+.tb-list { position: relative; list-style: none; margin: 12px 0 0; padding: 2px; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.tb-list:empty { display: none; }
+.tb-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--field-line) 45%, transparent); background: var(--glass-2); }
+.tb-row.on { border-color: var(--accent); background: var(--on); }
+.tb-item { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 42px; padding: 8px 10px; border: 0; border-radius: 11px;
+  background: none; cursor: pointer; text-align: start; }
+.tb-lab { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.tb-time { margin-inline-start: auto; padding-inline-start: 8px; white-space: nowrap; color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tb-x { width: 38px; height: 38px; margin-inline-end: 2px; display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: none; color: var(--muted); cursor: pointer; }
+.tb-x:hover { color: var(--bad); background: var(--glass); }
+.tb-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.tb-list :focus-visible { outline-offset: -2px; }   /* inside the list's edge, which would cut it off */
+.tb-edit { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 0 10px 10px; font-size: 13px; color: var(--text-2); }
+.tb-num { width: 5.2em; min-width: 0; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--field-line); background: var(--field);
+  text-align: center; font-variant-numeric: tabular-nums; }
+.tb-num:focus { outline: 2px solid var(--field-focus); outline-offset: 1px; }
+.tb-empty { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+/* trace: the line drawn so far over the waveform, a dot where the slider is now, and the slider itself */
+.tb-line { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; overflow: visible; }
+.tb-line path { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.tb-now { position: absolute; z-index: 7; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; pointer-events: none;
+  background: var(--btn); box-shadow: 0 0 0 2px var(--surface); }
+.tb-trace .scale-ends { margin-top: 0; }
+.tb-slider { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; }
+.tb-slider:focus-visible { outline: 2px solid var(--field-focus); outline-offset: 2px; border-radius: 10px; }
+.tb-slider::-webkit-slider-runnable-track { height: 8px; border-radius: 99px; background: var(--field); border: 1px solid var(--field-line); }
+.tb-slider::-moz-range-track { height: 8px; border-radius: 99px; background: var(--field); border: 1px solid var(--field-line); }
+.tb-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%;
+  background: var(--btn); border: 3px solid var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.tb-slider::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--btn); border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.tb-traced { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.tb-traced .tb-cap { margin: 0; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tb-small { padding: 8px 14px; font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) { .tb-wait { animation: none; } .tb-chip { transition: none; } }

@@ -1,0 +1,61 @@
+{
+ "id": "text-write",
+ "area": "tasks",
+ "modality": "text",
+ "family": "write",
+ "name": "Write or translate",
+ "layout": "stacked",
+ "pick": "People read each text and write something about it: a translation, a correction, a summary, a paraphrase, a reply or an answer to a question.",
+ "summary": "Read short texts and write a translation, correction or summary.",
+ "suggest": [
+  "Translate into German",
+  "Rewrite each sentence in simple English",
+  "Also rate how hard it was, 1 to 5"
+ ],
+ "examples": [
+  [
+   "they should translate to french",
+   {
+    "question": "Translate this text into French",
+    "title": "Translate into French"
+   }
+  ],
+  [
+   "summaries of at most one sentence",
+   {
+    "question": "Summarise this text in one sentence",
+    "multiline": false
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "Translate the text",
+  "instructions": "Read each text and write your translation. Keep the meaning and the tone; it does not have to be word for word.",
+  "question": "Translate this text into English",
+  "placeholder": "Your translation…",
+  "multiline": true,
+  "extraRating": "",
+  "charts": [
+   "people",
+   "time-per-item",
+   "timeline"
+  ]
+ }
+}

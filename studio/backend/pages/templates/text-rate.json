@@ -1,0 +1,61 @@
+{
+ "id": "text-rate",
+ "area": "listen",
+ "modality": "text",
+ "family": "rate",
+ "name": "Quality rating",
+ "layout": "stacked",
+ "pick": "A reading test: people read each text (for example machine translations or generated answers) and rate it on a scale: fluency, adequacy, quality, helpfulness.",
+ "summary": "Read texts and rate how well they are written, from 1 to 5.",
+ "suggest": [
+  "Also rate adequacy",
+  "Use a 1 to 7 scale",
+  "Ask if people are native speakers"
+ ],
+ "examples": [
+  [
+   "rate fluency and adequacy",
+   {
+    "question": "How fluent is this text?",
+    "secondQuestion": "How well does it keep the meaning?"
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": false,
+  "allowBack": true,
+  "askName": false,
+  "askAbout": [
+   "native speaker"
+  ],
+  "peoplePerItem": 0,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": true,
+  "practiceItems": 0,
+  "progress": "ring",
+  "finishCharts": [],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "How well is it written?",
+  "instructions": "Read each text carefully, then rate it. 1 means very poor, 5 means as good as a careful native writer.",
+  "question": "How fluent and natural is this text?",
+  "scaleMin": 1,
+  "scaleMax": 5,
+  "pointLabels": [
+   "Very poor",
+   "Poor",
+   "Fair",
+   "Good",
+   "Excellent"
+  ],
+  "secondQuestion": "",
+  "charts": [
+   "scores",
+   "systems",
+   "people"
+  ]
+ }
+}

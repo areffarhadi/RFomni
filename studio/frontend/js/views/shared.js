@@ -7,12 +7,15 @@ import { go } from '../nav.js';
 import { confirmDialog, errorToast, openModal, toast } from '../ui.js';
 import { ago } from './home.js';
 import { state } from '../state.js';
+import { pageDesign, pageSettings, uploadFiles, approvePage, approveLabel } from './pages.js';
+import * as charts from '../charts.js';
 
 const STATUS = { draft: 'Draft', live: 'Live', paused: 'Paused', closed: 'Closed' };
 const KIND_ICON = { image: 'image', video: 'film', audio: 'audio', text: 'file' };
-const TYPES = { choice: 'One answer', multi: 'Several answers', rating: 'Rating', text: 'Free text' };
+const TYPES = { choice: 'One answer', multi: 'Several answers', rating: 'Rating', text: 'Free text' };   // the older editor's kinds; pages made from a default have them all
 const THEMES = { forest: 'Green', dark: 'Night', light: 'Day', navy: 'Navy', cream: 'Cream', charcoal: 'Charcoal' };
 const DATA_ACCEPT = '.jpg,.jpeg,.png,.webp,.bmp,.gif,.tif,.tiff,.wav,.mp3,.flac,.ogg,.opus,.m4a,.aac,.mp4,.mov,.mkv,.webm,.avi,.m4v,.txt,.csv,.tsv,.jsonl,.json';
+const ARCHIVE_ACCEPT = '.zip,.tar,.tgz,.gz,.tbz2,.bz2,.txz,.xz';
 const kinds = (by) => Object.entries(by || {}).map(([k, n]) => `${n} ${k}`).join(', ') || 'no data yet';
 
 // ----------------------------------------------------------------------------- the list
@@ -108,6 +111,24 @@ export class SharedListView {
   }
 }
 
+// a CSV text as a table (the sample of the results file); quoted cells may hold commas and line breaks
+function csvTable(text) {
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const [head = [], ...body] = rows;
+  return h('div.st-file-table', h('table.st-table', h('thead', h('tr', head.map(c => h('th', c)))),
+    h('tbody', body.slice(0, 30).map(r => h('tr', r.map(c => h('td', c)))))));
+}
+
 // ----------------------------------------------------------------------------- the builder
 export class SharedTaskView {
   constructor(id) {
@@ -118,8 +139,7 @@ export class SharedTaskView {
     this.statusEl = h('span.st-status');
     this.goLive = h('button.btn.primary', { onclick: () => this.toggleLive() });
     this.panel = h('div.st-panel-body');
-    this.tabs = h('div.seg-ctl.st-tabs', Object.entries({ design: 'Design with AI', questions: 'Questions', data: 'Data', results: 'Results' })
-      .map(([k, v]) => h('button', { type: 'button', dataset: { v: k }, onclick: () => this.show(k) }, v)));
+    this.tabs = h('div.seg-ctl.st-tabs');
     this.frame = h('iframe.st-frame', { title: 'Preview of the page people will see' });
     this.device = 'desktop';
     const deviceCtl = h('div.seg-ctl.sm', ['desktop', 'phone'].map(d => h('button', {
@@ -136,9 +156,13 @@ export class SharedTaskView {
         this.goLive),
       h('div.st-body',
         h('aside.st-panel', this.tabs, this.panel),
-        h('section.st-preview', h('div.st-preview-bar', h('span.muted', 'What people will see'), h('div.grow'), deviceCtl,
+        h('section.st-preview', h('div.st-preview-bar', h('span.muted', 'What people will see'),
+          this.screenCtl = h('div.seg-ctl.sm', { title: 'Which screen of the page to show, or the file you will download' },
+            [['intro', 'Start'], ['item', 'An item'], ['done', 'Last screen'], ['file', 'Your file']]
+              .map(([k, v]) => h('button', { type: 'button', dataset: { v: k }, class: k === 'intro' ? 'on' : '', onclick: (e) => this.showScreen(k, e.currentTarget) }, v))),
+          h('div.grow'), deviceCtl,
           h('button.icon-btn.sm', { title: 'Reload the preview', onclick: () => this.reloadFrame() }, ico('repeat', 14))),
-        this.frameWrap)));
+        this.frameWrap, this.fileWrap = h('div.st-file-wrap', { hidden: true }))));
     this.load();
   }
 
@@ -155,9 +179,18 @@ export class SharedTaskView {
       go('#/shared');
       return;
     }
+    // a page made from a default page (views/pages.js) is changed through its settings: chat or by hand
+    const tabs = this.task.page ? { design: 'Design', settings: 'Settings', data: 'Data', results: 'Results' }
+      : { design: 'Design with AI', questions: 'Questions', data: 'Data', results: 'Results' };
+    this.tabs.replaceChildren(...Object.entries(tabs).map(([k, v]) => h('button', { type: 'button', dataset: { v: k }, onclick: () => this.show(k) }, v)));
     this.paintHead();
     this.frame.src = this.pageUrl(true);
-    this.show(this.task.summary.items ? 'design' : 'data');
+    this.show(this.task.summary.items || this.task.page ? 'design' : 'data');
+  }
+
+  pageHost() {
+    return { kind: 'shared', id: this.id, panel: this.panel, obj: () => this.task, showFile: () => this.showFile(),
+      setObj: (t) => { this.task = t; this.paintHead(); }, preview: () => this.pushDesign() };
   }
 
   paintHead() {
@@ -165,20 +198,52 @@ export class SharedTaskView {
     if (document.activeElement !== this.title) this.title.value = t.design.title;
     this.statusEl.className = `st-status s-${t.status}`;
     this.statusEl.textContent = STATUS[t.status];
-    this.goLive.replaceChildren(ico(t.status === 'live' ? 'pause' : 'share', 14), t.status === 'live' ? 'Pause' : 'Go live');
+    const [i, label] = t.page ? approveLabel(t) : t.status === 'live' ? ['pause', 'Pause'] : ['share', 'Go live'];
+    this.goLive.replaceChildren(ico(i, 14), label);
   }
 
   show(tab) {
     this.tab = tab;
     [...this.tabs.children].forEach(b => b.classList.toggle('on', b.dataset.v === tab));
-    ({ design: () => this.designTab(), questions: () => this.questionsTab(), data: () => this.dataTab(), results: () => this.resultsTab() })[tab]();
+    ({ design: () => (this.task.page ? pageDesign(this.pageHost()) : this.designTab()), questions: () => this.questionsTab(),
+      settings: () => pageSettings(this.pageHost()), data: () => this.dataTab(), results: () => this.resultsTab() })[tab]();
   }
 
   // the preview takes a new design without reloading (the page listens for it)
   pushDesign() {
     this.frame.contentWindow?.postMessage({ type: 'omni-design', design: this.task.design }, location.origin);
+    if (!this.fileWrap.hidden) this.showFile();
   }
-  reloadFrame() { this.frame.src = this.pageUrl(true); }
+  reloadFrame() { this.frame.src = this.pageUrl(true); this.fileWrap.hidden = true; this.frameWrap.hidden = false; [...this.screenCtl.children].forEach((b, i) => b.classList.toggle('on', !i)); }
+  showScreen(screen, btn) {
+    if (screen === 'file') return this.showFile();
+    [...this.screenCtl.children].forEach(b => b.classList.toggle('on', b === btn));
+    this.fileWrap.hidden = true; this.frameWrap.hidden = false;
+    this.frame.contentWindow?.postMessage({ type: 'omni-show', screen }, location.origin);
+  }
+
+  // the results file as it will look (shared_output.py): a sample with made-up answers, and where to change it
+  async showFile() {
+    [...this.screenCtl.children].forEach(b => b.classList.toggle('on', b.dataset.v === 'file'));
+    this.frameWrap.hidden = true; this.fileWrap.hidden = false;
+    let r;
+    try { r = await api.sharedFileSample(this.id); } catch (e) { this.fileWrap.replaceChildren(h('p.pg-notice.warn', ico('alert', 15), h('span', e.message))); return; }
+    const words = `${{ csv: 'A CSV file (opens in Excel)', json: 'A JSON file', jsonl: 'A JSON lines file' }[r.format]} · ${{
+      answer: 'one row per answer', item: 'one row per item, each person’s answer in their own column', person: 'one row per person, with all their answers' }[r.rows]}`;
+    const change = () => {
+      this.show('settings');
+      setTimeout(() => { const d = [...this.panel.querySelectorAll('details.pg-sec')].find(x => x.querySelector('summary b')?.textContent === 'Results file');
+        if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }, 500);
+    };
+    this.fileWrap.replaceChildren(h('div.st-file',
+      h('div.st-file-head', h('span.pg-bar-ico', ico('file', 16)), h('div.st-file-t', h('b', 'The file you will download'), h('span', words)), h('div.grow'),
+        this.task.page ? h('button.btn.sm', { type: 'button', onclick: change }, ico('edit', 13), 'Change it') : null,
+        h('button.btn.sm', { type: 'button', disabled: !r.answers, title: r.answers ? 'Download it with the answers so far' : 'No answers yet',
+          onclick: () => download(`/api/shared/${this.id}/file`) }, ico('download', 13), 'Download')),
+      h('p.st-file-note', ico('info', 13), h('span', (r.answers ? `A sample: made-up answers from three people. Your download has the ${r.answers} real answers. `
+        : 'A sample: made-up answers from three people. ') + (this.task.page ? 'Change it here or just tell the assistant, for example “a JSON file with one row per item”.' : ''))),
+      r.format === 'csv' ? csvTable(r.text) : h('pre.st-file-code', r.text.split('\n').slice(0, 160).join('\n'))));
+  }
 
   async save(design) {
     try {
@@ -188,13 +253,25 @@ export class SharedTaskView {
       return true;
     } catch (e) { toast(e.message, { kind: 'warn' }); return false; }
   }
-  saveTitle = debounce(() => {
+  saveTitle = debounce(async () => {
     const v = this.title.value.trim();
-    if (v && v !== this.task.design.title) this.save({ ...this.task.design, title: v });
+    if (!v || v === this.task.design.title) return;
+    if (!this.task.page) return this.save({ ...this.task.design, title: v });
+    try { this.task = (await api.pageSettings('shared', this.id, { title: v })).obj; this.pushDesign(); }  // a new version
+    catch (e) { toast(e.message, { kind: 'warn' }); }
   }, 600);
 
   async toggleLive() {
     const live = this.task.status === 'live';
+    if (this.task.page && !live) {   // made from a default page: approve this version, live once the data is there
+      const r = await approvePage('shared', this.id);
+      if (!r) return;
+      this.task = r.obj; this.paintHead();
+      if (this.tab === 'design') this.show('design');
+      if (r.obj.status === 'live') this.shareDialog(true);
+      else toast(`Version ${r.obj.page.approved.version} is approved. ${r.note}.`, { kind: 'warn', timeout: 8000, action: { label: 'Add data', onClick: () => this.show('data') } });
+      return;
+    }
     try {
       this.task = await api.sharedPatch(this.id, { status: live ? 'paused' : 'live' });
       this.paintHead();
@@ -338,11 +415,13 @@ export class SharedTaskView {
   // ---------- data
   async dataTab() {
     const status = h('p.muted.st-data-status', kinds(this.task.summary.by_kind) + `, ${this.task.summary.items} items`);
-    const fileIn = h('input', { type: 'file', multiple: true, accept: DATA_ACCEPT, hidden: true, onchange: () => this.upload([...fileIn.files], status) });
+    const fileIn = h('input', { type: 'file', multiple: true, accept: `${DATA_ACCEPT},${ARCHIVE_ACCEPT}`, hidden: true, onchange: () => this.upload([...fileIn.files], status) });
     const folderIn = h('input', { type: 'file', webkitdirectory: true, hidden: true, onchange: () => this.upload([...folderIn.files], status) });
+    const archiveIn = h('input', { type: 'file', accept: ARCHIVE_ACCEPT, hidden: true, onchange: () => this.upload([...archiveIn.files], status) });
     const drop = h('div.st-drop', { onclick: () => fileIn.click() },
       ico('upload', 22), h('b', 'Drop files here, or click to choose'),
-      h('span.muted', 'Images, video, audio, or text: .txt (one item per line), .csv / .tsv (a text column), .jsonl'), fileIn, folderIn);
+      h('span.muted', 'Images, video, audio, or text: .txt (one item per line), .csv / .tsv (a text column), .jsonl. ' +
+        'Or a .zip / .tar.gz of them; big files go up in pieces.'), fileIn, folderIn, archiveIn);
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('over'));
     drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); this.upload([...e.dataTransfer.files], status); });
@@ -352,6 +431,7 @@ export class SharedTaskView {
       drop,
       h('div.row', { style: { gap: '8px', margin: '10px 0 18px' } },
         h('button.btn.sm', { onclick: () => folderIn.click() }, ico('folder', 13), 'Upload a folder'),
+        h('button.btn.sm', { onclick: () => archiveIn.click() }, ico('layers', 13), 'Upload a .zip or .tar.gz'),
         h('div.grow'),
         h('button.btn.sm.ghost', { onclick: async () => {
           if (!(await confirmDialog('Remove all items from this task? Answers already given stay in the results.', { title: 'Remove all data', ok: 'Remove all' }))) return;
@@ -378,13 +458,8 @@ export class SharedTaskView {
 
   async upload(files, status) {
     if (!files.length) return;
-    let n = 0, bad = 0;
-    for (const [i, f] of files.entries()) {
-      status.textContent = `Uploading ${i + 1} of ${files.length}: ${f.name}`;
-      try { n += (await api.sharedUpload(this.id, f, f.webkitRelativePath || '')).added; }
-      catch (e) { bad++; if (bad <= 3) toast(`${f.name}: ${e.message}`, { kind: 'warn' }); }
-    }
-    toast(`Added ${n} items${bad ? `, ${bad} files could not be read` : ''}`);
+    const { added, bad } = await uploadFiles(this.id, files, (t) => { status.textContent = t; });
+    toast(`Added ${added} items${bad ? `, ${bad} files could not be read` : ''}`);
     this.refresh('data');
   }
 
@@ -403,6 +478,8 @@ export class SharedTaskView {
     try { r = await api.sharedResults(this.id, where); } catch (e) { errorToast(e); return; }
     const s = r.summary;
     const ratings = r.fields.filter(f => f.type === 'rating');
+    const scored = r.fields.filter(f => f.mos || f.score);   // ratings, and other answers that average to a number
+    const score = (f) => f.mos || f.score;
     const fmt = (m) => m?.mean == null ? '—' : `${m.mean.toFixed(2)}${m.ci95 != null ? ` ± ${m.ci95.toFixed(2)}` : ''}`;
     // keep only people who answered a listener question a certain way (e.g. native speakers)
     const filters = (r.intro_fields || []).filter(f => f.type === 'choice').map(f => h('label.field', h('span', f.label),
@@ -411,10 +488,10 @@ export class SharedTaskView {
         this.resultsTab(parts.join(','));
       } }, h('option', { value: '' }, 'Everyone'), f.options.map(o => h('option', { value: `${f.id}:${o}`, selected: (r.where || {})[f.id] === o }, o)))));
     const keyIn = h('textarea.textarea', { rows: 3, placeholder: 'c01,system_a\nc02,native\n…  (clip, system per line)' });
-    const keyBox = ratings.length ? h('div',
-      h('h2', 'Per system (MOS ± 95% interval)'),
-      r.systems.length ? h('table.st-table', h('thead', h('tr', h('th', 'System'), ratings.map(f => h('th', f.label)), h('th', 'Ratings'))),
-        h('tbody', r.systems.map(x => h('tr', h('td', h('b', x.system)), ratings.map(f => h('td', fmt(x[f.id]))), h('td', String(x[ratings[0].id]?.n ?? 0))))))
+    const keyBox = scored.length ? h('div',
+      h('h2', `Per system (${ratings.length === scored.length ? 'MOS' : 'mean'} ± 95% interval)`),
+      r.systems.length ? h('table.st-table', h('thead', h('tr', h('th', 'System'), scored.map(f => h('th', f.label)), h('th', 'Answers'))),
+        h('tbody', r.systems.map(x => h('tr', h('td', h('b', x.system)), scored.map(f => h('td', fmt(x[f.id]))), h('td', String(x[scored[0].id]?.n ?? 0))))))
         : h('p.muted', 'Add the blind key (which system made each clip) to see results per system. It stays private: listeners never see it.'),
       h('label.field', { style: { marginTop: '10px' } }, h('span', `Blind key${r.keyed ? ` (${r.keyed} clips matched)` : ''}`), keyIn,
         h('div.row', { style: { gap: '8px', marginTop: '6px' } },
@@ -426,30 +503,104 @@ export class SharedTaskView {
           } }, 'Use this key')))) : null;
     const bar = (label, n, max) => h('div.st-bar', h('span', label), h('i', h('b', { style: { width: `${max ? (n / max) * 100 : 0}%` } })), h('em', String(n)));
     this.panel.replaceChildren(h('div.st-form',
+      this.charts(r),
       h('div.st-nums',
         h('div', h('b', `${s.complete} / ${s.items}`), h('span', 'items complete')),
         h('div', h('b', String(s.answers)), h('span', 'answers')),
         h('div', h('b', String(s.people)), h('span', 'people'))),
       h('div.row', { style: { gap: '8px', margin: '4px 0 18px' } },
-        h('button.btn.sm', { onclick: () => download(`/api/shared/${this.id}/export.csv`) }, ico('download', 13), 'CSV (one row per answer)'),
-        h('button.btn.sm', { onclick: () => download(`/api/shared/${this.id}/export.jsonl`) }, ico('download', 13), 'JSONL (per item)'),
+        h('button.btn.sm.primary', { title: 'In the form set on the page (see Your file above the preview)', onclick: () => download(`/api/shared/${this.id}/file`) }, ico('download', 13), 'Download your file'),
+        h('button.btn.sm.ghost', { onclick: () => download(`/api/shared/${this.id}/export.csv`) }, 'CSV, every detail'),
+        h('button.btn.sm.ghost', { onclick: () => download(`/api/shared/${this.id}/export.jsonl`) }, 'JSONL per item'),
         h('div.grow'), h('button.icon-btn.sm', { title: 'Refresh', onclick: () => this.resultsTab() }, ico('repeat', 13))),
       filters.length ? h('div.st-filter', h('h2', 'Whose answers'), h('div.st-two', filters)) : null,
-      ratings.length ? h('table.st-table', { style: { marginBottom: '8px' } }, h('thead', h('tr', h('th', 'Scale'), h('th', 'MOS ± 95%'), h('th', 'Ratings'))),
-        h('tbody', ratings.map(f => h('tr', h('td', f.label), h('td', fmt(f.mos)), h('td', String(f.mos?.n ?? 0)))))) : null,
+      scored.length ? h('table.st-table', { style: { marginBottom: '8px' } }, h('thead', h('tr', h('th', 'Question'), h('th', 'Score ± 95%'), h('th', 'Answers'))),
+        h('tbody', scored.map(f => h('tr', h('td', f.label, h('small.muted', ` (${f.mos ? 'MOS' : f.score_name})`)), h('td', fmt(score(f))), h('td', String(score(f)?.n ?? 0)))))) : null,
       keyBox,
+      this.goldBox(r),
       ...r.fields.map(f => {
         const max = Math.max(1, ...f.counts.map(c => c[1]));
+        const means = f.rows ? Object.entries(f.rows).map(([k, m]) => [k, m]) : f.places ? f.places.map(p => [p.answer, p]) : null;
         return h('div.st-result', h('h2', f.label),
           f.agreement != null ? h('p.muted', `Agreement where several people answered: ${Math.round(f.agreement * 100)}%`) : null,
-          f.type === 'text' ? h('p.muted', `${f.texts || 0} written answers (in the exports)`)
-            : f.counts.length ? f.counts.map(([v, n]) => bar(v, n, max)) : h('p.muted', 'No answers yet'));
+          f.marks?.n ? h('p.muted', `${f.marks.mean.toFixed(1)} marks per answer on average`) : null,
+          means ? h('table.st-table', h('thead', h('tr', h('th', f.rows ? 'Aspect' : 'Answer'), h('th', f.rows ? 'Mean ± 95%' : 'Mean place'))),
+            h('tbody', means.map(([k, m]) => h('tr', h('td', k), h('td', fmt(m))))))
+            : f.type === 'text' ? h('p.muted', `${f.texts || 0} written answers (in the exports)`)
+              : f.counts.length ? f.counts.map(([v, n]) => bar(v, n, max))
+                : h('p.muted', f.score ? 'Answers are in the files below.' : 'No answers yet'));
       }),
       h('h2', 'People'),
-      r.sessions.length ? h('table.st-table', h('thead', h('tr', h('th', 'Session'), h('th', 'Name'), h('th', 'About'), h('th', 'Answers'), h('th', 'Last active'))),
+      r.sessions.length ? h('table.st-table', h('thead', h('tr', h('th', 'Session'), h('th', 'Name'), h('th', 'About'), h('th', 'Answers'),
+        r.gold ? h('th', 'Known answers right') : null, h('th', 'Last active'))),
         h('tbody', r.sessions.map(x => h('tr', { style: { opacity: x.kept ? 1 : 0.45 }, title: x.comment || '' }, h('td', h('code', x.id)), h('td', x.name || '—'),
-          h('td', Object.values(x.info || {}).join(', ') || '—'), h('td', String(x.done)), h('td', ago(x.last_at))))))
+          h('td', Object.values(x.info || {}).join(', ') || '—'), h('td', String(x.done)),
+          r.gold ? h('td', x.checks ? `${x.checks.right} of ${x.checks.of}` : '—') : null, h('td', ago(x.last_at))))))
         : h('p.muted', 'Nobody has started yet. Share the link to begin.')));
+  }
+
+  // items with known answers: people get them like any other item; the table of people shows how many they got right
+  goldBox(r) {
+    const f = this.task.design.fields.find(x => ['choice', 'multi', 'rating'].includes(x.type));
+    if (!f) return null;
+    const box = h('textarea.textarea', { rows: 3, placeholder: `c07,${f.options?.[0] ?? f.min ?? 'answer'}\nc19,${f.options?.[1] ?? f.max ?? 'answer'}\n…  (clip, known answer per line)` });
+    return h('div',
+      h('h2', 'Attention checks'),
+      h('p.muted', `Items whose answer to “${f.label}” you know. People get them like any other item; the table of people below shows how many each got right.`),
+      h('label.field', h('span', `Known answers${r.gold ? ` (${r.gold} items)` : ''}`), box,
+        h('div.row', { style: { gap: '8px', marginTop: '6px' } },
+          h('input', { type: 'file', accept: '.csv,.txt,.tsv', onchange: async (e) => { box.value = (await e.target.files[0]?.text() || '').replaceAll('\t', ','); } }),
+          h('div.grow'),
+          h('button.btn.sm', { onclick: async () => {
+            try { const g = await api.sharedGold(this.id, box.value); toast(box.value.trim() ? `${g.matched} items have known answers` : 'Known answers removed'); this.resultsTab(); }
+            catch (e) { toast(e.message, { kind: 'warn' }); }
+          } }, 'Use these answers'))));
+  }
+
+  // the charts the owner chose for this page (design.settings.result_charts; charts.js)
+  charts(r) {
+    const want = r.charts || [];
+    if (!want.length) return null;
+    const def = Object.fromEntries(this.task.design.fields.map(f => [f.id, f]));
+    const card = (title, body, note) => h('div.pg-chart', h('h3', title), body, note ? h('p.ch-note', note) : null);
+    const out = [];
+    for (const c of want) {
+      if (c === 'answers') {
+        for (const f of r.fields.filter(x => !['rating', 'text', 'number', 'grid', 'trace', 'ab_scale', 'mushra'].includes(x.type) && x.counts.length)) {
+          out.push(card(f.label, charts.bars(f.counts.map(([v, n]) => ({ label: v, value: n })))));
+        }
+      } else if (c === 'scores') {
+        for (const f of r.fields.filter(x => x.type === 'rating')) {
+          const d = def[f.id], n = Object.fromEntries(f.counts);
+          const rows = [];
+          for (let v = d.min; v <= d.max; v++) rows.push({ label: String(v), value: n[String(v)] || 0 });
+          out.push(card(f.label, charts.columns(rows, { mean: f.mos?.mean ?? null, caption: f.label }),
+            f.mos?.n ? `MOS ${f.mos.mean.toFixed(2)}${f.mos.ci95 != null ? ` ± ${f.mos.ci95.toFixed(2)}` : ''} from ${f.mos.n} ratings` : 'No ratings yet'));
+        }
+      } else if (c === 'systems') {
+        // the range a score can take: the question's own, or the comparison's (a share is 0 to 1)
+        const span = (d) => ({ ab_scale: [-3, 3], mushra: [0, 100], best_worst: [-1, 1], ab_choice: [0, 1], abx: [0, 1], pick_items: [0, 1] })[d.type] || [d.min, d.max];
+        for (const f of r.fields.filter(x => x.mos || x.score)) {
+          const [lo, hi] = span(def[f.id]);
+          out.push(card(`${f.label}: per system`, r.systems.length
+            ? charts.means(r.systems.map(x => ({ label: x.system, mean: x[f.id]?.mean ?? null, ci: x[f.id]?.ci95 ?? null, n: x[f.id]?.n || 0 })), lo, hi)
+            : h('p.muted', 'Add the blind key below (which system made each clip) to compare systems.'), 'Dots are the mean scores; lines are 95% intervals.'));
+        }
+      } else if (c === 'agreement') {
+        const fs = r.fields.filter(x => x.agreement != null);
+        out.push(card('Agreement', fs.length ? h('div.ch-rings', fs.map(f => charts.ring(f.agreement, f.label)))
+          : h('p.muted', 'Shows once several people have answered the same items.'), 'How often people chose the same answer as the majority.'));
+      } else if (c === 'timeline') {
+        out.push(card('Answers per day', charts.timeline(r.timeline || [])));
+      } else if (c === 'time-per-item') {
+        out.push(card('Time per item', charts.histogram(r.seconds || [])));
+      } else if (c === 'people') {
+        const top = [...r.sessions].sort((a, b) => b.done - a.done).slice(0, 15);
+        out.push(card('Items per person', charts.bars(top.map(x => ({ label: x.name || x.id, value: x.done }))),
+          r.sessions.length > 15 ? `The 15 busiest of ${r.sessions.length} people.` : ''));
+      }
+    }
+    return h('div.pg-charts', out);
   }
 
   // ---------- the link

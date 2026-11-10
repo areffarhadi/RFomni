@@ -14,7 +14,10 @@ export function setShareSession(sid) { shareSession = sid; }
 async function req(method, url, body) {
   const opt = { method, headers: shareSession ? { 'X-Omni-Session': shareSession } : {} };
   if (body instanceof FormData) opt.body = body;
-  else if (body !== undefined) {
+  else if (body instanceof Blob) {  // a piece of a big upload, as it is
+    opt.headers['Content-Type'] = 'application/octet-stream';
+    opt.body = body;
+  } else if (body !== undefined) {
     opt.headers['Content-Type'] = 'application/json';
     opt.body = JSON.stringify(body);
   }
@@ -100,6 +103,7 @@ export const api = {
   sharedList: (kind = '') => req('GET', `/api/shared?${qs({ kind })}`),
   sharedCreate: (title, kind = 'labelling') => req('POST', '/api/shared', { title, kind }),
   sharedKey: (id, csv) => req('POST', `/api/shared/${enc(id)}/key`, { csv }),
+  sharedGold: (id, csv) => req('POST', `/api/shared/${enc(id)}/gold`, { csv }),
   shared: (id) => req('GET', `/api/shared/${enc(id)}`),
   sharedPatch: (id, patch) => req('PATCH', `/api/shared/${enc(id)}`, patch),
   sharedDelete: (id) => req('DELETE', `/api/shared/${enc(id)}`),
@@ -116,6 +120,28 @@ export const api = {
     return req('POST', `/api/shared/${enc(id)}/upload`, fd);
   },
   stopTunnel: () => req('DELETE', '/api/share-server/tunnel'),
+
+  // default pages, adapted in a chat (backend/pages_routes.py); kind is shared (tasks, tests) or collect
+  pagesCatalogue: (area = '') => req('GET', `/api/pages/catalogue?${qs({ area })}`),
+  pagesPick: (area, modality, text) => req('POST', '/api/pages/pick', { area, modality, text }),
+  pagesCreate: (area, modality, template, text) => req('POST', '/api/pages', { area, modality, template, text }),
+  page: (kind, id) => req('GET', `/api/pages/${kind}/${enc(id)}`),
+  pageChat: (kind, id, message) => req('POST', `/api/pages/${kind}/${enc(id)}/chat`, { message }),
+  pageUndo: (kind, id) => req('POST', `/api/pages/${kind}/${enc(id)}/undo`),
+  pageSettings: (kind, id, settings) => req('PATCH', `/api/pages/${kind}/${enc(id)}/settings`, { settings }),
+  pageApprove: (kind, id) => req('POST', `/api/pages/${kind}/${enc(id)}/approve`),
+  pageSave: (kind, id, name = '') => req('POST', `/api/pages/${kind}/${enc(id)}/save`, { name }),
+  pageRestore: (kind, id, version) => req('POST', `/api/pages/${kind}/${enc(id)}/restore`, { version }),
+  sharedFileSample: (id) => req('GET', `/api/shared/${enc(id)}/file/sample`),
+  pagePrompts: (id, body) => req('POST', `/api/pages/collect/${enc(id)}/prompts`, body),
+  pageRequests: () => req('GET', '/api/page-requests'),
+  pageRequest: (body) => req('POST', '/api/page-requests', body),
+  pageAnswer: (rid, answer, status) => req('POST', `/api/page-requests/${enc(rid)}`, { answer, status }),
+  // big files in pieces (Cloudflare refuses a body over 100 MB), then added to a shared task
+  uploadStart: (name, size) => req('POST', '/api/uploads', { name, size }),
+  uploadPiece: (uid, offset, blob) => req('PUT', `/api/uploads/${enc(uid)}?offset=${offset}`, blob),
+  uploadImport: (uid, task) => req('POST', `/api/uploads/${enc(uid)}/import`, { task }),
+  uploadJob: (uid) => req('GET', `/api/uploads/${enc(uid)}/import`),
 };
 
 export const urls = {

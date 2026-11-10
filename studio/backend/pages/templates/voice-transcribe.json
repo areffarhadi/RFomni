@@ -1,0 +1,60 @@
+{
+ "id": "voice-transcribe",
+ "area": "tasks",
+ "modality": "voice",
+ "family": "write",
+ "name": "Transcription",
+ "layout": "stacked",
+ "pick": "People listen to each recording and write down what is said (transcription), or check and correct a transcript.",
+ "summary": "Listen to short recordings and write down what is said.",
+ "suggest": [
+  "Also ask how clear the speech is, 1 to 5",
+  "Each person does at most 50 clips",
+  "Add an optional comment box"
+ ],
+ "examples": [
+  [
+   "also rate the audio quality",
+   {
+    "extraRating": "How good is the audio quality?"
+   }
+  ],
+  [
+   "use one line instead of a big box",
+   {
+    "multiline": false
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "Write down what you hear",
+  "instructions": "Listen to each recording and type exactly what is said, word for word, including repeated words. Write numbers as words. Mark words you cannot understand as [unclear].",
+  "question": "Write down exactly what is said",
+  "placeholder": "Type what you hear…",
+  "multiline": true,
+  "extraRating": "",
+  "mustPlay": false,
+  "charts": [
+   "people",
+   "time-per-item",
+   "timeline"
+  ]
+ }
+}

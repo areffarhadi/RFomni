@@ -122,7 +122,9 @@ def validate_design(d: dict) -> dict:
                      "per_pair": int(_num(st.get("per_pair"), 0, 1000, 0, int)),
                      "info": info, "info_required": [k for k in st.get("info_required") or [] if k in info],
                      "allow_skip": bool(st.get("allow_skip", True)),
-                     "condition_order": "shuffled" if st.get("condition_order") == "shuffled" else "together"},
+                     "condition_order": "shuffled" if st.get("condition_order") == "shuffled" else "together",
+                     # what the prompts are: sentences to read aloud, or questions to answer out loud
+                     "prompt_kind": "question" if st.get("prompt_kind") == "question" else "sentence"},
     }
 
 

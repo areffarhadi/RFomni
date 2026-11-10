@@ -1,0 +1,55 @@
+{
+ "id": "video-caption",
+ "area": "tasks",
+ "modality": "video",
+ "family": "write",
+ "name": "Captions",
+ "layout": "side",
+ "pick": "People watch each video clip and write a description, a caption, or what happens step by step.",
+ "summary": "Watch short clips and describe what happens.",
+ "suggest": [
+  "Describe the actions only",
+  "Also rate the video quality",
+  "Must watch to the end"
+ ],
+ "examples": [
+  [
+   "what is the person doing, short answers",
+   {
+    "question": "What is the person doing?",
+    "multiline": false
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "Describe the clip",
+  "instructions": "Watch each clip and describe what happens in one or two sentences. Mention who is there and what they do.",
+  "question": "Describe what happens in this clip",
+  "placeholder": "Two people walk into a shop and…",
+  "multiline": true,
+  "extraRating": "",
+  "mustPlay": true,
+  "charts": [
+   "people",
+   "time-per-item",
+   "timeline"
+  ]
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "id": "image-caption",
+ "area": "tasks",
+ "modality": "image",
+ "family": "write",
+ "name": "Captions",
+ "layout": "side",
+ "pick": "People look at each image and write a description or caption, alt text, or answer a question about it.",
+ "summary": "Look at images and describe each in a sentence.",
+ "suggest": [
+  "Captions of at most one sentence",
+  "Write alt text for blind readers",
+  "Also rate the image quality 1 to 5"
+ ],
+ "examples": [
+  [
+   "they should write alt text",
+   {
+    "question": "Write alt text for this image, for people who cannot see it",
+    "title": "Describe images for blind readers"
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 1,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "Describe the picture",
+  "instructions": "Look at each image and describe what you see in one or two sentences: who or what is there, and what is happening.",
+  "question": "Describe this image in one or two sentences",
+  "placeholder": "A man in a red coat crossing a busy street…",
+  "multiline": true,
+  "extraRating": "",
+  "charts": [
+   "people",
+   "time-per-item",
+   "timeline"
+  ]
+ }
+}

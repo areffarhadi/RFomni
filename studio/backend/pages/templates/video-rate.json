@@ -1,0 +1,60 @@
+{
+ "id": "video-rate",
+ "area": "listen",
+ "modality": "video",
+ "family": "rate",
+ "name": "Quality rating",
+ "layout": "side",
+ "pick": "A viewing test: people watch each video clip (for example from several codecs or generators) and rate it on a scale: quality, smoothness, realism.",
+ "summary": "Watch clips and rate their quality, from 1 to 5.",
+ "suggest": [
+  "Rate smoothness of motion",
+  "Also rate the audio",
+  "They must watch to the end"
+ ],
+ "examples": [
+  [
+   "rate motion smoothness",
+   {
+    "question": "How smooth is the motion in this clip?"
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": false,
+  "allowBack": true,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 0,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": true,
+  "practiceItems": 0,
+  "progress": "ring",
+  "finishCharts": [],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "How good is the video?",
+  "instructions": "Watch each clip to the end, then rate its quality: sharpness, smooth motion, and anything that looks wrong.",
+  "question": "How good is the quality of this video?",
+  "scaleMin": 1,
+  "scaleMax": 5,
+  "pointLabels": [
+   "Bad",
+   "Poor",
+   "Fair",
+   "Good",
+   "Excellent"
+  ],
+  "secondQuestion": "",
+  "mustPlay": true,
+  "noRepeat": false,
+  "charts": [
+   "scores",
+   "systems",
+   "people"
+  ]
+ }
+}

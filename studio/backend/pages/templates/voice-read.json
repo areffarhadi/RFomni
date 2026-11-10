@@ -1,0 +1,69 @@
+{
+ "id": "voice-read",
+ "area": "collect",
+ "modality": "voice",
+ "family": "record",
+ "name": "Read aloud",
+ "layout": "",
+ "pick": "People read sentences aloud and record them: a read-speech corpus, possibly in several emotions or speaking styles.",
+ "summary": "Read short sentences aloud and record them.",
+ "suggest": [
+  "Read each sentence happy, sad and angry",
+  "Record at 48000 for full quality",
+  "Ask about accent too"
+ ],
+ "examples": [
+  [
+   "each sentence in happy and sad voice",
+   {
+    "ways": [
+     "Happy",
+     "Sad"
+    ]
+   }
+  ],
+  [
+   "the sentences are in Spanish",
+   {
+    "languageName": "Spanish"
+   }
+  ],
+  [
+   "sentences about the weather",
+   {
+    "prompts": [
+     "It will rain all afternoon.",
+     "The sun came out after lunch.",
+     "Tomorrow will be cold and windy."
+    ]
+   }
+  ]
+ ],
+ "settings": {
+  "wayOrder": "together",
+  "minSeconds": 1,
+  "maxSeconds": 15,
+  "sampleRate": "16000",
+  "askAbout": [
+   "gender",
+   "age",
+   "first language"
+  ],
+  "peoplePerPrompt": 0,
+  "allowSkip": true,
+  "theme": "forest",
+  "accent": "",
+  "consent": "I agree that my recordings and the information I give are stored and used to build a speech dataset for research.",
+  "title": "Read sentences aloud",
+  "instructions": "Find a quiet place and use headphones if you can. Read each sentence aloud in the way asked, then listen to it before you submit.",
+  "mode": "read",
+  "languageName": "English",
+  "ways": [],
+  "prompts": [
+   "The meeting starts at ten o'clock tomorrow.",
+   "Please close the window before you leave.",
+   "My sister bought a new bicycle last week.",
+   "Could you tell me the way to the station?"
+  ]
+ }
+}

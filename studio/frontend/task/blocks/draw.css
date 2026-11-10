@@ -1,0 +1,85 @@
+/* Drawing on the item: boxes, points and outlined shapes (frontend/task/blocks/draw.js). */
+
+/* eight label colours by index: bright with a dark edge on the dark modes, deep with a light edge on the light ones,
+   so a mark reads on any picture and its swatch reads on the card */
+:root { --dr-c0: #ff6b6b; --dr-c1: #ffa94d; --dr-c2: #ffd43b; --dr-c3: #69db7c; --dr-c4: #3bc9db; --dr-c5: #74a7ff;
+  --dr-c6: #c99bff; --dr-c7: #f783ac; --dr-halo: rgba(0, 0, 0, .55); --dr-knob: #ffffff; }
+:root[data-theme="light"], :root[data-theme="cream"] { --dr-c0: #d92626; --dr-c1: #e8590c; --dr-c2: #a16207; --dr-c3: #2b8a3e;
+  --dr-c4: #0c8599; --dr-c5: #1c5fd4; --dr-c6: #8a3ffc; --dr-c7: #c2255c; --dr-halo: rgba(255, 255, 255, .8); }
+
+.dr { width: 100%; display: grid; gap: 10px; container-type: inline-size; padding-bottom: 12px; }  /* room for the item's name under it */
+
+/* label chips, and the tools at the end of their row (under them on a narrow card) */
+.dr-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.dr-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.dr-chip { padding: 6px 13px; padding-inline-start: 10px; border-radius: 999px; font-size: 14px; min-height: 36px; text-align: start; overflow-wrap: anywhere; }
+.dr-sw { flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--c);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 30%, transparent); }
+.dr-tools { grid-column: 2; display: flex; justify-content: flex-end; gap: 6px; }
+@container (max-width: 420px) { .dr-bar { grid-template-columns: minmax(0, 1fr); } .dr-tools { grid-column: 1; } }
+.dr-tool { padding: 7px 14px; min-height: 36px; font-size: 13px; }
+.dr-ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* the stage: a fixed box (no jump while the picture loads), the picture as large as fits, the drawing exactly on it */
+.dr-stage { position: relative; height: min(66vh, 75cqw); min-height: 200px; border-radius: 16px; background: var(--media-bg);
+  overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.dr-stage.is-video { height: min(60vh, 56.25cqw); min-height: 150px; }  /* a 16:9 frame; the player row goes under it */
+.dr-stage:focus-visible { outline: 2px solid var(--field-focus); outline-offset: 2px; }
+.dr .dr-stage > img, .dr .dr-stage > video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  border-radius: 0; background: none; object-fit: contain; cursor: default; }
+.dr-stage:not(.ready) > img, .dr-stage:not(.ready) > .dr-svg { visibility: hidden; }
+.dr-wait { position: absolute; inset: 0; margin: auto; }
+.dr-stage.ready > .dr-wait { display: none; }
+.dr-err { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; margin: 0; padding: 20px; text-align: center; color: var(--text-2); background: var(--surface); }
+
+/* the video's player row: play, one frame back and forward, the place in the video, the time */
+.dr-player { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; }
+.dr-player .dr-seek { margin: 0; }  /* it is 100% of its cell wide, so no side margins */
+.dr-pbtn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--field-line); background: var(--field); transition: border-color .15s; }
+.dr-pbtn:hover { border-color: var(--accent); }
+.dr-pbtn .dr-ic { width: 18px; height: 18px; fill: currentColor; }
+.dr-clock { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@container (max-width: 420px) {
+  .dr-player { grid-template-columns: auto auto auto 1fr; }
+  .dr-player .dr-seek { grid-row: 1; grid-column: 1 / -1; }
+  .dr-clock { justify-self: end; }
+}
+
+/* the drawing; touch-action: none keeps the page still while a finger draws on the picture */
+.dr-svg { position: absolute; display: block; overflow: visible; touch-action: none; cursor: crosshair; }
+.dr-svg .halo { fill: none; stroke: var(--dr-halo); stroke-width: 4.5; stroke-linejoin: round; }
+.dr-svg .line { fill: var(--c); fill-opacity: .14; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; }
+.dr-svg .on .line { fill-opacity: .26; stroke-width: 2.5; }
+.dr-svg .draft .line { fill-opacity: .1; stroke-dasharray: 7 5; }
+.dr-svg .dot { fill: var(--c); stroke: var(--dr-halo); stroke-width: 2.5; }
+.dr-svg .ring { fill: none; stroke: var(--c); stroke-width: 2; }
+.dr-svg .knob { fill: var(--dr-knob); stroke: var(--c); stroke-width: 2; }
+.dr-svg .knob.first { fill: var(--c); stroke: var(--dr-knob); stroke-width: 2.5; }
+.dr-svg .halo, .dr-svg .line, .dr-svg .dot, .dr-svg .ring, .dr-svg .knob { pointer-events: none; }
+/* what can be grabbed: an unselected box or shape by its edge, the selected one anywhere, a point anywhere, the corners */
+.dr-svg .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: move; }
+.dr-svg .on .hit, .dr-point .dr-svg .hit { fill: transparent; pointer-events: all; }
+.dr-svg .grip { fill: transparent; pointer-events: all; cursor: move; }
+.dr-svg .grip.nw, .dr-svg .grip.se { cursor: nwse-resize; }
+.dr-svg .grip.ne, .dr-svg .grip.sw { cursor: nesw-resize; }
+.dr-svg.drafting, .dr-svg.drafting * { cursor: crosshair; }
+@media (pointer: coarse) { .dr-svg .hit { stroke-width: 26; } }
+
+/* the list under the question: each row selects its mark; the cross removes it */
+.dr-answer { display: grid; gap: 8px; margin-top: 4px; }
+.dr-status { margin: 0; font-size: 13px; }
+.dr-list { list-style: none; margin: 0 -3px; padding: 3px; display: grid; gap: 6px; max-height: min(352px, 45vh); overflow-y: auto; }  /* a part row shows when it scrolls */
+.dr-list :focus-visible { outline-offset: 1px; }  /* inside the list's scroll box */
+.dr-empty { color: var(--muted); font-size: 13px; padding: 2px 0; }
+.dr-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dr-pick { flex: 1; min-width: 0; min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; cursor: pointer;
+  text-align: start; border: 1px solid var(--field-line); background: var(--field); transition: border-color .15s, background .15s; }
+.dr-pick:hover { border-color: var(--accent); }
+.dr-pick[aria-pressed="true"] { border-color: var(--accent); background: var(--on); }
+.dr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-time { flex: none; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dr-x { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; cursor: pointer;
+  border: 1px solid transparent; background: none; color: var(--muted); transition: color .15s, border-color .15s; }
+.dr-x:hover { color: var(--bad); border-color: var(--field-line); }
+.dr-x .dr-ic { width: 18px; height: 18px; }

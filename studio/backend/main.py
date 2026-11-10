@@ -29,7 +29,7 @@ from .util import new_id, now_iso, safe_rel_path, unique_path
 
 store = ProjectStore(config.PROJECTS_DIR)
 jobs = JobManager(store)
-VERSION, CODENAME = "0.6.6", "Atelier"
+VERSION, CODENAME = "0.6.7", "Atelier"
 app = FastAPI(title="Omni Studio", version=VERSION)
 share_mod.server.app = app  # the shared listener serves the same app behind its gate
 
@@ -863,16 +863,28 @@ def cancel_job(jid: str):
 from .agent import router as agent_router, voice_router  # noqa: E402  (its actions use store/jobs above)
 from .shared_routes import router as shared_router  # noqa: E402
 from .collect_routes import router as collect_router  # noqa: E402
+from .pages_routes import router as pages_router  # noqa: E402
 
 app.include_router(agent_router)
 app.include_router(voice_router)
 app.include_router(shared_router)
 app.include_router(collect_router)
+app.include_router(pages_router)
 
 
 # -----------------------------------------------------------------------------
 # frontend
 # -----------------------------------------------------------------------------
+from . import assets  # noqa: E402
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/index.html", include_in_schema=False)
+def app_page():
+    """The app, with its scripts and styles stamped so browsers fetch a file again only when it changed (assets.py)."""
+    return assets.page(config.FRONTEND_DIR / "index.html")
+
+
 app.mount("/", StaticFiles(directory=config.FRONTEND_DIR, html=True), name="frontend")
 
 

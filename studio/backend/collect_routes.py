@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from . import collect as C
+from . import assets
 from . import config
 from .util import slugify
 
@@ -138,7 +139,7 @@ def public_collect():
 
 @router.get("/c/{token}")
 def rec_page(token: str):
-    return FileResponse(PAGE, headers={"Cache-Control": "no-cache"})
+    return assets.page(PAGE)
 
 
 @router.get("/api/c/{token}")

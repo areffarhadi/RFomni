@@ -15,25 +15,31 @@
   let design = null, sid = null, item = null, answers = {}, shownAt = 0, busy = false, kind = 'labelling';
   // listening tests: rate only after hearing the clip to the end (heard), count the plays, and go back (history)
   let heard = false, plays = 0, history = [], pos = null;
+  // a comparison's screen (several items at once), the clips and videos on screen, the item's timer
+  let screen = null, players = [], timer = 0;
 
   // page language: the owner picks English or Persian (right to left, Persian digits)
   const STR = {
     en: { start: 'Start', newSession: 'Start a new session', cont: (id) => `Continue session ${id}`, or: 'or continue a session',
       noAccount: 'No account needed. You get a session ID; keep it to continue later on any device.', go: 'Continue',
       submit: 'Submit', next: 'Next', back: 'Back', skip: 'Skip', practice: 'Practice clip: not scored',
-      listenFirst: 'Listen to the whole clip first.', clipHint: 'Listen to the whole clip before answering. Space plays and pauses.',
+      listenFirst: 'Listen to the whole clip first.', watchFirst: 'Watch the whole clip first.', clipHint: 'Listen to the whole clip before answering. Space plays and pauses.',
       answer: (q) => `Please answer “${q}”.`, thanks: 'Thank you!', nothingLeft: 'There is nothing left for you to do.',
       sid: 'Your session ID', overall: 'Overall comments (optional)', send: 'Send', sent: 'Thank you, your comment was saved.',
       done: (a, b) => `${a} of ${b} done`, welcome: (n) => `Welcome back. ${n} done so far.`, yourSid: (id) => `Your session ID is ${id}. Keep it to continue later.`,
-      required: 'Please fill in the required answers.' },
+      required: 'Please fill in the required answers.', drag: 'Drag to answer',
+      noMorePlays: (n) => `You can play each clip ${n === 1 ? 'once' : `${n} times`}.`, timeUp: 'Time is up for this item.',
+      left: (s) => `${s} s left`, expired: 'This comparison was open too long. Here is a new one.' },
     fa: { start: 'شروع', newSession: 'شروع جلسه‌ی تازه', cont: (id) => `ادامه‌ی جلسه‌ی ${id}`, or: 'یا ادامه‌ی جلسه‌ی قبلی',
       noAccount: 'نیازی به حساب کاربری نیست. یک شناسه‌ی جلسه می‌گیرید و با آن می‌توانید بعداً، روی هر دستگاهی، ادامه دهید.', go: 'ادامه',
       submit: 'ثبت', next: 'بعدی', back: 'قبلی', skip: 'رد کردن', practice: 'نمونه‌ی تمرینی (امتیاز آن حساب نمی‌شود)',
-      listenFirst: 'ابتدا نمونه را تا آخر گوش دهید.', clipHint: 'پیش از پاسخ، نمونه را تا آخر گوش دهید. کلید فاصله پخش و توقف می‌کند.',
+      listenFirst: 'ابتدا نمونه را تا آخر گوش دهید.', watchFirst: 'ابتدا ویدیو را تا آخر ببینید.', clipHint: 'پیش از پاسخ، نمونه را تا آخر گوش دهید. کلید فاصله پخش و توقف می‌کند.',
       answer: (q) => `لطفاً به «${q}» پاسخ دهید.`, thanks: 'سپاس از همکاری شما', nothingLeft: 'نمونه‌ی دیگری برای شما باقی نمانده است.',
       sid: 'شناسه‌ی جلسه‌ی شما', overall: 'نظر کلی (اختیاری)', send: 'ارسال', sent: 'سپاس، نظر شما ثبت شد.',
       done: (a, b) => `${FA(a)} از ${FA(b)}`, welcome: (n) => `خوش آمدید. تاکنون ${FA(n)} نمونه.`, yourSid: (id) => `شناسه‌ی جلسه‌ی شما ${id} است. برای ادامه نگهش دارید.`,
-      required: 'لطفاً پرسش‌های الزامی را پاسخ دهید.' },
+      required: 'لطفاً پرسش‌های الزامی را پاسخ دهید.', drag: 'برای پاسخ بکشید',
+      noMorePlays: (n) => `هر نمونه را ${FA(n)} بار می‌توانید پخش کنید.`, timeUp: 'زمان این نمونه تمام شد.',
+      left: (s) => `${FA(s)} ثانیه`, expired: 'این مقایسه زیادی باز ماند. مقایسه‌ی تازه‌ای آمد.' },
   };
   const FA = (d) => String(d).replace(/[0-9]/g, (c) => '۰۱۲۳۴۵۶۷۸۹'[c]);
   const ui = () => design?.look?.ui_lang === 'fa' ? 'fa' : 'en';
@@ -119,6 +125,13 @@
         : `${mine} done; ${p.complete} of ${p.items} items complete`;
     const frac = limit ? mine / limit : p.items ? (everyone ? (p.mine_here ?? p.complete) : p.complete) / p.items : 0;
     $('.progress-bar i').style.width = `${Math.min(100, frac * 100)}%`;
+    const ring = design?.look?.progress === 'ring';  // the owner chose a ring instead of the bar
+    box.classList.toggle('as-ring', ring);
+    if (ring) {
+      let r = $('.progress-ring');
+      if (!r) { r = svg('<circle class="t" cx="12" cy="12" r="9"/><circle class="a" cx="12" cy="12" r="9" pathLength="100"/>', 'progress-ring'); box.prepend(r); }
+      r.querySelector('.a').style.strokeDasharray = `${Math.min(100, frac * 100)} 100`;
+    }
   }
   function showSid() {
     const b = $('.sid');
@@ -130,12 +143,12 @@
   });
 
   // ---------- screens
-  function screen(...nodes) {
+  function showScreen(...nodes) {
     app.replaceChildren(...nodes);
     app.firstElementChild?.classList.add('fade');
   }
   function fail(msg) {
-    screen(h('div', { class: 'card center' }, h('h1', {}, 'Not available'), h('p', { class: 'lead' }, msg)));
+    showScreen(h('div', { class: 'card center' }, h('h1', {}, 'Not available'), h('p', { class: 'lead' }, msg)));
   }
 
   function intro() {
@@ -159,7 +172,7 @@
       start({ name: name?.value || '', info: vals });
     };
     const startBtn = h('button', { class: 'btn primary block', type: 'button', onclick: begin }, t('start'));
-    screen(h('div', { class: `card center${introFields.length ? ' wide' : ''}` },
+    showScreen(h('div', { class: `card center${introFields.length ? ' wide' : ''}` },
       h('h1', {}, bi(design.title)),
       design.instructions ? h('p', { class: 'lead' }, fill(design.instructions)) : null,
       name ? h('label', { class: 'f' }, 'Your name or ID (shown to the task owner)', name) : null,
@@ -203,7 +216,7 @@
     try { groups = (await api('GET', `/groups?session=${encodeURIComponent(sid)}`)).groups; } catch { /* keep the last list */ }
     const everyone = design.settings.labels_per_item === 0;
     $('.change-group').hidden = true;
-    screen(h('div', { class: 'card center wide' },
+    showScreen(h('div', { class: 'card center wide' },
       h('h1', {}, `Choose a ${groupLabel().toLowerCase()}`),
       h('p', { class: 'lead' }, `Pick the ${groupLabel().toLowerCase()} you know well. You can switch at any time.`),
       h('input', { class: 'input group-search', placeholder: `Search ${groupLabel().toLowerCase()}s`, oninput: (e) => {
@@ -225,13 +238,13 @@
   $('.change-group').addEventListener('click', () => pickGroup());
 
   async function next() {
-    screen(h('div', { class: 'card center' }, h('div', { class: 'spin', 'aria-label': 'Loading' })));
+    showScreen(h('div', { class: 'card center' }, h('div', { class: 'spin', 'aria-label': 'Loading' })));
     $('.change-group').hidden = !groups.length;
     try {
       const r = await api('GET', `/next?session=${encodeURIComponent(sid)}${group ? `&group=${encodeURIComponent(group)}` : ''}`);
       setProgress(r.progress);
       if (!r.item) return done(r.progress);
-      item = r.item;
+      item = r.item; screen = r.screen || null;
       answers = {}; heard = false; plays = 0; pos = null;
       work();
     } catch (e) {
@@ -243,7 +256,7 @@
   function done(p) {
     const limitHit = p?.limit && p.mine >= p.limit;
     if (group && !limitHit) {
-      return screen(h('div', { class: 'card center' },
+      return showScreen(h('div', { class: 'card center' },
         h('div', { class: 'done-icon' }, svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>')),
         h('h1', {}, `${group}: all done`),
         h('p', { class: 'lead' }, `There is nothing left for you to label in ${group}. Thank you!`),
@@ -251,7 +264,7 @@
         sid && !preview ? [h('p', { class: 'muted', style: 'margin-top:16px' }, 'Your session ID'), h('div', { class: 'big-sid' }, sid)] : null));
     }
     const comment = design.settings.final_comment ? h('textarea', { class: 'input', rows: 3 }) : null;
-    screen(h('div', { class: 'card center' },
+    showScreen(h('div', { class: 'card center' },
       h('div', { class: 'done-icon' }, svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>')),
       h('h1', {}, t('thanks')),
       h('p', { class: 'lead' }, ui() === 'fa' ? t('nothingLeft') : limitHit ? `You labelled ${p.mine} items, the number this task asks of each person.`
@@ -260,8 +273,42 @@
         h('button', { class: 'btn block', type: 'button', style: 'margin-bottom:14px', onclick: async (e) => {
           try { await api('POST', '/comment', { session: sid, text: comment.value }); toast(t('sent')); e.target.disabled = true; } catch (err) { toast(err.message); }
         } }, t('send'))] : null,
-      design.settings.allow_back && history.length ? h('button', { class: 'btn block', type: 'button', style: 'margin-bottom:14px', onclick: back }, t('back')) : null,
+      design.settings.allow_back && history.length && !design.fields.some(f => COMPARE.has(f.type))
+        ? h('button', { class: 'btn block', type: 'button', style: 'margin-bottom:14px', onclick: back }, t('back')) : null,
+      finishCharts(),
       sid && !preview ? [h('p', { class: 'muted' }, t('sid')), h('div', { class: 'big-sid' }, sid)] : null));
+  }
+
+  // charts on the last screen, as the owner chose: this person's answers, everyone's, and their time per item
+  function finishCharts() {
+    const want = design.settings.finish_charts || [];
+    if (!want.length) return null;
+    const box = h('div', { class: 'fc' });
+    api('GET', `/finish${sid && !preview ? `?session=${encodeURIComponent(sid)}` : ''}`).then(r => {
+      const pct = (o, k) => { const tot = Object.values(o || {}).reduce((a, b) => a + b, 0); return tot ? (o[k] || 0) / tot : 0; };
+      const parts = [];
+      if (want.includes('my-answers') || want.includes('everyone')) {
+        for (const f of r.fields) {
+          const mine = want.includes('my-answers'), all = want.includes('everyone') && f.everyone;
+          parts.push(h('div', { class: 'fc-chart' }, h('p', { class: 'fc-title' }, bi(fill(f.label))),
+            f.keys.map(k => h('div', { class: 'fc-row' }, h('span', { class: 'fc-key' }, k),
+              h('div', { class: 'fc-bars' },
+                mine ? h('i', { class: 'me', style: `width:${pct(f.mine, k) * 100}%` }) : null,
+                all ? h('i', { class: 'all', style: `width:${pct(f.everyone, k) * 100}%` }) : null),
+              h('em', {}, mine ? num(f.mine[k] || 0) : `${Math.round(pct(f.everyone, k) * 100)}%`))),
+            mine && all ? h('p', { class: 'fc-legend' }, h('i', { class: 'me' }), 'You ', h('i', { class: 'all' }), 'Everyone') : null));
+        }
+      }
+      if (want.includes('my-time') && r.seconds.length) {
+        const max = Math.max(...r.seconds), med = [...r.seconds].sort((a, b) => a - b)[Math.floor(r.seconds.length / 2)];
+        parts.push(h('div', { class: 'fc-chart' }, h('p', { class: 'fc-title' }, 'Your time per item'),
+          h('div', { class: 'fc-time' }, r.seconds.map(x => h('i', { style: `height:${Math.max(6, (x / max) * 100)}%`, title: `${x} s` }))),
+          h('p', { class: 'fc-legend' }, `Half your answers took under ${num(med)} seconds.`)));
+      }
+      if (r.demo) parts.unshift(h('p', { class: 'hint' }, 'Preview: these charts show example numbers.'));
+      box.replaceChildren(...parts);
+    }).catch(() => box.remove());
+    return box;
   }
 
   // ---------- the item and the questions
@@ -283,11 +330,9 @@
     }
     if (it.kind === 'video') {
       if (it.playable === false) return h('div', { class: 'cant' }, 'This video format cannot be played in a browser. Please skip it.');
-      return h('video', { src: it.src, controls: true, playsinline: true, preload: 'metadata' });
+      return track(h('video', { src: it.src, controls: true, playsinline: true, preload: 'metadata' }));
     }
-    const audio = h('audio', { src: it.src, controls: true, preload: 'auto' });
-    audio.addEventListener('play', () => { plays++; });
-    audio.addEventListener('ended', () => { heard = true; lockRatings(); });
+    const audio = track(h('audio', { src: it.src, controls: true, preload: 'auto' }));
     const playIcon = '<path d="M8 5.5v13l11-6.5z"/>', pauseIcon = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
     const btn = h('button', { class: 'play', type: 'button', 'aria-label': 'Play', onclick: () => (audio.paused ? audio.play() : audio.pause()) }, svg(playIcon));
     audio.addEventListener('play', () => { btn.replaceChildren(svg(pauseIcon)); btn.setAttribute('aria-label', 'Pause'); });
@@ -295,10 +340,12 @@
     return h('div', { class: 'audio' }, it.text ? h('p', { class: 'stim', dir: 'auto' }, it.text) : null, btn, audio, h('p', { class: 'hint' }, t('clipHint')));
   }
 
-  function question(f, idx) {
+  function question(f, idx, mounted = {}) {
     const [first, ...rest] = bi(fill(f.label), true);
     const head = [h('p', { class: 'q-label', id: `q-${f.id}` }, first, f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null, rest),
       f.help ? h('p', { class: 'q-help' }, bi(fill(f.help))) : null];
+    if (mounted[f.id]) return h('div', { class: `q q-${f.type}`, role: 'group', 'aria-labelledby': `q-${f.id}` }, head, mounted[f.id].answer || null);
+    const keys = design.settings.show_keys !== false;
     if (f.type === 'choice' || f.type === 'multi') {
       const multi = f.type === 'multi';
       const box = h('div', { class: 'opts', role: multi ? 'group' : 'radiogroup', 'aria-labelledby': `q-${f.id}` });
@@ -313,18 +360,21 @@
           else answers[f.id] = o;
           paint(); $('.err').textContent = '';
         },
-      }, o, idx === 0 && i < 9 ? h('kbd', {}, String(i + 1)) : null)));
+      }, o, keys && idx === 0 && i < 9 ? h('kbd', {}, num(i + 1)) : null)));
       paint();
       return h('div', { class: 'q' }, head, box);
     }
+    if (f.type === 'rating' && f.slider) return h('div', { class: 'q' }, head, slider(f));
     if (f.type === 'rating') {
-      const box = h('div', { class: 'scale', role: 'radiogroup', 'aria-labelledby': `q-${f.id}` });
+      const words = f.labels?.length === f.max - f.min + 1 ? f.labels : null;
+      const box = h('div', { class: `scale${words ? ' labelled' : ''}`, role: 'radiogroup', 'aria-labelledby': `q-${f.id}` });
       for (let v = f.min; v <= f.max; v++) {
-        box.append(h('button', { class: 'opt', type: 'button', role: 'radio', 'aria-checked': String(+answers[f.id] === v), 'data-v': v,
-          onclick: () => { answers[f.id] = v; [...box.children].forEach(b => b.setAttribute('aria-checked', String(+b.dataset.v === v))); $('.err').textContent = ''; } }, num(v)));
+        box.append(h('button', { class: 'opt', type: 'button', role: 'radio', 'aria-checked': String(+answers[f.id] === v), 'data-v': v, 'data-lock': true,
+          onclick: () => { answers[f.id] = v; [...box.children].forEach(b => b.setAttribute('aria-checked', String(+b.dataset.v === v))); $('.err').textContent = ''; } },
+        num(v), words ? h('small', {}, words[v - f.min]) : null));
       }
       return h('div', { class: 'q' }, head, box,
-        f.min_label || f.max_label ? h('div', { class: 'scale-ends' }, h('span', {}, f.min_label || ''), h('span', {}, f.max_label || '')) : null);
+        !words && (f.min_label || f.max_label) ? h('div', { class: 'scale-ends' }, h('span', {}, f.min_label || ''), h('span', {}, f.max_label || '')) : null);
     }
     const input = h(f.multiline ? 'textarea' : 'input', { class: 'input', placeholder: f.placeholder || '', 'aria-labelledby': `q-${f.id}`,
       dir: 'auto', oninput: (e) => { answers[f.id] = e.target.value; } });
@@ -332,33 +382,132 @@
     return h('div', { class: 'q' }, head, input);
   }
 
+  // a clip or video on screen: plays are counted (a play from the start, not a pause and go on), at most max_plays,
+  // and "play to the end first" waits until every one has played through
+  function track(el) {
+    if (players.includes(el)) return el;
+    players.push(el);
+    el._fresh = true;
+    if (pos === null && heard) { heard = false; lockRatings(); }   // a clip a block adds later (once its tools load)
+    el.addEventListener('play', () => {
+      const max = design.settings.max_plays || 0;
+      if (!el._fresh) return;
+      if (max && (el._plays || 0) >= max && !preview) { el.pause(); toast(t('noMorePlays', max)); return; }
+      el._fresh = false; el._plays = (el._plays || 0) + 1; plays++;
+    });
+    el.addEventListener('seeked', () => { if (el.currentTime < 0.05) el._fresh = true; });
+    el.addEventListener('ended', () => {
+      el._fresh = true; el._ended = true;
+      heard = players.every(p => p._ended);
+      lockRatings();
+    });
+    return el;
+  }
+
+  const COMPARE = new Set(['ab_choice', 'ab_scale', 'abx', 'mushra', 'best_worst', 'pick_items']);
+  // the kinds of question in frontend/task/blocks/*.js (the page's own: buttons, tick boxes, scale, slider, text box)
+  const blockOf = (f) => window.OmniBlocks?.[f.type === 'choice' && f.dropdown ? 'dropdown' : f.type === 'text' && f.prefill ? 'prefill'
+    : ['choice', 'multi', 'rating', 'text'].includes(f.type) ? '' : f.type];
+  const answered = (f) => {
+    const b = blockOf(f), v = answers[f.id];
+    if (b?.answered) return b.answered(f, v);
+    return !(v == null || v === '' || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).length));
+  };
+  // each block draws its answer (and, when it works on the item itself, the item); mounted afresh for every item
+  function mountBlocks() {
+    const out = {};
+    for (const f of design.fields) {
+      const b = blockOf(f);
+      if (!b || (COMPARE.has(f.type) && !screen)) continue;
+      const ctx = { h, svg, lang: ui(), num, item, screen, value: answers[f.id], keys: design.settings.show_keys !== false,
+        set: (v) => { if (v == null) delete answers[f.id]; else answers[f.id] = v; const e = $('.err'); if (e) e.textContent = ''; },
+        track };
+      try { out[f.id] = b.mount(f, ctx) || {}; } catch (e) { console.error(e); out[f.id] = { answer: h('p', { class: 'err' }, String(e.message || e)) }; }
+    }
+    return out;
+  }
+
+  // a sliding bar: any number from min to max; no answer until the person moves it
+  function slider(f) {
+    const dec = f.step === 1 ? 0 : f.step === 0.1 ? 1 : 2;
+    const has = answers[f.id] != null && answers[f.id] !== '';
+    const show = (v) => num((+v).toFixed(dec));
+    const out = h('output', { class: `slider-val${has ? '' : ' idle'}`, 'aria-hidden': 'true' }, has ? show(answers[f.id]) : t('drag'));
+    const input = h('input', { type: 'range', class: `slider${has ? '' : ' idle'}`, min: f.min, max: f.max, step: f.step || 0.01,
+      value: has ? answers[f.id] : (f.min + f.max) / 2, 'aria-labelledby': `q-${f.id}` });
+    const set = () => {
+      answers[f.id] = +(+input.value).toFixed(dec);
+      out.textContent = show(input.value);
+      out.classList.remove('idle'); input.classList.remove('idle');
+      input.setAttribute('aria-valuetext', show(input.value));
+      $('.err').textContent = '';
+    };
+    input.addEventListener('input', set);
+    input.addEventListener('pointerup', set);   // a click on the middle is an answer too
+    const end = (n, w) => h('span', {}, h('b', {}, num(n)), w ? ` ${w}` : '');
+    return h('div', { class: 'slider-box' }, out, input,
+      h('div', { class: 'scale-ends' }, end(f.min, f.min_label), end(f.max, f.max_label)));
+  }
+
   // must listen to the end: the answers open once the clip has played through (or when going back to it)
+  const mustPlay = () => design.settings.must_listen && ['audio', 'video'].includes(item?.kind) && !item.pending && players.length > 0 && !heard;
   function lockRatings() {
-    const locked = design.settings.must_listen && item?.kind === 'audio' && !item.pending && !heard;
-    document.querySelectorAll('.questions .opt').forEach(b => { b.disabled = locked; });
+    const locked = mustPlay();
+    document.querySelectorAll('.questions .opt, .questions .slider, .questions [data-lock]').forEach(b => { b.disabled = locked; });
     const hint = $('.listen-first');
-    if (hint) hint.textContent = locked ? t('listenFirst') : '';
+    if (hint) hint.textContent = locked ? t(item.kind === 'video' ? 'watchFirst' : 'listenFirst') : '';
   }
 
   function work() {
     const stacked = design.look?.layout === 'stacked';
     const listening = kind === 'listening';
-    const submit = h('button', { class: 'btn primary', type: 'button', onclick: send }, listening ? t('next') : t('submit'), h('kbd', {}, 'Enter'));
+    const comparing = !!screen && design.fields.some(f => COMPARE.has(f.type));
+    players.forEach(p => p.pause?.());
+    players = []; heard = false;
+    clearInterval(timer);
+    const mounted = mountBlocks();
+    const byType = (f) => mounted[f.id]?.media;
+    const cmpMedia = design.fields.filter(f => COMPARE.has(f.type)).map(byType).find(Boolean);
+    const onItem = design.fields.filter(f => !COMPARE.has(f.type) && byType(f)).map(f => mounted[f.id])[0];
+    const submit = h('button', { class: 'btn primary', type: 'button', onclick: send }, listening ? t('next') : t('submit'),
+      design.settings.show_keys !== false ? h('kbd', {}, 'Enter') : null);
     const skipBtn = design.settings.allow_skip ? h('button', { class: 'btn', type: 'button', onclick: skip }, t('skip')) : null;
-    const backBtn = design.settings.allow_back && !preview && history.length && (pos === null || pos > 0)
+    const backBtn = design.settings.allow_back && !preview && !comparing && history.length && (pos === null || pos > 0)
       ? h('button', { class: 'btn', type: 'button', onclick: back }, t('back')) : null;
-    screen(h('div', { class: `work${stacked ? ' stacked' : ''}` },
+    const clock = design.settings.time_limit ? h('span', { class: 'clock', role: 'timer', 'aria-live': 'off' }) : null;
+    const shown = comparing ? cmpMedia || null : onItem ? onItem.media : mediaView(item);
+    const tags = [item.practice ? h('div', { class: 'practice-tag' }, t('practice')) : null,
+      item.sample ? h('div', { class: 'practice-tag sample-tag' }, 'Sample item: your own data shows here once you add it') : null].filter(Boolean);
+    showScreen(h('div', { class: `work${stacked || comparing ? ' stacked' : ''}${onItem && !comparing ? ' on-item' : ''}${comparing ? ' comparing' : ''}${shown || tags.length ? '' : ' no-media'}` },
       h('h1', { class: 'sr-only' }, bi(design.title)),
-      h('section', { class: 'card media', 'aria-label': 'Item' },
-        item.practice ? h('div', { class: 'practice-tag' }, t('practice')) : null,
-        mediaView(item), item.kind !== 'text' && !listening ? h('span', { class: 'name' }, item.name) : null),
+      shown || tags.length ? h('section', { class: 'card media', 'aria-label': 'Item' }, tags, shown,
+        !onItem && !comparing && item.kind !== 'text' && !listening ? h('span', { class: 'name' }, item.name) : null) : null,
       h('section', { class: 'card questions', 'aria-label': 'Questions' },
         h('p', { class: 'listen-first', role: 'status' }),
-        design.fields.map(question),
+        design.fields.map((f, i) => question(f, i, mounted)),
         h('p', { class: 'err', role: 'alert' }),
-        h('div', { class: 'actions' }, backBtn, skipBtn, h('span', { class: 'grow' }), submit))));
+        h('div', { class: 'actions' }, backBtn, skipBtn, h('span', { class: 'grow' }), clock, submit))));
     shownAt = performance.now();
+    heard = !players.length;
     lockRatings();
+    if (clock) startClock(clock);
+  }
+
+  // seconds per item: the clock counts down; at zero the answer goes in when it is complete, else the item is passed
+  function startClock(clock) {
+    const end = Date.now() + design.settings.time_limit * 1000, me = item;
+    const tick = () => {
+      if (item !== me) return clearInterval(timer);
+      const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      clock.textContent = t('left', left);
+      clock.classList.toggle('low', left <= 5);
+      if (left > 0) return;
+      clearInterval(timer);
+      toast(t('timeUp'));
+      if (design.fields.every(f => !f.required || answered(f)) && !mustPlay()) send(); else skip(true);
+    };
+    tick();
+    timer = setInterval(tick, 250);
   }
 
   // back: the previous clip with this person's answer, to change it; then on to where they were
@@ -367,56 +516,75 @@
     if (at <= 0) return;
     try {
       const r = await api('GET', `/answered/${encodeURIComponent(history[at - 1])}?session=${encodeURIComponent(sid)}`);
-      pos = at - 1; item = r.item; answers = { ...r.values }; heard = true; plays = 0;
+      pos = at - 1; item = r.item; screen = null; answers = { ...r.values }; heard = true; plays = 0;
       work();
+      heard = true; lockRatings();
     } catch (e) { toast(e.message); }
   }
 
   async function send() {
     if (busy) return;
-    const missing = design.fields.find(f => f.required && (answers[f.id] == null || answers[f.id] === '' || (Array.isArray(answers[f.id]) && !answers[f.id].length)));
-    if (design.settings.must_listen && item.kind === 'audio' && !item.pending && !heard) { $('.err').textContent = t('listenFirst'); return; }
+    const missing = design.fields.find(f => f.required && !answered(f));
+    if (mustPlay()) { $('.err').textContent = t(item.kind === 'video' ? 'watchFirst' : 'listenFirst'); return; }
     if (missing) { $('.err').textContent = t('answer', fill(missing.label)); return; }
     busy = true;
     try {
-      const r = await api('POST', '/answer', { session: sid, item: item.id, values: answers, ms: Math.round(performance.now() - shownAt), plays });
+      const r = await api('POST', '/answer', { session: sid, item: item.id, ...(screen ? { screen: screen.id } : {}), values: answers,
+        ms: Math.round(performance.now() - shownAt), plays });
       if (r.preview) toast('Preview: the answer was checked, not saved.');
       if (r.history) history = r.history;
       if (pos !== null && pos < history.length - 1) {  // went back: walk forward through what they already did
         const nxt = history[pos + 1];
         const a = await api('GET', `/answered/${encodeURIComponent(nxt)}?session=${encodeURIComponent(sid)}`);
-        pos += 1; item = a.item; answers = { ...a.values }; heard = true; plays = 0;
-        return work();
+        pos += 1; item = a.item; screen = null; answers = { ...a.values }; heard = true; plays = 0;
+        work();
+        heard = true; lockRatings();
+        return;
       }
       next();
     } catch (e) {
-      $('.err').textContent = e.message;
+      if (screen && /no longer open/.test(e.message)) { toast(t('expired')); next(); }
+      else $('.err').textContent = e.message;
     } finally { busy = false; }
   }
 
-  async function skip() {
+  // timeout: the clock ran out (allowed even when skipping is off)
+  async function skip(timeout = false) {
     if (busy) return;
     busy = true;
-    try { await api('POST', '/skip', { session: sid, item: item.id }); next(); }
+    try { await api('POST', '/skip', { session: sid, item: item.id, ...(timeout === true ? { timeout: true } : {}) }); next(); }
     catch (e) { $('.err').textContent = e.message; }
     finally { busy = false; }
   }
 
-  // keys: 1-9 answer the first list question, Enter submits, Space plays audio (not while typing)
+  // keys: 1-9 answer the first list or scale question, letters play a comparison's clips (A, B, X, R for the
+  // reference), Enter submits, Space plays audio; not while typing, nor inside a block that uses the keys itself
   document.addEventListener('keydown', (e) => {
     if (!item || !$('.questions')) return;
-    const typing = e.target.closest?.('input, textarea');
-    if (e.key === 'Enter' && !e.shiftKey && !(typing && e.target.tagName === 'TEXTAREA')) { e.preventDefault(); send(); return; }
-    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (/^[1-9]$/.test(e.key)) $('.questions .opts')?.children[+e.key - 1]?.click();
-    if (e.key === ' ' && item.kind === 'audio') { e.preventDefault(); $('.play')?.click(); }
+    const own = e.target.closest?.('[data-own-keys]');
+    const typing = e.target.closest?.('input:not([type=range]), textarea, select, [contenteditable]');
+    if (e.key === 'Enter' && !e.shiftKey && !own && !(typing && e.target.tagName === 'TEXTAREA')) { e.preventDefault(); send(); return; }
+    if (typing || own || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ' && item.kind === 'audio') { e.preventDefault(); $('.play')?.click(); return; }
+    if (design.settings.show_keys === false) return;
+    if (/^[1-9]$/.test(e.key)) ($('.questions .opts') || $('.questions .scale'))?.children[+e.key - 1]?.click();
+    else if (/^[a-z]$/i.test(e.key)) $(`[data-key="${e.key.toLowerCase()}"]`)?.click();
   });
 
-  // the studio's designer sends each new design to its preview
+  // the studio's designer sends each new design to its preview, and asks for a screen: the start, an item, the end
   addEventListener('message', (e) => {
-    if (!preview || e.origin !== location.origin || e.data?.type !== 'omni-design') return;
+    if (!preview || e.origin !== location.origin) return;
+    if (e.data?.type === 'omni-show') {
+      if (e.data.screen === 'item') start({});
+      else if (e.data.screen === 'done') { sid ||= 'PREVIEW'; done({ mine: 12 }); }
+      else { sid = null; item = null; intro(); }
+      return;
+    }
+    if (e.data?.type !== 'omni-design') return;
     applyDesign(e.data.design);
-    if (item && $('.questions')) { answers = {}; work(); } else if (!sid) intro(); else if ($('.groups')) pickGroup();
+    const wantScreen = design.fields.some(f => COMPARE.has(f.type));
+    if (item && $('.questions')) { if (wantScreen !== !!screen) next(); else { answers = {}; work(); } } else if ($('.done-icon')) done({ mine: 12 });
+    else if (!sid) intro(); else if ($('.groups')) pickGroup();
   });
 
   // ---------- start

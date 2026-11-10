@@ -1,0 +1,59 @@
+{
+ "id": "image-rate",
+ "area": "listen",
+ "modality": "image",
+ "family": "rate",
+ "name": "Quality rating",
+ "layout": "side",
+ "pick": "A viewing test: people look at each image (for example from several image generators or codecs) and rate it on a scale: quality, realism, aesthetics.",
+ "summary": "Look at images and rate their quality, from 1 to 5.",
+ "suggest": [
+  "Rate realism instead of quality",
+  "Also ask how well it matches the prompt",
+  "1 to 10 scale"
+ ],
+ "examples": [
+  [
+   "how realistic is it",
+   {
+    "question": "How realistic does this image look?",
+    "title": "How real does it look?"
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": false,
+  "allowBack": true,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 0,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": true,
+  "practiceItems": 0,
+  "progress": "ring",
+  "finishCharts": [],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "How good does it look?",
+  "instructions": "Look at each image, then rate its quality: sharpness, colours and anything that looks wrong. Click the image to see it larger.",
+  "question": "How good is the quality of this image?",
+  "scaleMin": 1,
+  "scaleMax": 5,
+  "pointLabels": [
+   "Bad",
+   "Poor",
+   "Fair",
+   "Good",
+   "Excellent"
+  ],
+  "secondQuestion": "",
+  "charts": [
+   "scores",
+   "systems",
+   "people"
+  ]
+ }
+}

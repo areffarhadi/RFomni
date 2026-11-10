@@ -18,16 +18,21 @@ import time
 from collections import Counter
 from pathlib import Path
 
+from . import blocks as BL
 from . import config
 from . import media as media_mod
+from . import shared_output as SO
 from .util import new_id, now_iso, read_json, safe_rel_path, slugify, unique_path, write_json
 
 ROOT = config.WORKSPACE / "shared"
 TEXT_EXT = {".txt", ".csv", ".tsv", ".jsonl", ".json"}
 DATA_EXT = config.MEDIA_EXT | TEXT_EXT
-FIELD_TYPES = ("choice", "multi", "rating", "text")
+FIELD_TYPES = BL.FIELD_TYPES   # the kinds of question: blocks.py
+STEPS = BL.STEPS
 STATUSES = ("draft", "live", "paused", "closed")
 THEMES = ("forest", "dark", "light", "navy", "cream", "charcoal")
+FINISH_CHARTS = ("my-answers", "everyone", "my-time")
+RESULT_CHARTS = ("answers", "scores", "systems", "agreement", "timeline", "time-per-item", "people")
 LEASE_SEC = 600            # an item handed to one person is not handed to another for this long
 MAX_TEXT = 20000           # characters kept per text item
 
@@ -50,7 +55,7 @@ def default_design(title: str = "") -> dict:
         "look": {"theme": "forest", "accent": "", "layout": "side", "dir": "ltr", "ui_lang": "en"},
         "settings": {"labels_per_item": 1, "max_per_session": 0, "allow_skip": True, "shuffle": True,
                      "ask_name": False, "group_label": "Group", "must_listen": False, "no_repeat": False,
-                     "allow_back": False, "final_comment": False},
+                     "allow_back": False, "final_comment": False, "max_plays": 0, "time_limit": 0, "show_keys": True},
     }
 
 
@@ -79,22 +84,11 @@ def validate_design(d: dict) -> dict:
             fid += "_2"
         seen.add(fid)
         out = {"id": fid, "type": typ, "label": label, "required": bool(f.get("required", typ != "text")),
-               "help": str(f.get("help") or "").strip()[:300]}
-        if typ in ("choice", "multi"):
-            opts = list(dict.fromkeys(str(o).strip()[:60] for o in f.get("options") or [] if str(o).strip()))[:20]
-            if len(opts) < 2:
-                raise ValueError(f"“{label}” needs at least two options")
-            out["options"] = opts
-        elif typ == "rating":
-            lo = _int(f.get("min"), 0, 10, 1)
-            hi = _int(f.get("max"), lo + 1, 11, max(lo + 1, 5))
-            out.update(min=lo, max=hi, min_label=str(f.get("min_label") or "").strip()[:40],
-                       max_label=str(f.get("max_label") or "").strip()[:40])
-        else:
-            out.update(multiline=bool(f.get("multiline", True)), placeholder=str(f.get("placeholder") or "").strip()[:120])
+               "help": str(f.get("help") or "").strip()[:300], **BL.stored(f, typ, label)}
         fields.append(out)
     if not fields:
         raise ValueError("The page needs at least one question")
+    BL.check_page(fields)
     intro = []
     for f in (d.get("intro_fields") or [])[:8]:  # questions people answer once, before they start (stored per session)
         label = str(f.get("label") or "").strip()[:200]
@@ -116,11 +110,13 @@ def validate_design(d: dict) -> dict:
         "instructions": str(d.get("instructions") or "").strip()[:4000],
         "fields": fields,
         "intro_fields": intro,
+        "output": SO.clean(d.get("output")),   # the results file the owner downloads (shared_output.py)
         "look": {"theme": look.get("theme") if look.get("theme") in THEMES else "forest",
                  "accent": accent if re.fullmatch(r"#[0-9a-fA-F]{6}", accent) else "",
                  "layout": "stacked" if look.get("layout") == "stacked" else "side",
                  "dir": "rtl" if look.get("dir") == "rtl" else "ltr",
-                 "ui_lang": look.get("ui_lang") if look.get("ui_lang") in ("en", "fa") else "en"},
+                 "ui_lang": look.get("ui_lang") if look.get("ui_lang") in ("en", "fa") else "en",
+                 "progress": "ring" if look.get("progress") == "ring" else "bar"},
         # labels_per_item 0: everyone labels every item (each person goes through all of them)
         "settings": {"labels_per_item": _int(st.get("labels_per_item"), 0, 50, 1),
                      "max_per_session": _int(st.get("max_per_session"), 0, 100000, 0),
@@ -130,7 +126,13 @@ def validate_design(d: dict) -> dict:
                      # listening tests: rate only after hearing the clip to the end; never the same sentence twice in
                      # a row; go back and change an earlier answer; a comment at the end
                      "must_listen": bool(st.get("must_listen", False)), "no_repeat": bool(st.get("no_repeat", False)),
-                     "allow_back": bool(st.get("allow_back", False)), "final_comment": bool(st.get("final_comment", False))},
+                     "allow_back": bool(st.get("allow_back", False)), "final_comment": bool(st.get("final_comment", False)),
+                     # plays allowed per clip (0: any number), seconds per item (0: no limit), keys shown on the answers
+                     "max_plays": _int(st.get("max_plays"), 0, 20, 0), "time_limit": _int(st.get("time_limit"), 0, 3600, 0),
+                     "show_keys": bool(st.get("show_keys", True)),
+                     # charts: on the last screen people see, and on the owner's results page
+                     "finish_charts": [c for c in st.get("finish_charts") or [] if c in FINISH_CHARTS],
+                     "result_charts": [c for c in st.get("result_charts") or [] if c in RESULT_CHARTS]},
     }
 
 
@@ -413,7 +415,7 @@ def _answers(tid: str, practice: bool = False) -> list:
     for ln in f.read_text(encoding="utf-8").splitlines():
         if ln.strip():
             a = json.loads(ln)
-            latest[(a["session"], a["item"])] = a
+            latest[(a["session"], a["item"], a.get("screen"))] = a
     return [a for a in latest.values() if practice or not a.get("practice")]
 
 
@@ -505,22 +507,11 @@ def next_item(task: dict, sid: str, group: str | None = None) -> dict | None:
         return pick
 
 
-def _check_values(task: dict, values: dict) -> dict:
+def _check_values(task: dict, values: dict, it: dict | None = None, screen: dict | None = None) -> dict:
+    """Each question's answer, checked (blocks.check); a required one that is missing raises ValueError."""
     out = {}
     for f in task["design"]["fields"]:
-        v = values.get(f["id"])
-        if f["type"] == "choice":
-            v = v if v in f["options"] else None
-        elif f["type"] == "multi":
-            v = [o for o in f["options"] if o in (v or [])] or None
-        elif f["type"] == "rating":
-            try:
-                v = float(v)
-                v = v if f["min"] <= v <= f["max"] else None
-            except (TypeError, ValueError):
-                v = None
-        else:
-            v = str(v or "").strip()[:5000] or None
+        v = BL.check(f, values.get(f["id"]), it or {}, screen)
         if v is None and f["required"]:
             raise ValueError(f"Please answer “{f['label']}”")
         if v is not None:
@@ -532,31 +523,151 @@ def answer(task: dict, sid: str, iid: str, values: dict, ms: int | None = None, 
     """Store an answer; answering an item again (going back) replaces this person's earlier answer."""
     tid = task["id"]
     it = item(tid, iid)
-    clean = _check_values(task, values if isinstance(values, dict) else {})
+    clean = _check_values(task, values if isinstance(values, dict) else {}, it)
+    return _store(task, sid, [(it, clean)], ms, plays)
+
+
+def _store(task: dict, sid: str, recs: list, ms, plays, screen: str | None = None) -> dict:
+    """Write the answers [(item, values)] of one screen: one item, or the items of a comparison."""
+    tid = task["id"]
     with _lock:
         ss = _sessions(tid)
         s = ss.get(sid)
         if not s:
             raise ValueError("This session was not found. Start a new one.")
-        rec = {"item": iid, "session": sid, "name": s.get("name", ""), "values": clean, "at": now_iso(),
-               "ms": int(ms) if isinstance(ms, (int, float)) else None,
-               **({"plays": int(plays)} if isinstance(plays, (int, float)) else {}),
-               **({"practice": True} if it.get("practice") else {})}
+        at = now_iso()
+        ids = [it["id"] for it, _ in recs]
         with open(_dir(tid) / "answers.jsonl", "a", encoding="utf-8") as f:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            for it, vals in recs:
+                rec = {"item": it["id"], "session": sid, "name": s.get("name", ""), "values": vals, "at": at,
+                       "ms": int(ms) if isinstance(ms, (int, float)) else None,
+                       **({"plays": int(plays)} if isinstance(plays, (int, float)) else {}),
+                       **({"practice": True} if it.get("practice") else {}),
+                       **({"screen": screen, "with": [i for i in ids if i != it["id"]]} if screen else {})}
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         hist = s.setdefault("history", [])
-        if iid not in hist:
-            hist.append(iid)
-            if not it.get("practice"):
-                s["done"] += 1
-        s["last_at"] = rec["at"]
+        for it, _ in recs:
+            if it["id"] not in hist:
+                hist.append(it["id"])
+                if not it.get("practice"):
+                    s["done"] += 1
+            _leases.pop((tid, it["id"]), None)
+        s["last_at"] = at
         _save_sessions(tid, ss)
-        _leases.pop((tid, iid), None)
         return s
 
 
-def skip(task: dict, sid: str, iid: str) -> None:
-    if not task["design"]["settings"]["allow_skip"]:
+# ----------------------------------------------------------------------------- comparisons: several items on one screen
+_screens: dict = {}   # screen id -> {"task", "session", "items", "x", "ref", "until"}: what a comparison showed
+_hidden: dict = {}    # key -> (task id, item id, until): media whose own address would give it away (ABX's X, the reference)
+SCREEN_SEC = 6 * 3600
+
+
+def compare_field(task: dict) -> dict | None:
+    return next((f for f in task["design"]["fields"] if BL.is_compare(f)), None)
+
+
+def _sets(its: list) -> dict:
+    """Item id -> the set it is compared within: the versions of one sentence (the same stimulus, or the same file name in
+    different folders), in one group, practice items apart."""
+    stems = Counter(Path(i["name"]).stem.lower() for i in its)
+    out = {}
+    for i in its:
+        stem = Path(i["name"]).stem.lower()
+        k = i.get("stimulus") or (stem if stems[stem] > 1 else None)
+        if k:
+            out[i["id"]] = (i.get("group") or "", bool(i.get("practice")), k)
+    return out
+
+
+def _is_ref(it: dict) -> bool:
+    folder = Path(it.get("rel_path") or "").parent.name
+    return any(BL.REF.match(x or "") for x in (it.get("system"), folder, Path(it["name"]).stem))
+
+
+def _hide(tid: str, iid: str) -> str:
+    now = time.time()
+    if len(_hidden) > 20000:
+        for k in [k for k, (_, _, until) in _hidden.items() if until < now]:
+            _hidden.pop(k, None)
+    key = secrets.token_urlsafe(9)
+    _hidden[key] = (tid, iid, now + SCREEN_SEC)
+    return key
+
+
+def hidden(tid: str, key: str) -> str | None:
+    """The item behind a hidden media address, while it lasts."""
+    hit = _hidden.get(key)
+    return hit[1] if hit and hit[0] == tid and hit[2] > time.time() else None
+
+
+def screen(task: dict, anchor: dict, sid: str, pool: list | None = None) -> dict:
+    """A comparison screen built around one item: the others it is compared with (the other versions of its sentence
+    first, ones this person has not done first), in random order; for ABX which one X is, for MUSHRA the reference.
+    -> {"id", "items": [item], "x": id or None, "ref": id or None, "x_key", "ref_key"}"""
+    f = compare_field(task)
+    tid = task["id"]
+    its = pool if pool is not None else items(tid)
+    sets = _sets(its)
+    same = lambda i: i["id"] != anchor["id"] and bool(i.get("practice")) == bool(anchor.get("practice")) \
+        and (i.get("group") or "") == (anchor.get("group") or "") and i["kind"] == anchor["kind"] and not i.get("pending")
+    others = [i for i in its if same(i)]
+    key = sets.get(anchor["id"])
+    mates = [i for i in others if key and sets.get(i["id"]) == key]
+    mine = _counts(tid)[1].get(sid, set()) if pool is None else set()
+    rnd = secrets.SystemRandom()
+    rnd.shuffle(mates)
+    mates.sort(key=lambda i: i["id"] in mine)   # what this person has not done yet first
+    want = BL.screen_size(f) - 1
+    chosen = mates[:want]
+    if f["type"] == "mushra" and not mates:   # no other versions of this sentence (a preview with samples): a few others
+        want = 4
+    if len(chosen) < want and (f["type"] != "mushra" or not mates):   # too few versions: others fill the screen
+        rest = [i for i in others if i not in chosen and not (key and sets.get(i["id"]) == key)]
+        chosen += rnd.sample(rest, min(len(rest), want - len(chosen)))
+    shown = [anchor, *chosen]
+    rnd.shuffle(shown)
+    ids = [i["id"] for i in shown]
+    sc = {"task": tid, "session": sid, "items": ids, "until": time.time() + SCREEN_SEC,
+          "x": rnd.choice(ids[:2]) if f["type"] == "abx" and len(ids) > 1 else None,
+          "ref": next((i["id"] for i in shown if _is_ref(i)), None) if f["type"] == "mushra" else None}
+    now = time.time()
+    if len(_screens) > 20000:
+        for k in [k for k, v in _screens.items() if v["until"] < now]:
+            _screens.pop(k, None)
+    scid = secrets.token_urlsafe(9)
+    _screens[scid] = sc
+    return {"id": scid, "items": shown, "x": sc["x"], "ref": sc["ref"],
+            "x_key": _hide(tid, sc["x"]) if sc["x"] else None, "ref_key": _hide(tid, sc["ref"]) if sc["ref"] else None}
+
+
+def answer_screen(task: dict, sid: str, scid: str, values: dict, ms=None, plays=None, preview: bool = False,
+                  pool: list | None = None) -> dict | None:
+    """Store the answer to a comparison screen as one answer per item shown (blocks.split)."""
+    sc = _screens.get(scid or "")
+    if not sc or sc["task"] != task["id"] or sc["session"] != sid:
+        raise ValueError("This comparison is no longer open. Please reload the page.")
+    by_id = {i["id"]: i for i in (pool if pool is not None else items(task["id"]))}
+    shown = [by_id[i] for i in sc["items"] if i in by_id]
+    if len(shown) != len(sc["items"]):
+        raise ValueError("An item of this comparison was removed. Please reload the page.")
+    clean = _check_values(task, values if isinstance(values, dict) else {}, shown[0], sc)
+    per = {}
+    for f in task["design"]["fields"]:
+        if f["id"] in clean:
+            parts = BL.split(f, clean[f["id"]], sc) if BL.is_compare(f) else {i: clean[f["id"]] for i in sc["items"]}
+            for iid, v in parts.items():
+                per.setdefault(iid, {})[f["id"]] = v
+    if preview:
+        return None
+    s = _store(task, sid, [(it, per.get(it["id"], {})) for it in shown], ms, plays, screen=scid)
+    _screens.pop(scid, None)
+    return s
+
+
+def skip(task: dict, sid: str, iid: str, timeout: bool = False) -> None:
+    """Pass an item: the person chose to (when skipping is on), or its time ran out (seconds per item)."""
+    if not task["design"]["settings"]["allow_skip"] and not (timeout and task["design"]["settings"].get("time_limit")):
         raise ValueError("Skipping is turned off for this task")
     with _lock:
         ss = _sessions(task["id"])
@@ -603,6 +714,56 @@ def set_key(tid: str, text: str) -> dict:
                 n += 1
         write_json(_dir(tid) / "items.json", {"items": its})
     return {"matched": n, "rows": len(key), "systems": sorted({v for v in key.values()})}
+
+
+def gold_field(task: dict) -> dict | None:
+    """The question known answers are given for: the first with fixed answers."""
+    return next((f for f in task["design"]["fields"] if f["type"] in ("choice", "multi", "rating")), None)
+
+
+def set_gold(tid: str, text: str) -> dict:
+    """Items with known answers, to check that people pay attention: "clip,answer" lines (the clip by its file name,
+    with or without extension, or its item id; several answers of a tick-box question joined with ";"). Everyone gets
+    them like any other item; the results show how many each person got right. Empty text removes them."""
+    f = gold_field(get(tid))
+    if not f:
+        raise ValueError("Known answers need a question with fixed answers: buttons, tick boxes or a scale")
+    rows = [r for r in csv.reader(io.StringIO(text or "")) if len(r) >= 2 and r[0].strip()
+            and r[0].strip().lower() not in ("clip", "file", "item", "id", "name", "filename")]
+    key = {r[0].strip(): r[1].strip() for r in rows if r[1].strip()}
+    lower = {o.lower(): o for o in f.get("options") or []}
+    with _lock:
+        its = items(tid)
+        n = 0
+        for i in its:
+            i.pop("gold", None)
+            v = key.get(i["id"]) or key.get(i["name"]) or key.get(Path(i["name"]).stem)
+            if v is None:
+                continue
+            if f["type"] == "multi":
+                v = [lower.get(x.strip().lower(), x.strip()) for x in v.split(";")]
+            elif f["type"] == "choice":
+                v = lower.get(v.lower(), v)
+            v = BL.check(f, v, i)
+            if v is not None:
+                i["gold"] = {"field": f["id"], "value": sorted(v) if isinstance(v, list) else v}
+                n += 1
+        write_json(_dir(tid) / "items.json", {"items": its})
+    return {"matched": n, "rows": len(key), "question": f["label"]}
+
+
+def checks(tid: str, answers: list | None = None) -> dict:
+    """Per person, how many items with known answers they got right: {session: {"right", "of"}} (empty without any)."""
+    gold = {i["id"]: i["gold"] for i in items(tid) if i.get("gold")}
+    out: dict = {}
+    for a in answers if answers is not None else _answers(tid):
+        g = gold.get(a["item"])
+        if g:
+            v = a["values"].get(g["field"])
+            r = out.setdefault(a["session"], {"right": 0, "of": 0})
+            r["of"] += 1
+            r["right"] += (sorted(v) if isinstance(v, list) else v) == g["value"]
+    return out
 
 
 def progress(task: dict, sid: str | None = None, group: str | None = None) -> dict:
@@ -660,6 +821,9 @@ def summary(task: dict) -> dict:
             "answers": sum(per_item.values()), "people": len(by_session)}
 
 
+decimals = BL.decimals
+
+
 def _mean_ci(vals: list) -> dict:
     """Mean with a 95% confidence interval (normal approximation, as MOS results are usually given)."""
     n = len(vals)
@@ -691,44 +855,100 @@ def results(task: dict, where: dict | None = None) -> dict:
         by_item.setdefault(a["item"], []).append(a)
     dist = {f["id"]: Counter() for f in fields}
     agree = {f["id"]: [] for f in fields if f["type"] in ("choice", "rating")}
+    scores = {f["id"]: [] for f in fields if f["type"] in BL.SCORE_NAME}
     rows = []
     systems: dict = {}
     for it in real_items(tid):
         aa = by_item.get(it["id"], [])
-        if it.get("system"):
-            for f in fields:
-                if f["type"] == "rating":
-                    systems.setdefault(it["system"], {}).setdefault(f["id"], []).extend(
-                        float(a["values"][f["id"]]) for a in aa if a["values"].get(f["id"]) is not None)
         row = {"id": it["id"], "name": it["name"], "kind": it["kind"], "answers": len(aa), "majority": {}}
         for f in fields:
             vals = [a["values"].get(f["id"]) for a in aa if a["values"].get(f["id"]) is not None]
             for v in vals:
-                for x in (v if isinstance(v, list) else [v]):
-                    dist[f["id"]][str(x)] += 1
+                for k in BL.keys(f, v):
+                    dist[f["id"]][k] += 1
+            if f["id"] in scores:
+                nums = [x for x in (BL.score(f, v) for v in vals) if x is not None]
+                scores[f["id"]] += nums
+                if it.get("system") and nums:
+                    systems.setdefault(it["system"], {}).setdefault(f["id"], []).extend(nums)
             if vals and f["type"] in ("choice", "rating"):
-                top, n = Counter(map(str, vals)).most_common(1)[0]
+                top, n = Counter(BL.keys(f, v)[0] for v in vals).most_common(1)[0]
                 row["majority"][f["id"]] = top
                 if len(vals) > 1:
                     agree[f["id"]].append(n / len(vals))
         rows.append(row)
     ss = _sessions(tid)
-    ratings = {f["id"]: [float(a["values"][f["id"]]) for a in answers if a["values"].get(f["id"]) is not None]
-               for f in fields if f["type"] == "rating"}
+    chk = checks(tid)
     return {"summary": summary(task), "where": where or {},
-            "fields": [{"id": f["id"], "label": f["label"], "type": f["type"],
-                        "counts": dist[f["id"]].most_common(30) if f["type"] != "text" else [],
-                        "texts": sum(dist[f["id"]].values()) if f["type"] == "text" else None,
+            "fields": [{"id": f["id"], "label": f["label"], "type": f["type"], "kind": BL.kind_of(f),
+                        "counts": dist[f["id"]].most_common(30),
+                        "texts": sum(1 for a in answers if a["values"].get(f["id"])) if f["type"] == "text" else None,
                         "agreement": round(sum(agree[f["id"]]) / len(agree[f["id"]]), 3) if agree.get(f["id"]) else None,
-                        **({"mos": _mean_ci(ratings[f["id"]])} if f["type"] == "rating" else {})} for f in fields],
+                        **({"mos": _mean_ci(scores[f["id"]])} if f["type"] == "rating" else {}),
+                        **({"score": _mean_ci(scores[f["id"]]), "score_name": BL.SCORE_NAME[f["type"]]}
+                           if f["id"] in scores and f["type"] != "rating" else {}),
+                        **_details(f, [a["values"].get(f["id"]) for a in answers])} for f in fields],
             "systems": [{"system": name, **{fid: _mean_ci(v) for fid, v in by.items()}} for name, by in sorted(systems.items())],
+            # for the charts: answers per day, and seconds per answer (the most recent 5000)
+            "charts": task["design"]["settings"].get("result_charts") or [],
+            "timeline": sorted(Counter(a["at"][:10] for a in answers).items()),
+            "seconds": [round(a["ms"] / 1000, 1) for a in sorted(answers, key=lambda a: a["at"])[-5000:] if a.get("ms")],
             "keyed": sum(1 for i in real_items(tid) if i.get("system")),
             "intro_fields": task["design"].get("intro_fields") or [],
+            "gold": sum(1 for i in real_items(tid) if i.get("gold")),
             "sessions": sorted(({"id": s["id"], "name": s.get("name", ""), "info": s.get("info") or {}, "done": s["done"],
+                                 **({"checks": chk[s["id"]]} if s["id"] in chk else {}),
                                  "comment": s.get("comment", ""), "started_at": s["started_at"], "last_at": s["last_at"],
                                  "kept": keep is None or s["id"] in keep} for s in ss.values()),
                                key=lambda s: s["last_at"], reverse=True),
             "items": rows}
+
+
+def _details(f: dict, vals: list) -> dict:
+    """What a question's kind adds to its results: grid = the mean of each aspect, ranking = each answer's mean place,
+    marks = how many marks per answer."""
+    vals = [v for v in vals if v is not None]
+    if f["type"] == "grid":
+        return {"rows": {r: _mean_ci([float(v[r]) for v in vals if r in v]) for r in f["rows"]}}
+    if f["type"] == "rank":
+        return {"places": sorted(({"answer": o, **_mean_ci([float(v.index(o) + 1) for v in vals if o in v])} for o in f["options"]),
+                                 key=lambda x: x["mean"] if x["mean"] is not None else 1e9)}
+    if f["type"] in BL.MARKS:
+        return {"marks": _mean_ci([float(len(v)) for v in vals])}
+    return {}
+
+
+def finish_charts(task: dict, sid: str | None) -> dict:
+    """What the charts on a person's last screen need: their own answers per choice and rating question, everyone's
+    (only when the owner shows that chart) and their seconds per item. Without a session (the owner's preview)
+    the numbers are made up, so the owner sees what the charts will look like."""
+    import random
+    want = task["design"]["settings"].get("finish_charts") or []
+    fields = [f for f in task["design"]["fields"] if f["type"] in ("choice", "multi", "rating", "rank") + BL.MARKS
+              and not f.get("dropdown")]
+    keys = lambda f: (f["options"] if f["type"] in ("choice", "multi", "rank") else [str(v) for v in range(f["min"], f["max"] + 1)]
+                      if f["type"] == "rating" else f.get("labels") or ["mark"])
+    if not sid:
+        rnd = random.Random(7)
+        demo = lambda f: {k: rnd.randint(0, 9) for k in keys(f)}
+        return {"demo": True, "charts": want, "seconds": [round(rnd.uniform(3, 14), 1) for _ in range(12)],
+                "fields": [{"id": f["id"], "label": f["label"], "keys": keys(f), "mine": demo(f),
+                            **({"everyone": {k: v * 7 + rnd.randint(0, 20) for k, v in demo(f).items()}} if "everyone" in want else {})}
+                           for f in fields]}
+    answers = _answers(task["id"])
+    out = []
+    for f in fields:
+        mine, every = Counter(), Counter()
+        for a in answers:
+            v = a["values"].get(f["id"])
+            for k in BL.keys(f, v):
+                every[k] += 1
+                if a["session"] == sid:
+                    mine[k] += 1
+        out.append({"id": f["id"], "label": f["label"], "keys": keys(f), "mine": dict(mine),
+                    **({"everyone": dict(every)} if "everyone" in want else {})})
+    secs = [round(a["ms"] / 1000, 1) for a in sorted(answers, key=lambda a: a["at"]) if a["session"] == sid and a.get("ms")]
+    return {"charts": want, "fields": out, "seconds": secs[-200:]}
 
 
 def export_csv(task: dict) -> str:
@@ -747,7 +967,7 @@ def export_csv(task: dict) -> str:
         w.writerow([a["item"], it.get("name", ""), it.get("kind", ""), it.get("group", ""), it.get("system", ""), it.get("stimulus", ""),
                     a["session"], a.get("name", ""), *[info.get(k, "") for k in intro], a["at"],
                     round(a["ms"] / 1000, 1) if a.get("ms") else "", a.get("plays", ""),
-                    *["; ".join(v) if isinstance(v, list) else ("" if v is None else v) for v in vals]])
+                    *[BL.cell(v) for v in vals]])
     return buf.getvalue()
 
 

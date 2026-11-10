@@ -15,6 +15,10 @@
     fearful: '#7ac7a8', disgusted: '#9bb04a', calm: '#7ab8d6' };
 
   let project = null, sid = null, lang = null, pair = null, prog = { done: 0, total: 0 }, step = 0;
+  // the prompts are sentences to read aloud, or questions to answer out loud (design.settings.prompt_kind)
+  const asks = () => project?.design?.settings?.prompt_kind === 'question';
+  const word = (n) => (asks() ? (n === 1 ? 'question' : 'questions') : (n === 1 ? 'sentence' : 'sentences'));
+  const doWhat = () => (asks() ? 'answer the question' : 'read the sentence');
 
   // ---------- helpers
   function h(tag, attrs = {}, ...kids) {
@@ -140,7 +144,7 @@
       h('h1', {}, 'Choose a language'),
       h('p', { class: 'lead' }, 'Pick a language you speak fluently. You can record in more than one.'),
       h('div', { class: 'groups' }, d.languages.filter(l => l.prompts.length).map(l => h('button', { class: 'group', type: 'button', onclick: () => chooseLang(l.code) },
-        h('b', {}, l.name), h('span', {}, `${l.prompts.length} sentences × ${d.conditions.length} ${d.conditions.length === 1 ? 'way' : 'ways'}`))))));
+        h('b', {}, l.name), h('span', {}, `${l.prompts.length} ${word(2)} × ${d.conditions.length} ${d.conditions.length === 1 ? 'way' : 'ways'}`))))));
   }
   function chooseLang(code) { lang = code; step = 0; store.set('lang', code); next(); }
 
@@ -271,7 +275,7 @@
       h('button', { class: 'btn', type: 'button', onclick: () => startRec(ui) }, 'Record again'),
       h('span', { class: 'grow' }), dur,
       h('button', { class: 'btn primary', type: 'button', onclick: () => submit(ui) }, 'Submit', h('kbd', {}, 'Enter')));
-    const hint = h('p', { class: 'hint center' }, 'Press the button (or Space), read the sentence, then press it again.');
+    const hint = h('p', { class: 'hint center' }, `Press the button (or Space), ${doWhat()}, then press it again.`);
     const ui = { err, timer, lvl, paint: null };
     ui.paint = (stateName) => {
       const live = stateName === 'live', has = stateName === 'take';
@@ -281,7 +285,7 @@
       mic.hidden = has;
       lvl.hidden = !live; timer.hidden = has;
       wave.hidden = !has; tools.hidden = !has;
-      hint.textContent = has ? 'Listen to it. Drag the handles to cut the start or the end, then submit.' : live ? 'Recording… press again (or Space) to stop.' : 'Press the button (or Space), read the sentence, then press it again.';
+      hint.textContent = has ? 'Listen to it. Drag the handles to cut the start or the end, then submit.' : live ? 'Recording… press again (or Space) to stop.' : `Press the button (or Space), ${doWhat()}, then press it again.`;
       if (has) { autoTrim(); draw(); }
       err.replaceChildren();
     };
@@ -339,7 +343,7 @@
         h('div', { class: 'cond', style: col ? `--c:${col}` : '' }, h('i'), c.label),
         c.hint ? h('p', { class: 'cond-hint' }, c.hint) : null,
         h('p', { class: 'sentence', dir: 'auto', lang }, pr.text),
-        h('div', { class: 'sent-meta' }, `${lg?.name || lang}, sentence ${pair.index + 1} of ${lg?.prompts.length || '?'}`)),
+        h('div', { class: 'sent-meta' }, `${lg?.name || lang}, ${word(1)} ${pair.index + 1} of ${lg?.prompts.length || '?'}`)),
       h('section', { class: 'card recorder', 'aria-label': 'Recorder' }, mic, timer, lvl, wave, tools, hint, err,
         project.design.settings.allow_skip ? h('button', { class: 'skip', type: 'button', onclick: () => skip() }, 'Skip this one') : null)));
     current = ui;

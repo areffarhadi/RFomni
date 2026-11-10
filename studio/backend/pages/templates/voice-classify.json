@@ -1,0 +1,73 @@
+{
+ "id": "voice-classify",
+ "area": "tasks",
+ "modality": "voice",
+ "family": "classify",
+ "name": "Classification",
+ "layout": "stacked",
+ "pick": "People listen to each recording and choose a class for it: emotion, speaker gender or age, accent, language, noise or clean, speech or music, and the like.",
+ "summary": "Listen to short recordings and choose what fits.",
+ "suggest": [
+  "My classes are happy, sad, angry and neutral",
+  "Let 3 people label each clip",
+  "People can pick several classes"
+ ],
+ "examples": [
+  [
+   "the classes are male, female and child",
+   {
+    "classes": [
+     "Male",
+     "Female",
+     "Child"
+    ],
+    "question": "Who is speaking?"
+   }
+  ],
+  [
+   "they should hear the whole clip first",
+   {
+    "mustPlay": true
+   }
+  ]
+ ],
+ "settings": {
+  "randomOrder": true,
+  "allowSkip": true,
+  "allowBack": false,
+  "askName": false,
+  "askAbout": [],
+  "peoplePerItem": 3,
+  "itemsPerPerson": 0,
+  "comment": "off",
+  "finalComment": false,
+  "practiceItems": 0,
+  "progress": "bar",
+  "finishCharts": [
+   "my-answers"
+  ],
+  "theme": "forest",
+  "accent": "",
+  "language": "en",
+  "title": "What do you hear?",
+  "instructions": "Listen to each recording, then choose the class that fits it best. Use headphones if you can. If you really cannot tell, choose Not sure.",
+  "question": "Which emotion do you hear?",
+  "classes": [
+   "Neutral",
+   "Happy",
+   "Sad",
+   "Angry"
+  ],
+  "multiple": false,
+  "notSure": true,
+  "other": false,
+  "classHelp": "",
+  "confidence": false,
+  "mustPlay": false,
+  "charts": [
+   "answers",
+   "agreement",
+   "people"
+  ]
+ }
+}

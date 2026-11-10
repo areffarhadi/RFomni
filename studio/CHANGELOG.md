@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.6.7 "Atelier" (2026-11-10)
+
+Default pages adapted in a chat, and a library of 23 kinds of question for audio, video, images and text.
+
+- **Default pages** (`backend/pages/`): 14 ready-made pages for Shared tasks, Subjective tests and Data collection.
+  A new page takes three steps (`#/new/tasks`, `#/new/listen`, `#/new/collect`): the kind of data, the task in your
+  own words, then the closest page. You adapt it in a free chat with a small model (Qwen3.5-9B on the 4090), or by
+  hand in the Settings tab. Code checks catch the model's slips. Undo goes back a step, and a saved version can be
+  reopened and continued later. Sample files fill the preview until you add your own data.
+- **Asking an administrator**: a corner button sends "this page cannot do it yet" to the Requests page, where an
+  administrator answers.
+- **23 kinds of question** (`backend/blocks.py`, `frontend/task/blocks/`); the chat offers only the kinds that suit
+  the page's data:
+  - **Basic and form:** buttons, tick boxes, scale, slider, text, dropdown, number, ranking, a grid of ratings, and
+    correcting a given text.
+  - **Comparisons:** A/B choice, a 7-point comparison scale (CMOS), ABX, MUSHRA, best and worst, and picking the
+    items that match.
+  - **On the item:** time ranges and moments on the waveform, rating while it plays, boxes, points and shapes on
+    images and video frames, and highlighted spans of text.
+- **Comparisons are built from file names**: the same file name in different folders is one sentence from several
+  systems. ABX's X and the MUSHRA reference (a `ref` folder) are served from hidden addresses.
+- **New rules**: how many times a clip can be played, seconds per item, and keyboard keys on or off.
+- **Attention checks**: known answers for some items (Results tab). The results show how many each person got right,
+  and the results file can add a `checks_right` column.
+- **Results**: scores per system for every scored question, the details of grids, rankings and marks, and charts
+  (`frontend/js/charts.js`). The results file takes the form its owner chooses (`backend/shared_output.py`), with a
+  sample to check it.
+- **Data collection**: the prompts can be questions answered out loud as well as sentences read aloud.
+- **Big uploads** go in pieces (Cloudflare refuses a body over 100 MB), and archives are unpacked into a shared task.
+- **Fresh files after every change**: the app page stamps each script and stylesheet with a fingerprint of the file
+  (`backend/assets.py`), and an import map does the same for the modules.
+- **Studio links on the public address**: `labelomni.com/#/...` opens the Studio at that place instead of the front
+  page.
+
 ## v0.6.6 "Atelier" (2026-11-08)
 
 Three new colour modes, a movement from page to page, and the studio on glass.

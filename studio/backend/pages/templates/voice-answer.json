@@ -1,0 +1,60 @@
+{
+ "id": "voice-answer",
+ "area": "collect",
+ "modality": "voice",
+ "family": "record",
+ "name": "Answer out loud",
+ "layout": "",
+ "pick": "People answer questions out loud in their own words: spontaneous speech, opinions, descriptions, short interviews.",
+ "summary": "Answer short questions out loud, in your own words.",
+ "suggest": [
+  "Answers of up to one minute",
+  "Ask about accent and age",
+  "Questions about daily life"
+ ],
+ "examples": [
+  [
+   "let them talk up to a minute",
+   {
+    "maxSeconds": 60
+   }
+  ],
+  [
+   "questions about holidays",
+   {
+    "prompts": [
+     "Where did you go on your last holiday?",
+     "What do you like to do on holiday?",
+     "Describe a beautiful place you have visited."
+    ]
+   }
+  ]
+ ],
+ "settings": {
+  "wayOrder": "together",
+  "minSeconds": 3,
+  "maxSeconds": 45,
+  "sampleRate": "16000",
+  "askAbout": [
+   "gender",
+   "age",
+   "first language"
+  ],
+  "peoplePerPrompt": 0,
+  "allowSkip": true,
+  "theme": "forest",
+  "accent": "",
+  "consent": "I agree that my recordings and the information I give are stored and used to build a speech dataset for research.",
+  "title": "Answer a few questions out loud",
+  "instructions": "Find a quiet place. Read each question, then answer it out loud in your own words, as if you were talking to a friend. There are no wrong answers.",
+  "mode": "answer",
+  "languageName": "English",
+  "ways": [],
+  "prompts": [
+   "What did you do last weekend?",
+   "Describe the room you are in right now.",
+   "What is your favourite meal, and why?",
+   "How do you usually get to work or school?"
+  ]
+ }
+}

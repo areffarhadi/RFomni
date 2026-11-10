@@ -3,6 +3,8 @@ const P = {
   play: '<polygon points="6 3 20 12 6 21 6 3"/>',
   pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  'chevron-up': '<path d="m6 15 6-6 6 6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
   minus: '<path d="M5 12h14"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',

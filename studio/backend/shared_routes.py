@@ -8,14 +8,17 @@
 The owner can open the page with ?preview=1 before it is live; answers given in a preview are not saved.
 """
 import secrets
+from collections import Counter
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
+from . import assets
 from . import config
 from . import media as media_mod
 from . import share as share_mod
+from . import shared_output as SO
 from . import shared_tasks as ST
 from .util import slugify
 
@@ -162,6 +165,38 @@ def shared_key(tid: str, request: Request, body: dict = Body(...)):
     return ST.set_key(tid, str(body.get("csv") or ""))
 
 
+@router.post("/api/shared/{tid}/gold")
+def shared_gold(tid: str, request: Request, body: dict = Body(...)):
+    """Items with known answers (clip,answer per line), to check that people pay attention."""
+    _own(request, tid)
+    try:
+        return ST.set_gold(tid, str(body.get("csv") or ""))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.get("/api/shared/{tid}/file")
+def shared_file(tid: str, request: Request):
+    """The results file in the form the owner chose (design.output)."""
+    task = _own(request, tid)
+    text, mime, ext = SO.render(task["design"], ST._answers(tid), ST.items(tid), ST._sessions(tid))
+    name = slugify(task["design"]["title"], 40) or tid
+    return Response(text, media_type=f"{mime}; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{name}.{ext}"'})
+
+
+@router.get("/api/shared/{tid}/file/sample")
+def shared_file_sample(tid: str, request: Request):
+    """What the results file will look like: three people, three items, made-up answers."""
+    task = _own(request, tid)
+    its = ST.items(tid)
+    kinds = Counter(i["kind"] for i in its)
+    page = task.get("page") or {}
+    kind = kinds.most_common(1)[0][0] if kinds else {"voice": "audio", "image": "image", "video": "video", "text": "text"}.get(page.get("modality"), "audio")
+    text, ext = SO.sample(task["design"], its, kind)
+    o = SO.clean(task["design"].get("output"))
+    return {"text": text, "ext": ext, "format": o["format"], "rows": o["rows"], "answers": len(ST._answers(tid))}
+
+
 @router.get("/api/shared/{tid}/export.{fmt}")
 def shared_export(tid: str, fmt: str, request: Request):
     task = _own(request, tid)
@@ -212,6 +247,22 @@ def _item_out(token: str, it: dict, preview: bool) -> dict:
     return out
 
 
+def _screen_out(token: str, task: dict, anchor: dict, sid: str, preview: bool, pool: list | None = None) -> dict:
+    """A comparison screen for the page: its items (never their systems), and X or the reference by hidden addresses."""
+    sc = ST.screen(task, anchor, sid, pool)
+    q = "?preview=1" if preview else ""
+    item_out = (lambda i: i) if pool is not None else (lambda i: _item_out(token, i, preview))
+    out = {"id": sc["id"], "items": [item_out(i) for i in sc["items"]]}
+    for k in ("x", "ref"):
+        if sc[k]:
+            it = next(i for i in sc["items"] if i["id"] == sc[k])
+            out[k] = {**item_out(it), "id": k, "name": k.upper()}
+            if it.get("kind") == "text":
+                continue
+            out[k]["src"] = it["src"] if pool is not None else f"/api/t/{token}/h/{sc[k + '_key']}{q}"
+    return out
+
+
 @router.get("/api/public/tasks")
 def public_tasks(kind: str = "labelling"):
     """The public pages: live tasks of a kind (labelling, or listening tests) their owners listed. Anyone can open them."""
@@ -220,7 +271,7 @@ def public_tasks(kind: str = "labelling"):
 
 @router.get("/t/{token}")
 def task_page(token: str):
-    return FileResponse(PAGE, headers={"Cache-Control": "no-cache"})
+    return assets.page(PAGE)
 
 
 @router.get("/api/t/{token}")
@@ -256,11 +307,22 @@ def public_next(token: str, request: Request, session: str = "", group: str = ""
     if prev:
         its = [i for i in ST.items(task["id"]) if not group or i.get("group") == group]
         it = secrets.choice(its) if its else None
-        return {"item": _item_out(token, it, True) if it else None, "progress": ST.progress(task, None, group or None)}
-    it = ST.next_item(task, _sid(session), group or None)
-    if it is None and not ST.session(task, _sid(session)):
+        prog = ST.progress(task, None, group or None)
+        if not it and task.get("page"):  # a page made from a default, before its data: show what it will look like
+            from .pages import samples
+            pool = samples.items(task["page"]["modality"])
+            first = pool[0] if pool else None
+            screen = _screen_out(token, task, first, "PREVIEW", True, pool) if first and ST.compare_field(task) else None
+            return {"item": first, "progress": prog, **({"screen": screen} if screen else {})}
+        screen = _screen_out(token, task, it, "PREVIEW", True) if it and ST.compare_field(task) else None
+        return {"item": _item_out(token, it, True) if it else None, "progress": prog, **({"screen": screen} if screen else {})}
+    sid = _sid(session)
+    it = ST.next_item(task, sid, group or None)
+    if it is None and not ST.session(task, sid):
         raise HTTPException(404, "This session was not found. Start a new one.")
-    return {"item": _item_out(token, it, False) if it else None, "progress": ST.progress(task, _sid(session), group or None)}
+    screen = _screen_out(token, task, it, sid, False) if it and ST.compare_field(task) else None
+    return {"item": _item_out(token, it, False) if it else None, "progress": ST.progress(task, sid, group or None),
+            **({"screen": screen} if screen else {})}
 
 
 @router.get("/api/t/{token}/groups")
@@ -272,15 +334,36 @@ def public_groups(token: str, request: Request, session: str = "", preview: bool
 @router.post("/api/t/{token}/answer")
 def public_answer(token: str, request: Request, body: dict = Body(...), preview: bool = False):
     task, prev = _public(request, token, preview)
-    if prev:
-        ST._check_values(task, body.get("values") or {})  # still tells the owner when a required answer is missing
+    iid, values = str(body.get("item") or ""), body.get("values") or {}
+    if prev:   # still tells the owner when a required answer is missing
+        if body.get("screen"):
+            ST.answer_screen(task, "PREVIEW", str(body["screen"]), values, preview=True, pool=_preview_pool(task))
+        else:
+            ST._check_values(task, values, _preview_item(task, iid))
         return {"ok": True, "preview": True, "progress": ST.progress(task)}
     try:
-        s = ST.answer(task, _sid(body.get("session")), str(body.get("item") or ""), body.get("values") or {}, body.get("ms"),
-                      body.get("plays"))
+        if body.get("screen"):
+            s = ST.answer_screen(task, _sid(body.get("session")), str(body["screen"]), values, body.get("ms"), body.get("plays"))
+        else:
+            s = ST.answer(task, _sid(body.get("session")), iid, values, body.get("ms"), body.get("plays"))
     except ST.NotFound:
         raise HTTPException(404, "This item is no longer part of the task")
     return {"ok": True, "done": s["done"], "history": s.get("history") or [], "progress": ST.progress(task, s["id"])}
+
+
+def _preview_pool(task: dict) -> list | None:
+    """The items a preview shows: the task's own, or the sample items of a page that has no data yet (None)."""
+    if ST.items(task["id"]) or not task.get("page"):
+        return None
+    from .pages import samples
+    return samples.items(task["page"]["modality"])
+
+
+def _preview_item(task: dict, iid: str) -> dict:
+    try:
+        return ST.item(task["id"], iid)
+    except ST.NotFound:
+        return next((i for i in _preview_pool(task) or [] if i["id"] == iid), {})
 
 
 @router.get("/api/t/{token}/answered/{iid}")
@@ -296,6 +379,16 @@ def public_answered(token: str, iid: str, request: Request, session: str = "", p
     return {"item": _item_out(token, r["item"], prev), "values": r["values"]}
 
 
+@router.get("/api/t/{token}/finish")
+def public_finish(token: str, request: Request, session: str = "", preview: bool = False):
+    """The numbers behind the charts on the last screen (shared_tasks.finish_charts)."""
+    task, prev = _public(request, token, preview)
+    sid = None if prev else _sid(session)
+    if sid and not ST.session(task, sid):
+        raise HTTPException(404, "This session was not found.")
+    return ST.finish_charts(task, sid)
+
+
 @router.post("/api/t/{token}/comment")
 def public_comment(token: str, request: Request, body: dict = Body(...), preview: bool = False):
     task, prev = _public(request, token, preview)
@@ -308,8 +401,18 @@ def public_comment(token: str, request: Request, body: dict = Body(...), preview
 def public_skip(token: str, request: Request, body: dict = Body(...), preview: bool = False):
     task, prev = _public(request, token, preview)
     if not prev:
-        ST.skip(task, _sid(body.get("session")), str(body.get("item") or ""))
+        ST.skip(task, _sid(body.get("session")), str(body.get("item") or ""), timeout=bool(body.get("timeout")))
     return {"ok": True}
+
+
+@router.get("/api/t/{token}/h/{key}")
+def public_hidden(token: str, key: str, request: Request, preview: bool = False):
+    """Media whose own address would give it away (ABX's X, the reference of a comparison)."""
+    task, _ = _public(request, token, preview)
+    iid = ST.hidden(task["id"], key)
+    if not iid:
+        raise HTTPException(404, "This comparison is no longer open. Please reload the page.")
+    return public_media(token, iid, request, preview)
 
 
 @router.get("/api/t/{token}/item/{iid}/media")
